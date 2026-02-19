@@ -10,7 +10,7 @@ import {
   TokenId,
   PrivateKey,
 } from '@hashgraph/sdk';
-import { HieroContext } from '../context/index.js';
+import type { HieroContext } from '../context/index.js';
 import { normalizeError } from '../errors/index.js';
 
 /**
@@ -68,7 +68,8 @@ export class NftClient {
         .setDecimals(0)
         .setInitialSupply(0)
         .setTreasuryAccountId(
-          options.treasuryAccountId ?? this.context.operatorAccountId.toString(),
+          options.treasuryAccountId ??
+            this.context.operatorAccountId.toString(),
         )
         .setSupplyKey(supplyKey.publicKey)
         .setAdminKey(adminKey.publicKey);
@@ -191,9 +192,9 @@ export class NftClient {
       }
 
       const frozenTx = tx.freezeWith(this.context.client);
-      const response = await (await frozenTx.sign(key)).execute(
-        this.context.client,
-      );
+      const response = await (
+        await frozenTx.sign(key)
+      ).execute(this.context.client);
       const receipt = await response.getReceipt(this.context.client);
       return receipt.serials.map((s) => s.toNumber());
     } catch (error) {

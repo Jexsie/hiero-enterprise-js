@@ -23,7 +23,9 @@ describe('MirrorNodeClient', () => {
 
   describe('fetch error handling', () => {
     it('throws HieroError on network failure', async () => {
-      vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('ECONNREFUSED'));
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(
+        new Error('ECONNREFUSED'),
+      );
       await expect(client.queryAccount('0.0.1')).rejects.toThrow(HieroError);
       await expect(client.queryAccount('0.0.1')).rejects.toThrow(
         /Mirror node request failed/,
@@ -79,7 +81,9 @@ describe('MirrorNodeClient', () => {
                 deleted: false,
               },
             ],
-            links: { next: '/api/v1/accounts/0.0.12345/nfts?limit=25&offset=1' },
+            links: {
+              next: '/api/v1/accounts/0.0.12345/nfts?limit=25&offset=1',
+            },
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         ),
@@ -134,10 +138,10 @@ describe('MirrorNodeClient', () => {
   describe('queryTransaction', () => {
     it('throws NOT_FOUND for empty transactions', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-        new Response(
-          JSON.stringify({ transactions: [] }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+        new Response(JSON.stringify({ transactions: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await expect(

@@ -5,7 +5,7 @@ import {
   TopicMessageSubmitTransaction,
   PrivateKey,
 } from '@hashgraph/sdk';
-import { HieroContext } from '../context/index.js';
+import type { HieroContext } from '../context/index.js';
 import { normalizeError } from '../errors/index.js';
 
 /**
@@ -63,8 +63,7 @@ export class TopicClient {
         ? PrivateKey.fromString(options.adminKey)
         : this.context.operatorKey;
 
-      const tx = new TopicCreateTransaction()
-        .setAdminKey(adminKey.publicKey);
+      const tx = new TopicCreateTransaction().setAdminKey(adminKey.publicKey);
 
       if (options.memo) {
         tx.setTopicMemo(options.memo);

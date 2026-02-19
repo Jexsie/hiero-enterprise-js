@@ -1,8 +1,7 @@
 import 'reflect-metadata';
-import { Module, Controller, Get, Post, Param, Body, Injectable } from '@nestjs/common';
+import { Module, Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import {
-  HieroModule,
+import type {
   AccountClient,
   TopicClient,
   AccountRepository,
@@ -11,6 +10,7 @@ import {
   TopicRepository,
   NetworkRepository,
 } from '@hiero-enterprise/nest';
+import { HieroModule } from '@hiero-enterprise/nest';
 
 // ─── Controllers ──────────────────────────────────────────────
 

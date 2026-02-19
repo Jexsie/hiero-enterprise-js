@@ -7,9 +7,8 @@ import {
   TokenBurnTransaction,
   TransferTransaction,
   PrivateKey,
-  Hbar,
 } from '@hashgraph/sdk';
-import { HieroContext } from '../context/index.js';
+import type { HieroContext } from '../context/index.js';
 import { normalizeError } from '../errors/index.js';
 
 /**
@@ -71,7 +70,8 @@ export class FungibleTokenClient {
         .setDecimals(options.decimals ?? 0)
         .setInitialSupply(options.initialSupply ?? 0)
         .setTreasuryAccountId(
-          options.treasuryAccountId ?? this.context.operatorAccountId.toString(),
+          options.treasuryAccountId ??
+            this.context.operatorAccountId.toString(),
         )
         .setSupplyKey(supplyKey.publicKey)
         .setAdminKey(adminKey.publicKey);

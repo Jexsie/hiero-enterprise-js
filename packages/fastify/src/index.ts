@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import type { HieroConfig } from '@hiero-enterprise/core';
 import {
   HieroContext,
-  HieroConfig,
   resolveMirrorNodeUrl,
   MirrorNodeClient,
   AccountClient,

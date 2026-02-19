@@ -138,8 +138,16 @@ function createMockTransactionInfo(): TransactionInfo {
 
 function createMockExchangeRates(): ExchangeRates {
   return {
-    currentRate: { hbarEquivalent: 30000, centEquivalent: 1200, expirationTime: '1234567890' },
-    nextRate: { hbarEquivalent: 30000, centEquivalent: 1200, expirationTime: '1234567890' },
+    currentRate: {
+      hbarEquivalent: 30000,
+      centEquivalent: 1200,
+      expirationTime: '1234567890',
+    },
+    nextRate: {
+      hbarEquivalent: 30000,
+      centEquivalent: 1200,
+      expirationTime: '1234567890',
+    },
   };
 }
 

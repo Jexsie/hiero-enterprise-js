@@ -1,8 +1,4 @@
-import {
-  Client,
-  AccountId,
-  PrivateKey,
-} from '@hashgraph/sdk';
+import { Client, AccountId, PrivateKey } from '@hashgraph/sdk';
 import type { HieroConfig } from '../config/index.js';
 import { resolveConfigFromEnv } from '../config/index.js';
 import { HieroError } from '../errors/index.js';
@@ -47,9 +43,12 @@ export class HieroContext {
       this.client = Client.forPreviewnet();
     } else {
       // Custom network — attempt to parse as JSON or URL
-      throw new HieroError(`Custom networks are not yet supported: "${network}"`, {
-        code: 'UNSUPPORTED_NETWORK',
-      });
+      throw new HieroError(
+        `Custom networks are not yet supported: "${network}"`,
+        {
+          code: 'UNSUPPORTED_NETWORK',
+        },
+      );
     }
 
     // Set operator

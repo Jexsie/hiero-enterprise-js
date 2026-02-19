@@ -6,7 +6,7 @@ import {
   FileAppendTransaction,
   FileInfoQuery,
 } from '@hashgraph/sdk';
-import { HieroContext } from '../context/index.js';
+import type { HieroContext } from '../context/index.js';
 import { normalizeError } from '../errors/index.js';
 
 /** Maximum chunk size for file operations (4KB) */

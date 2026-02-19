@@ -1,14 +1,14 @@
+import type { ContractFunctionParameters } from '@hashgraph/sdk';
 import {
   ContractCreateTransaction,
   ContractCreateFlow,
   ContractExecuteTransaction,
   ContractDeleteTransaction,
-  ContractFunctionParameters,
   FileId,
   Hbar,
 } from '@hashgraph/sdk';
 import type { ContractCallResult } from '../data/index.js';
-import { HieroContext } from '../context/index.js';
+import type { HieroContext } from '../context/index.js';
 import { normalizeError } from '../errors/index.js';
 
 /**
@@ -67,9 +67,7 @@ export class SmartContractClient {
     constructorParams?: ContractFunctionParameters,
   ): Promise<string> {
     try {
-      const tx = new ContractCreateFlow()
-        .setBytecode(bytecode)
-        .setGas(gas);
+      const tx = new ContractCreateFlow().setBytecode(bytecode).setGas(gas);
 
       if (constructorParams) {
         tx.setConstructorParameters(constructorParams);

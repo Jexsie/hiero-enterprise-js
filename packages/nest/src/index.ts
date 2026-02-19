@@ -1,6 +1,6 @@
+import type { HieroConfig } from '@hiero-enterprise/core';
 import {
   HieroContext,
-  HieroConfig,
   resolveConfigFromEnv,
   resolveMirrorNodeUrl,
   MirrorNodeClient,

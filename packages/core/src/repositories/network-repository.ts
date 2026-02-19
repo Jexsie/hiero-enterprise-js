@@ -1,4 +1,8 @@
-import type { ExchangeRates, NetworkStake, NetworkSupplies } from '../data/index.js';
+import type {
+  ExchangeRates,
+  NetworkStake,
+  NetworkSupplies,
+} from '../data/index.js';
 import type { MirrorNodeClient } from '../mirror/index.js';
 
 /**

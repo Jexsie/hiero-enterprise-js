@@ -1,7 +1,7 @@
-import type { Request, Response, NextFunction, Router } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import type { HieroConfig } from '@hiero-enterprise/core';
 import {
   HieroContext,
-  HieroConfig,
   resolveMirrorNodeUrl,
   MirrorNodeClient,
   AccountClient,
@@ -42,6 +42,7 @@ export interface HieroServices {
  * Augment Express Request to include Hiero services.
  */
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       hiero: HieroServices;

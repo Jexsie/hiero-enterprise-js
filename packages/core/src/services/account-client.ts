@@ -6,7 +6,7 @@ import {
   PrivateKey,
 } from '@hashgraph/sdk';
 import type { Account, Balance } from '../data/index.js';
-import { HieroContext } from '../context/index.js';
+import type { HieroContext } from '../context/index.js';
 import { normalizeError } from '../errors/index.js';
 
 /**
@@ -133,8 +133,6 @@ export class AccountClient {
    * @returns The operator account balance
    */
   async getOperatorAccountBalance(): Promise<Balance> {
-    return this.getAccountBalance(
-      this.context.operatorAccountId.toString(),
-    );
+    return this.getAccountBalance(this.context.operatorAccountId.toString());
   }
 }

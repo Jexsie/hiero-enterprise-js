@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  HieroError,
-  normalizeError,
-} from '../src/errors/hiero-error.js';
+import { HieroError, normalizeError } from '../src/errors/hiero-error.js';
 
 describe('HieroError', () => {
   it('creates an error with default values', () => {

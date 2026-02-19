@@ -60,15 +60,11 @@ export function resolveMirrorNodeUrl(
  * @returns A HieroConfig or null if required env vars are missing
  */
 export function resolveConfigFromEnv(): HieroConfig | null {
-  const network =
-    process.env['HIERO_NETWORK'] ??
-    process.env['HEDERA_NETWORK'];
+  const network = process.env['HIERO_NETWORK'] ?? process.env['HEDERA_NETWORK'];
   const operatorId =
-    process.env['HIERO_OPERATOR_ID'] ??
-    process.env['HEDERA_OPERATOR_ID'];
+    process.env['HIERO_OPERATOR_ID'] ?? process.env['HEDERA_OPERATOR_ID'];
   const operatorKey =
-    process.env['HIERO_OPERATOR_KEY'] ??
-    process.env['HEDERA_OPERATOR_KEY'];
+    process.env['HIERO_OPERATOR_KEY'] ?? process.env['HEDERA_OPERATOR_KEY'];
   const mirrorNodeUrl = process.env['HIERO_MIRROR_NODE_URL'];
 
   if (!network || !operatorId || !operatorKey) {

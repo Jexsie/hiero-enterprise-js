@@ -224,7 +224,7 @@ export class MirrorNodeClient {
 
 // ─── Mirror Node Response Types ────────────────────────────────
 
-interface MirrorPageResponse<T> {
+interface MirrorPageResponse<_T> {
   [key: string]: unknown;
   links?: { next: string | null };
 }
@@ -281,7 +281,11 @@ interface MirrorTokenResponse {
   fee_schedule_key?: { key: string };
   deleted: boolean;
   pause_status?: string;
-  custom_fees?: { fixed_fees?: MirrorFixedFee[]; fractional_fees?: MirrorFractionalFee[]; royalty_fees?: MirrorRoyaltyFee[] };
+  custom_fees?: {
+    fixed_fees?: MirrorFixedFee[];
+    fractional_fees?: MirrorFractionalFee[];
+    royalty_fees?: MirrorRoyaltyFee[];
+  };
   created_timestamp?: string;
   expiry_timestamp?: string;
   memo?: string;
@@ -504,7 +508,10 @@ function convertTokenInfo(raw: MirrorTokenResponse): TokenInfo {
     tokenId: raw.token_id,
     name: raw.name,
     symbol: raw.symbol,
-    type: raw.type === 'NON_FUNGIBLE_UNIQUE' ? 'NON_FUNGIBLE_UNIQUE' : 'FUNGIBLE_COMMON',
+    type:
+      raw.type === 'NON_FUNGIBLE_UNIQUE'
+        ? 'NON_FUNGIBLE_UNIQUE'
+        : 'FUNGIBLE_COMMON',
     decimals: parseInt(raw.decimals, 10),
     totalSupply: raw.total_supply,
     maxSupply: raw.max_supply,
