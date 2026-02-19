@@ -21,6 +21,7 @@ import {
 // ─── Injection Tokens ──────────────────────────────────────────
 
 export const HIERO_CONFIG = 'HIERO_CONFIG';
+export const HIERO_CONTEXT = 'HIERO_CONTEXT';
 
 // ─── HieroModule ───────────────────────────────────────────────
 
@@ -68,7 +69,7 @@ export class HieroModule {
       module: HieroModule,
       providers: [
         { provide: HIERO_CONFIG, useValue: resolved },
-        { provide: HieroContext, useValue: context },
+        { provide: HIERO_CONTEXT, useValue: context },
         { provide: MirrorNodeClient, useValue: mirrorNodeClient },
         { provide: AccountClient, useValue: new AccountClient(context) },
         { provide: FileClient, useValue: new FileClient(context) },
@@ -109,7 +110,7 @@ export class HieroModule {
       ],
       exports: [
         HIERO_CONFIG,
-        HieroContext,
+        HIERO_CONTEXT,
         MirrorNodeClient,
         AccountClient,
         FileClient,
@@ -133,12 +134,12 @@ export class HieroModule {
  * Defined here to avoid runtime dependency on @nestjs/common.
  */
 interface NestDynamicModule {
-  module: unknown;
+  module: new (...args: any[]) => any;
   providers: Array<{
-    provide: unknown;
-    useValue: unknown;
+    provide: string | symbol | (new (...args: any[]) => any);
+    useValue: any;
   }>;
-  exports: unknown[];
+  exports: Array<string | symbol | (new (...args: any[]) => any)>;
 }
 
 // Re-export core types for convenience
