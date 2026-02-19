@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Lock files (pnpm uses pnpm-lock.yaml)
+package-lock.json
+yarn.lock
+
+# Test coverage
+coverage/
+
+# Misc
+*.log

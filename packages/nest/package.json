@@ -1,0 +1,26 @@
+{
+  "name": "@hiero-enterprise/nest",
+  "version": "0.1.0",
+  "description": "NestJS module for Hiero/Hedera networks",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hiero-enterprise/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@nestjs/common": ">=10",
+    "@nestjs/core": ">=10"
+  }
+}

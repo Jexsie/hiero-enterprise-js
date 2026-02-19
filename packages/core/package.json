@@ -1,0 +1,26 @@
+{
+  "name": "@hiero-enterprise/core",
+  "version": "0.1.0",
+  "description": "Core services, repositories, and data models for Hiero/Hedera networks",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hashgraph/sdk": "^2.55.0"
+  }
+}
