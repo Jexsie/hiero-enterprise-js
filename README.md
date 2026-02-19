@@ -125,6 +125,16 @@ The testing subpath provides:
 - `testConfig` — safe dummy credentials for test environments
 - `createMockMirrorNodeClient()` — fully typed mock returning sensible defaults
 
+## Samples
+
+Full working sample projects are available in the [`samples/`](./samples) directory:
+
+| Sample | Framework | How to run |
+|--------|-----------|------------|
+| [express-sample](./samples/express-sample) | Express | `pnpm --filter hiero-express-sample dev` |
+| [fastify-sample](./samples/fastify-sample) | Fastify | `pnpm --filter hiero-fastify-sample dev` |
+| [nest-sample](./samples/nest-sample) | NestJS | `pnpm --filter hiero-nest-sample dev` |
+
 ## Architecture
 
 ```
