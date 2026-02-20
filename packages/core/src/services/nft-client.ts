@@ -11,7 +11,7 @@ import {
     PrivateKey,
 } from "@hashgraph/sdk";
 import type { HieroContext } from "../context/index.js";
-import type { TransactionEvent } from "../interceptors/index.js";
+import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
 
 /**

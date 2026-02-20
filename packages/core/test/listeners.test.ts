@@ -3,7 +3,7 @@ import { HieroContext } from "../src/context/hiero-context.js";
 import type {
     TransactionListener,
     TransactionEvent,
-} from "../src/interceptors/index.js";
+} from "../src/listeners/index.js";
 import { AccountClient } from "../src/services/account-client.js";
 
 // Mock the hashgraph SDK so we don't hit the real network

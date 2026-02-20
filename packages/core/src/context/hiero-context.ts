@@ -5,7 +5,7 @@ import { HieroError } from "../errors/index.js";
 import type {
     TransactionListener,
     TransactionEvent,
-} from "../interceptors/index.js";
+} from "../listeners/index.js";
 
 /**
  * Central context for interacting with a Hiero network.

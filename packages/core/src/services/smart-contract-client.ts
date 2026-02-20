@@ -9,7 +9,7 @@ import {
 } from "@hashgraph/sdk";
 import type { ContractCallResult } from "../data/index.js";
 import type { HieroContext } from "../context/index.js";
-import type { TransactionEvent } from "../interceptors/index.js";
+import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
 
 /**

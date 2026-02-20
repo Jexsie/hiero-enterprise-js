@@ -7,7 +7,7 @@ import {
 } from "@hashgraph/sdk";
 import type { Account, Balance } from "../data/index.js";
 import type { HieroContext } from "../context/index.js";
-import type { TransactionEvent } from "../interceptors/index.js";
+import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
 
 /**
@@ -50,10 +50,10 @@ export class AccountClient {
         const start = Date.now();
 
         try {
-            const newKey = PrivateKey.generateED25519();
+            const newKey = PrivateKey.generateECDSA();
 
             const tx = new AccountCreateTransaction()
-                .setKey(newKey.publicKey)
+                .setKeyWithoutAlias(newKey.publicKey)
                 .setInitialBalance(new Hbar(options.initialBalance ?? 0));
 
             if (options.maxAutomaticTokenAssociations !== undefined) {
