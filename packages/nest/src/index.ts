@@ -133,7 +133,7 @@ export class HieroModule {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Constructor = abstract new (...args: any[]) => unknown;
+type Constructor = new (...args: any[]) => unknown;
 
 /**
  * Minimal subset of NestJS DynamicModule interface.
