@@ -21,3 +21,6 @@ export * from "./repositories/index.js";
 
 // Services
 export * from "./services/index.js";
+
+// Interceptors
+export * from "./interceptors/index.js";

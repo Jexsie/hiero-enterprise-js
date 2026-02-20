@@ -6,6 +6,7 @@ import {
     PrivateKey,
 } from "@hashgraph/sdk";
 import type { HieroContext } from "../context/index.js";
+import type { TransactionEvent } from "../interceptors/index.js";
 import { normalizeError } from "../errors/index.js";
 
 /**
@@ -51,6 +52,15 @@ export class TopicClient {
         this.context = context;
     }
 
+    private createEvent(type: string, methodName: string): TransactionEvent {
+        return {
+            type,
+            serviceName: "TopicClient",
+            methodName,
+            timestamp: new Date(),
+        };
+    }
+
     /**
      * Create a new public topic.
      *
@@ -58,6 +68,10 @@ export class TopicClient {
      * @returns The topic ID
      */
     async createTopic(options: CreateTopicOptions = {}): Promise<string> {
+        const event = this.createEvent("TopicCreate", "createTopic");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const adminKey = options.adminKey
                 ? PrivateKey.fromString(options.adminKey)
@@ -73,8 +87,23 @@ export class TopicClient {
 
             const response = await tx.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
-            return receipt.topicId!.toString();
+            const topicId = receipt.topicId!.toString();
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: receipt.status.toString(),
+                durationMs: Date.now() - start,
+            });
+
+            return topicId;
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "TopicClient.createTopic");
         }
     }
@@ -88,6 +117,13 @@ export class TopicClient {
     async createPrivateTopic(
         options: CreatePrivateTopicOptions,
     ): Promise<string> {
+        const event = this.createEvent(
+            "TopicCreatePrivate",
+            "createPrivateTopic",
+        );
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const adminKey = options.adminKey
                 ? PrivateKey.fromString(options.adminKey)
@@ -104,8 +140,23 @@ export class TopicClient {
 
             const response = await tx.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
-            return receipt.topicId!.toString();
+            const topicId = receipt.topicId!.toString();
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: receipt.status.toString(),
+                durationMs: Date.now() - start,
+            });
+
+            return topicId;
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "TopicClient.createPrivateTopic");
         }
     }
@@ -120,6 +171,10 @@ export class TopicClient {
         topicId: string,
         options: UpdateTopicOptions,
     ): Promise<void> {
+        const event = this.createEvent("TopicUpdate", "updateTopic");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const tx = new TopicUpdateTransaction().setTopicId(topicId);
 
@@ -139,14 +194,28 @@ export class TopicClient {
 
             const frozenTx = tx.freezeWith(this.context.client);
 
+            let response;
             if (options.adminKey) {
-                await (
+                response = await (
                     await frozenTx.sign(PrivateKey.fromString(options.adminKey))
                 ).execute(this.context.client);
             } else {
-                await frozenTx.execute(this.context.client);
+                response = await frozenTx.execute(this.context.client);
             }
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "TopicClient.updateTopic");
         }
     }
@@ -194,19 +263,37 @@ export class TopicClient {
      * @param adminKey - Admin key for authorization
      */
     async deleteTopic(topicId: string, adminKey?: string): Promise<void> {
+        const event = this.createEvent("TopicDelete", "deleteTopic");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const tx = new TopicDeleteTransaction()
                 .setTopicId(topicId)
                 .freezeWith(this.context.client);
 
+            let response;
             if (adminKey) {
-                await (
+                response = await (
                     await tx.sign(PrivateKey.fromString(adminKey))
                 ).execute(this.context.client);
             } else {
-                await tx.execute(this.context.client);
+                response = await tx.execute(this.context.client);
             }
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "TopicClient.deleteTopic");
         }
     }
@@ -223,20 +310,38 @@ export class TopicClient {
         message: string | Uint8Array,
         submitKey?: string,
     ): Promise<void> {
+        const event = this.createEvent("TopicSubmitMessage", "submitMessage");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const tx = new TopicMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(message)
                 .freezeWith(this.context.client);
 
+            let response;
             if (submitKey) {
-                await (
+                response = await (
                     await tx.sign(PrivateKey.fromString(submitKey))
                 ).execute(this.context.client);
             } else {
-                await tx.execute(this.context.client);
+                response = await tx.execute(this.context.client);
             }
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "TopicClient.submitMessage");
         }
     }

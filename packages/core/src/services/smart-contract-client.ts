@@ -9,6 +9,7 @@ import {
 } from "@hashgraph/sdk";
 import type { ContractCallResult } from "../data/index.js";
 import type { HieroContext } from "../context/index.js";
+import type { TransactionEvent } from "../interceptors/index.js";
 import { normalizeError } from "../errors/index.js";
 
 /**
@@ -20,6 +21,15 @@ export class SmartContractClient {
 
     constructor(context: HieroContext) {
         this.context = context;
+    }
+
+    private createEvent(type: string, methodName: string): TransactionEvent {
+        return {
+            type,
+            serviceName: "SmartContractClient",
+            methodName,
+            timestamp: new Date(),
+        };
     }
 
     /**
@@ -35,6 +45,10 @@ export class SmartContractClient {
         gas: number = 100_000,
         constructorParams?: ContractFunctionParameters,
     ): Promise<string> {
+        const event = this.createEvent("ContractCreate", "createContract");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const tx = new ContractCreateTransaction()
                 .setBytecodeFileId(FileId.fromString(fileId))
@@ -46,8 +60,23 @@ export class SmartContractClient {
 
             const response = await tx.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
-            return receipt.contractId!.toString();
+            const contractId = receipt.contractId!.toString();
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: receipt.status.toString(),
+                durationMs: Date.now() - start,
+            });
+
+            return contractId;
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "SmartContractClient.createContract");
         }
     }
@@ -66,6 +95,13 @@ export class SmartContractClient {
         gas: number = 100_000,
         constructorParams?: ContractFunctionParameters,
     ): Promise<string> {
+        const event = this.createEvent(
+            "ContractCreateFromBytecode",
+            "createContractFromBytecode",
+        );
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const tx = new ContractCreateFlow()
                 .setBytecode(bytecode)
@@ -77,8 +113,23 @@ export class SmartContractClient {
 
             const response = await tx.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
-            return receipt.contractId!.toString();
+            const contractId = receipt.contractId!.toString();
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: receipt.status.toString(),
+                durationMs: Date.now() - start,
+            });
+
+            return contractId;
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(
                 error,
                 "SmartContractClient.createContractFromBytecode",
@@ -103,6 +154,10 @@ export class SmartContractClient {
         params?: ContractFunctionParameters,
         payableAmount?: number,
     ): Promise<ContractCallResult> {
+        const event = this.createEvent("ContractCall", "callContractFunction");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const tx = new ContractExecuteTransaction()
                 .setContractId(contractId)
@@ -117,13 +172,28 @@ export class SmartContractClient {
             const record = await response.getRecord(this.context.client);
             const result = record.contractFunctionResult!;
 
-            return {
+            const callResult: ContractCallResult = {
                 gasUsed: result.gasUsed.toNumber(),
                 contractId: result.contractId?.toString() ?? contractId,
                 resultBytes: Buffer.from(result.bytes).toString("hex"),
                 errorMessage: result.errorMessage || undefined,
             };
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
+
+            return callResult;
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(
                 error,
                 "SmartContractClient.callContractFunction",
@@ -141,12 +211,29 @@ export class SmartContractClient {
         contractId: string,
         transferAccountId: string,
     ): Promise<void> {
+        const event = this.createEvent("ContractDelete", "deleteContract");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
-            await new ContractDeleteTransaction()
+            const response = await new ContractDeleteTransaction()
                 .setContractId(contractId)
                 .setTransferAccountId(transferAccountId)
                 .execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "SmartContractClient.deleteContract");
         }
     }

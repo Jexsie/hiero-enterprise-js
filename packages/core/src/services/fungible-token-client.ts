@@ -9,6 +9,7 @@ import {
     PrivateKey,
 } from "@hashgraph/sdk";
 import type { HieroContext } from "../context/index.js";
+import type { TransactionEvent } from "../interceptors/index.js";
 import { normalizeError } from "../errors/index.js";
 
 /**
@@ -48,6 +49,15 @@ export class FungibleTokenClient {
         this.context = context;
     }
 
+    private createEvent(type: string, methodName: string): TransactionEvent {
+        return {
+            type,
+            serviceName: "FungibleTokenClient",
+            methodName,
+            timestamp: new Date(),
+        };
+    }
+
     /**
      * Create a new fungible token.
      *
@@ -55,6 +65,10 @@ export class FungibleTokenClient {
      * @returns The token ID of the created token
      */
     async createToken(options: CreateTokenOptions): Promise<string> {
+        const event = this.createEvent("TokenCreate", "createToken");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const supplyKey = options.supplyKey
                 ? PrivateKey.fromString(options.supplyKey)
@@ -92,8 +106,23 @@ export class FungibleTokenClient {
 
             const response = await frozenTx.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
-            return receipt.tokenId!.toString();
+            const tokenId = receipt.tokenId!.toString();
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: receipt.status.toString(),
+                durationMs: Date.now() - start,
+            });
+
+            return tokenId;
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "FungibleTokenClient.createToken");
         }
     }
@@ -110,6 +139,10 @@ export class FungibleTokenClient {
         accountId: string,
         accountKey: string,
     ): Promise<void> {
+        const event = this.createEvent("TokenAssociate", "associateToken");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = PrivateKey.fromString(accountKey);
             const tx = new TokenAssociateTransaction()
@@ -117,8 +150,23 @@ export class FungibleTokenClient {
                 .setTokenIds([tokenId])
                 .freezeWith(this.context.client);
 
-            await (await tx.sign(key)).execute(this.context.client);
+            const response = await (
+                await tx.sign(key)
+            ).execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "FungibleTokenClient.associateToken");
         }
     }
@@ -135,6 +183,10 @@ export class FungibleTokenClient {
         accountId: string,
         accountKey: string,
     ): Promise<void> {
+        const event = this.createEvent("TokenDissociate", "dissociateToken");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = PrivateKey.fromString(accountKey);
             const tx = new TokenDissociateTransaction()
@@ -142,8 +194,23 @@ export class FungibleTokenClient {
                 .setTokenIds([tokenId])
                 .freezeWith(this.context.client);
 
-            await (await tx.sign(key)).execute(this.context.client);
+            const response = await (
+                await tx.sign(key)
+            ).execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "FungibleTokenClient.dissociateToken");
         }
     }
@@ -160,6 +227,10 @@ export class FungibleTokenClient {
         amount: number,
         supplyKey?: string,
     ): Promise<void> {
+        const event = this.createEvent("TokenMint", "mintToken");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = supplyKey
                 ? PrivateKey.fromString(supplyKey)
@@ -169,8 +240,23 @@ export class FungibleTokenClient {
                 .setAmount(amount)
                 .freezeWith(this.context.client);
 
-            await (await tx.sign(key)).execute(this.context.client);
+            const response = await (
+                await tx.sign(key)
+            ).execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "FungibleTokenClient.mintToken");
         }
     }
@@ -187,6 +273,10 @@ export class FungibleTokenClient {
         amount: number,
         supplyKey?: string,
     ): Promise<void> {
+        const event = this.createEvent("TokenBurn", "burnToken");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = supplyKey
                 ? PrivateKey.fromString(supplyKey)
@@ -196,8 +286,23 @@ export class FungibleTokenClient {
                 .setAmount(amount)
                 .freezeWith(this.context.client);
 
-            await (await tx.sign(key)).execute(this.context.client);
+            const response = await (
+                await tx.sign(key)
+            ).execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "FungibleTokenClient.burnToken");
         }
     }
@@ -218,6 +323,10 @@ export class FungibleTokenClient {
         toAccountId: string,
         amount: number,
     ): Promise<void> {
+        const event = this.createEvent("TokenTransfer", "transferToken");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = PrivateKey.fromString(fromKey);
             const tx = new TransferTransaction()
@@ -225,8 +334,23 @@ export class FungibleTokenClient {
                 .addTokenTransfer(tokenId, toAccountId, amount)
                 .freezeWith(this.context.client);
 
-            await (await tx.sign(key)).execute(this.context.client);
+            const response = await (
+                await tx.sign(key)
+            ).execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "FungibleTokenClient.transferToken");
         }
     }

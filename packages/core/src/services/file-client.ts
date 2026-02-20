@@ -7,6 +7,7 @@ import {
     FileInfoQuery,
 } from "@hashgraph/sdk";
 import type { HieroContext } from "../context/index.js";
+import type { TransactionEvent } from "../interceptors/index.js";
 import { normalizeError } from "../errors/index.js";
 
 /** Maximum chunk size for file operations (4KB) */
@@ -37,6 +38,15 @@ export class FileClient {
         contents: Uint8Array,
         expirationTime?: Date,
     ): Promise<string> {
+        const event: TransactionEvent = {
+            type: "FileCreate",
+            serviceName: "FileClient",
+            methodName: "createFile",
+            timestamp: new Date(),
+        };
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             // If contents fit in a single chunk, create directly
             const firstChunk = contents.slice(0, MAX_CHUNK_SIZE);
@@ -66,8 +76,21 @@ export class FileClient {
                 }
             }
 
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: receipt.status.toString(),
+                durationMs: Date.now() - start,
+            });
+
             return fileId;
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "FileClient.createFile");
         }
     }
@@ -95,12 +118,34 @@ export class FileClient {
      * @param contents - The new file contents
      */
     async updateFile(fileId: string, contents: Uint8Array): Promise<void> {
+        const event: TransactionEvent = {
+            type: "FileUpdate",
+            serviceName: "FileClient",
+            methodName: "updateFile",
+            timestamp: new Date(),
+        };
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
-            await new FileUpdateTransaction()
+            const response = await new FileUpdateTransaction()
                 .setFileId(fileId)
                 .setContents(contents)
                 .execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "FileClient.updateFile");
         }
     }
@@ -111,11 +156,33 @@ export class FileClient {
      * @param fileId - The file to delete
      */
     async deleteFile(fileId: string): Promise<void> {
+        const event: TransactionEvent = {
+            type: "FileDelete",
+            serviceName: "FileClient",
+            methodName: "deleteFile",
+            timestamp: new Date(),
+        };
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
-            await new FileDeleteTransaction()
+            const response = await new FileDeleteTransaction()
                 .setFileId(fileId)
                 .execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "FileClient.deleteFile");
         }
     }

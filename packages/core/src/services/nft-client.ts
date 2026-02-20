@@ -11,6 +11,7 @@ import {
     PrivateKey,
 } from "@hashgraph/sdk";
 import type { HieroContext } from "../context/index.js";
+import type { TransactionEvent } from "../interceptors/index.js";
 import { normalizeError } from "../errors/index.js";
 
 /**
@@ -21,9 +22,9 @@ export interface CreateNftTypeOptions {
     name: string;
     /** Collection symbol */
     symbol: string;
-    /** Maximum supply (0 = infinite) */
+    /** Maximum number of NFTs (default: unlimited) */
     maxSupply?: number;
-    /** Treasury account (defaults to operator) */
+    /** Treasury account ID (defaults to operator) */
     treasuryAccountId?: string;
     /** Treasury account private key */
     treasuryKey?: string;
@@ -31,7 +32,7 @@ export interface CreateNftTypeOptions {
     supplyKey?: string;
     /** Admin key (defaults to operator key) */
     adminKey?: string;
-    /** Token memo */
+    /** Collection memo */
     memo?: string;
 }
 
@@ -46,6 +47,15 @@ export class NftClient {
         this.context = context;
     }
 
+    private createEvent(type: string, methodName: string): TransactionEvent {
+        return {
+            type,
+            serviceName: "NftClient",
+            methodName,
+            timestamp: new Date(),
+        };
+    }
+
     /**
      * Create a new NFT collection (token type).
      *
@@ -53,6 +63,10 @@ export class NftClient {
      * @returns The token ID of the created NFT type
      */
     async createNftType(options: CreateNftTypeOptions): Promise<string> {
+        const event = this.createEvent("NftCreate", "createNftType");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const supplyKey = options.supplyKey
                 ? PrivateKey.fromString(options.supplyKey)
@@ -90,8 +104,23 @@ export class NftClient {
 
             const response = await frozenTx.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
-            return receipt.tokenId!.toString();
+            const tokenId = receipt.tokenId!.toString();
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: receipt.status.toString(),
+                durationMs: Date.now() - start,
+            });
+
+            return tokenId;
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "NftClient.createNftType");
         }
     }
@@ -104,6 +133,10 @@ export class NftClient {
         accountId: string,
         accountKey: string,
     ): Promise<void> {
+        const event = this.createEvent("NftAssociate", "associateNft");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = PrivateKey.fromString(accountKey);
             const tx = new TokenAssociateTransaction()
@@ -111,8 +144,23 @@ export class NftClient {
                 .setTokenIds([tokenId])
                 .freezeWith(this.context.client);
 
-            await (await tx.sign(key)).execute(this.context.client);
+            const response = await (
+                await tx.sign(key)
+            ).execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "NftClient.associateNft");
         }
     }
@@ -125,6 +173,10 @@ export class NftClient {
         accountId: string,
         accountKey: string,
     ): Promise<void> {
+        const event = this.createEvent("NftDissociate", "dissociateNft");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = PrivateKey.fromString(accountKey);
             const tx = new TokenDissociateTransaction()
@@ -132,8 +184,23 @@ export class NftClient {
                 .setTokenIds([tokenId])
                 .freezeWith(this.context.client);
 
-            await (await tx.sign(key)).execute(this.context.client);
+            const response = await (
+                await tx.sign(key)
+            ).execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "NftClient.dissociateNft");
         }
     }
@@ -151,6 +218,10 @@ export class NftClient {
         metadata: Uint8Array,
         supplyKey?: string,
     ): Promise<number> {
+        const event = this.createEvent("NftMint", "mintNft");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = supplyKey
                 ? PrivateKey.fromString(supplyKey)
@@ -164,8 +235,23 @@ export class NftClient {
                 await tx.sign(key)
             ).execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
-            return receipt.serials[0].toNumber();
+            const serial = receipt.serials[0].toNumber();
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: receipt.status.toString(),
+                durationMs: Date.now() - start,
+            });
+
+            return serial;
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "NftClient.mintNft");
         }
     }
@@ -183,6 +269,10 @@ export class NftClient {
         metadataList: Uint8Array[],
         supplyKey?: string,
     ): Promise<number[]> {
+        const event = this.createEvent("NftMintBatch", "mintNfts");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = supplyKey
                 ? PrivateKey.fromString(supplyKey)
@@ -193,13 +283,29 @@ export class NftClient {
                 tx.addMetadata(metadata);
             }
 
-            const frozenTx = tx.freezeWith(this.context.client);
+            tx.freezeWith(this.context.client);
+
             const response = await (
-                await frozenTx.sign(key)
+                await tx.sign(key)
             ).execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
-            return receipt.serials.map((s) => s.toNumber());
+            const serials = receipt.serials.map((s) => s.toNumber());
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: receipt.status.toString(),
+                durationMs: Date.now() - start,
+            });
+
+            return serials;
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "NftClient.mintNfts");
         }
     }
@@ -231,18 +337,36 @@ export class NftClient {
         serialNumbers: number[],
         supplyKey?: string,
     ): Promise<void> {
+        const event = this.createEvent("NftBurn", "burnNfts");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = supplyKey
                 ? PrivateKey.fromString(supplyKey)
                 : this.context.operatorKey;
-            const longs = serialNumbers.map((n) => BigInt(n));
             const tx = new TokenBurnTransaction()
                 .setTokenId(tokenId)
-                .setSerials(longs as unknown as number[])
+                .setSerials(serialNumbers)
                 .freezeWith(this.context.client);
 
-            await (await tx.sign(key)).execute(this.context.client);
+            const response = await (
+                await tx.sign(key)
+            ).execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "NftClient.burnNfts");
         }
     }
@@ -288,6 +412,10 @@ export class NftClient {
         fromKey: string,
         toAccountId: string,
     ): Promise<void> {
+        const event = this.createEvent("NftTransfer", "transferNfts");
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = PrivateKey.fromString(fromKey);
             const tx = new TransferTransaction();
@@ -297,9 +425,25 @@ export class NftClient {
                 tx.addNftTransfer(nftId, fromAccountId, toAccountId);
             }
 
-            const frozenTx = tx.freezeWith(this.context.client);
-            await (await frozenTx.sign(key)).execute(this.context.client);
+            tx.freezeWith(this.context.client);
+
+            const response = await (
+                await tx.sign(key)
+            ).execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "NftClient.transferNfts");
         }
     }

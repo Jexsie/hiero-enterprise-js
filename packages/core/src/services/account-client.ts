@@ -7,6 +7,7 @@ import {
 } from "@hashgraph/sdk";
 import type { Account, Balance } from "../data/index.js";
 import type { HieroContext } from "../context/index.js";
+import type { TransactionEvent } from "../interceptors/index.js";
 import { normalizeError } from "../errors/index.js";
 
 /**
@@ -39,6 +40,15 @@ export class AccountClient {
      * @returns The newly created account
      */
     async createAccount(options: CreateAccountOptions = {}): Promise<Account> {
+        const event: TransactionEvent = {
+            type: "AccountCreate",
+            serviceName: "AccountClient",
+            methodName: "createAccount",
+            timestamp: new Date(),
+        };
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const newKey = PrivateKey.generateED25519();
 
@@ -58,13 +68,28 @@ export class AccountClient {
             const response = await tx.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
 
-            return {
+            const result: Account = {
                 accountId: receipt.accountId!.toString(),
                 publicKey: newKey.publicKey.toString(),
                 privateKey: newKey.toString(),
                 evmAddress: newKey.publicKey.toEvmAddress(),
             };
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: receipt.status.toString(),
+                durationMs: Date.now() - start,
+            });
+
+            return result;
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "AccountClient.createAccount");
         }
     }
@@ -81,6 +106,15 @@ export class AccountClient {
         accountKey: string,
         transferAccountId?: string,
     ): Promise<void> {
+        const event: TransactionEvent = {
+            type: "AccountDelete",
+            serviceName: "AccountClient",
+            methodName: "deleteAccount",
+            timestamp: new Date(),
+        };
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
         try {
             const key = PrivateKey.fromString(accountKey);
             const transferTo =
@@ -91,8 +125,23 @@ export class AccountClient {
                 .setTransferAccountId(transferTo)
                 .freezeWith(this.context.client);
 
-            await (await tx.sign(key)).execute(this.context.client);
+            const response = await (
+                await tx.sign(key)
+            ).execute(this.context.client);
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
         } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
             throw normalizeError(error, "AccountClient.deleteAccount");
         }
     }

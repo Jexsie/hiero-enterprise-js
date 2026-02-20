@@ -2,6 +2,10 @@ import { Client, AccountId, PrivateKey } from "@hashgraph/sdk";
 import type { HieroConfig } from "../config/index.js";
 import { resolveConfigFromEnv } from "../config/index.js";
 import { HieroError } from "../errors/index.js";
+import type {
+    TransactionListener,
+    TransactionEvent,
+} from "../interceptors/index.js";
 
 /**
  * Central context for interacting with a Hiero network.
@@ -17,6 +21,9 @@ import { HieroError } from "../errors/index.js";
  */
 export class HieroContext {
     private static instance: HieroContext | null = null;
+
+    /** Registered transaction listeners */
+    private readonly listeners: TransactionListener[] = [];
 
     /** The underlying Hedera SDK Client */
     public readonly client: Client;
@@ -108,6 +115,57 @@ export class HieroContext {
         if (HieroContext.instance) {
             HieroContext.instance.client.close();
             HieroContext.instance = null;
+        }
+    }
+
+    // ─── Transaction Listener Management ─────────────────────────
+
+    /**
+     * Register a transaction listener.
+     *
+     * @param listener - Listener to register
+     */
+    public addTransactionListener(listener: TransactionListener): void {
+        this.listeners.push(listener);
+    }
+
+    /**
+     * Remove a previously registered transaction listener.
+     *
+     * @param listener - Listener to remove
+     */
+    public removeTransactionListener(listener: TransactionListener): void {
+        const idx = this.listeners.indexOf(listener);
+        if (idx !== -1) {
+            this.listeners.splice(idx, 1);
+        }
+    }
+
+    /**
+     * Emit a before-transaction event to all registered listeners.
+     * Called internally by service clients before executing a transaction.
+     *
+     * @param event - The transaction event
+     */
+    public async emitBeforeTransaction(event: TransactionEvent): Promise<void> {
+        for (const listener of this.listeners) {
+            if (listener.onBeforeTransaction) {
+                await listener.onBeforeTransaction(event);
+            }
+        }
+    }
+
+    /**
+     * Emit an after-transaction event to all registered listeners.
+     * Called internally by service clients after a transaction completes.
+     *
+     * @param event - The transaction event (includes result/error/duration)
+     */
+    public async emitAfterTransaction(event: TransactionEvent): Promise<void> {
+        for (const listener of this.listeners) {
+            if (listener.onAfterTransaction) {
+                await listener.onAfterTransaction(event);
+            }
         }
     }
 }
