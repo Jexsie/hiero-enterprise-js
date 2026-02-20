@@ -2,7 +2,8 @@
   "name": "hiero-enterprise-js",
   "version": "0.1.0",
   "private": true,
-  "description": "Enterprise-grade TypeScript library for Hiero/Hedera networks",
+  "description": "Enterprise-grade TypeScript library for Hiero networks",
+  "type": "module",
   "license": "Apache-2.0",
   "scripts": {
     "build": "pnpm -r run build",

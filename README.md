@@ -1,5 +1,11 @@
 # Hiero Enterprise JS
 
+[![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-≥20-green.svg)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![DCO](https://img.shields.io/badge/DCO-1.1-brightgreen.svg)](./DCO)
+
 A TypeScript library that simplifies building Node.js applications on the [Hiero](https://hiero.org) (Hedera) distributed ledger network. Provides managed services for accounts, tokens, NFTs, smart contracts, topics, and mirror node queries — with first-class integrations for Express, Fastify, and NestJS.
 
 > **Port of [hiero-enterprise-java](https://github.com/OpenElements/hiero-enterprise-java)** — same concepts, idiomatic TypeScript API.
@@ -158,8 +164,21 @@ Full working sample projects are available in the [`samples/`](./samples) direct
 pnpm install          # Install dependencies
 pnpm run build        # Build all packages
 pnpm run test         # Run unit tests
+pnpm run lint         # Type check + ESLint
+pnpm run format       # Format with Prettier
+pnpm run format:check # Check formatting (CI)
 pnpm run clean        # Clean build artifacts
 ```
+
+## Contributing
+
+We welcome contributions! Please read our [Contributing Guide](./CONTRIBUTING.md) for details on:
+
+- Bug reports and feature requests
+- Development workflow and coding standards
+- DCO sign-off requirements (`git commit -s`)
+- GPG signed commits
+- Pull request process
 
 ## License
 
