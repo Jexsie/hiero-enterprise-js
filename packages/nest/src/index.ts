@@ -132,17 +132,20 @@ export class HieroModule {
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Constructor = abstract new (...args: any[]) => unknown;
+
 /**
  * Minimal subset of NestJS DynamicModule interface.
  * Defined here to avoid runtime dependency on @nestjs/common.
  */
 interface NestDynamicModule {
-    module: new (...args: any[]) => any;
+    module: Constructor;
     providers: Array<{
-        provide: string | symbol | (new (...args: any[]) => any);
-        useValue: any;
+        provide: string | symbol | Constructor;
+        useValue: unknown;
     }>;
-    exports: Array<string | symbol | (new (...args: any[]) => any)>;
+    exports: Array<string | symbol | Constructor>;
 }
 
 // Re-export core types for convenience
