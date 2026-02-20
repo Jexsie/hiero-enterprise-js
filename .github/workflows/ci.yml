@@ -1,118 +1,118 @@
 name: CI
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
+    push:
+        branches: [main, master]
+    pull_request:
+        branches: [main, master]
 
 # Cancel in-progress runs for the same branch/PR
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
 
 jobs:
-  # ─── Lint & Type Check ──────────────────────────────────────────
-  lint:
-    name: Lint & Type Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    # ─── Lint & Type Check ──────────────────────────────────────────
+    lint:
+        name: Lint & Type Check
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 10
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+            - run: pnpm install --frozen-lockfile
 
-      - name: Type check all packages
-        run: pnpm run lint:types
+            - name: Type check all packages
+              run: pnpm run lint:types
 
-      - name: ESLint
-        run: pnpm run lint:eslint
+            - name: ESLint
+              run: pnpm run lint:eslint
 
-      - name: Prettier format check
-        run: pnpm run format:check
+            - name: Prettier format check
+              run: pnpm run format:check
 
-  # ─── Unit Tests ─────────────────────────────────────────────────
-  test:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20, 22]
-    steps:
-      - uses: actions/checkout@v4
+    # ─── Unit Tests ─────────────────────────────────────────────────
+    test:
+        name: Unit Tests
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [20, 22]
+        steps:
+            - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 10
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: pnpm
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+            - run: pnpm install --frozen-lockfile
 
-      - name: Build packages
-        run: pnpm run build
+            - name: Build packages
+              run: pnpm run build
 
-      - name: Run unit tests
-        run: pnpm run test
+            - name: Run unit tests
+              run: pnpm run test
 
-  # ─── Integration Tests (Hiero Solo) ────────────────────────────
-  # Uncomment once integration tests are written.
-  # Uses hiero-ledger/hiero-solo-action to spin up a local network.
-  #
-  # integration:
-  #   name: Integration Tests
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - uses: pnpm/action-setup@v4
-  #       with:
-  #         version: 10
-  #
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 22
-  #         cache: pnpm
-  #
-  #     - run: pnpm install --frozen-lockfile
-  #
-  #     - name: Build packages
-  #       run: pnpm run build
-  #
-  #     - name: Setup Hiero Solo Network
-  #       uses: hiero-ledger/hiero-solo-action@v0.8
-  #       id: solo
-  #       with:
-  #         installMirrorNode: true
-  #         mirrorNodePortRest: 5551
-  #
-  #     - name: Wait for Mirror Node
-  #       run: |
-  #         echo "Waiting for Mirror Node REST API to be ready..."
-  #         for i in $(seq 1 60); do
-  #           if curl -s http://localhost:5551/api/v1/accounts | grep -q "accounts"; then
-  #             echo "Mirror Node is ready!"
-  #             break
-  #           fi
-  #           echo "Attempt $i/60 — waiting 5s..."
-  #           sleep 5
-  #         done
-  #
-  #     - name: Run integration tests
-  #       env:
-  #         HIERO_NETWORK: hiero-solo-action
-  #         HIERO_OPERATOR_ID: ${{ steps.solo.outputs.accountId }}
-  #         HIERO_OPERATOR_KEY: ${{ steps.solo.outputs.privateKey }}
-  #         HIERO_MIRROR_NODE_URL: http://localhost:5551
-  #       run: pnpm run test:integration
+    # ─── Integration Tests (Hiero Solo) ────────────────────────────
+    # Uncomment once integration tests are written.
+    # Uses hiero-ledger/hiero-solo-action to spin up a local network.
+    #
+    # integration:
+    #   name: Integration Tests
+    #   runs-on: ubuntu-latest
+    #   steps:
+    #     - uses: actions/checkout@v4
+    #
+    #     - uses: pnpm/action-setup@v4
+    #       with:
+    #         version: 10
+    #
+    #     - uses: actions/setup-node@v4
+    #       with:
+    #         node-version: 22
+    #         cache: pnpm
+    #
+    #     - run: pnpm install --frozen-lockfile
+    #
+    #     - name: Build packages
+    #       run: pnpm run build
+    #
+    #     - name: Setup Hiero Solo Network
+    #       uses: hiero-ledger/hiero-solo-action@v0.8
+    #       id: solo
+    #       with:
+    #         installMirrorNode: true
+    #         mirrorNodePortRest: 5551
+    #
+    #     - name: Wait for Mirror Node
+    #       run: |
+    #         echo "Waiting for Mirror Node REST API to be ready..."
+    #         for i in $(seq 1 60); do
+    #           if curl -s http://localhost:5551/api/v1/accounts | grep -q "accounts"; then
+    #             echo "Mirror Node is ready!"
+    #             break
+    #           fi
+    #           echo "Attempt $i/60 — waiting 5s..."
+    #           sleep 5
+    #         done
+    #
+    #     - name: Run integration tests
+    #       env:
+    #         HIERO_NETWORK: hiero-solo-action
+    #         HIERO_OPERATOR_ID: ${{ steps.solo.outputs.accountId }}
+    #         HIERO_OPERATOR_KEY: ${{ steps.solo.outputs.privateKey }}
+    #         HIERO_MIRROR_NODE_URL: http://localhost:5551
+    #       run: pnpm run test:integration

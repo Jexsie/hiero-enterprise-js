@@ -1,25 +1,25 @@
 {
-  "name": "@hiero-enterprise/fastify",
-  "version": "0.1.0",
-  "description": "Fastify plugin for Hiero/Hedera networks",
-  "license": "Apache-2.0",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+    "name": "@hiero-enterprise/fastify",
+    "version": "0.1.0",
+    "description": "Fastify plugin for Hiero/Hedera networks",
+    "license": "Apache-2.0",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@hiero-enterprise/core": "workspace:*"
+    },
+    "peerDependencies": {
+        "fastify": ">=4"
     }
-  },
-  "scripts": {
-    "build": "tsc",
-    "clean": "rm -rf dist"
-  },
-  "dependencies": {
-    "@hiero-enterprise/core": "workspace:*"
-  },
-  "peerDependencies": {
-    "fastify": ">=4"
-  }
 }

@@ -3,26 +3,26 @@
  * Maps to Java: com.openelements.hiero.base.config.HieroConfig
  */
 export interface HieroConfig {
-  /** Network to connect to (e.g., "testnet", "mainnet", "previewnet", or custom) */
-  readonly network: string;
-  /** Operator account ID (e.g., "0.0.12345") */
-  readonly operatorId: string;
-  /** Operator private key (DER encoded) */
-  readonly operatorKey: string;
-  /** Mirror node base URL (auto-resolved if not provided) */
-  readonly mirrorNodeUrl?: string;
+    /** Network to connect to (e.g., "testnet", "mainnet", "previewnet", or custom) */
+    readonly network: string;
+    /** Operator account ID (e.g., "0.0.12345") */
+    readonly operatorId: string;
+    /** Operator private key (DER encoded) */
+    readonly operatorKey: string;
+    /** Mirror node base URL (auto-resolved if not provided) */
+    readonly mirrorNodeUrl?: string;
 }
 
 /**
  * Known network names and their mirror node URLs.
  */
 const MIRROR_NODE_URLS: Record<string, string> = {
-  mainnet: 'https://mainnet.mirrornode.hedera.com',
-  testnet: 'https://testnet.mirrornode.hedera.com',
-  previewnet: 'https://previewnet.mirrornode.hedera.com',
-  'hedera-mainnet': 'https://mainnet.mirrornode.hedera.com',
-  'hedera-testnet': 'https://testnet.mirrornode.hedera.com',
-  'hedera-previewnet': 'https://previewnet.mirrornode.hedera.com',
+    mainnet: "https://mainnet.mirrornode.hedera.com",
+    testnet: "https://testnet.mirrornode.hedera.com",
+    previewnet: "https://previewnet.mirrornode.hedera.com",
+    "hedera-mainnet": "https://mainnet.mirrornode.hedera.com",
+    "hedera-testnet": "https://testnet.mirrornode.hedera.com",
+    "hedera-previewnet": "https://previewnet.mirrornode.hedera.com",
 };
 
 /**
@@ -33,19 +33,19 @@ const MIRROR_NODE_URLS: Record<string, string> = {
  * @returns The mirror node base URL
  */
 export function resolveMirrorNodeUrl(
-  network: string,
-  explicitUrl?: string,
+    network: string,
+    explicitUrl?: string,
 ): string {
-  if (explicitUrl) {
-    return explicitUrl;
-  }
-  const url = MIRROR_NODE_URLS[network.toLowerCase()];
-  if (!url) {
-    throw new Error(
-      `Unknown network "${network}". Provide a mirrorNodeUrl in the config.`,
-    );
-  }
-  return url;
+    if (explicitUrl) {
+        return explicitUrl;
+    }
+    const url = MIRROR_NODE_URLS[network.toLowerCase()];
+    if (!url) {
+        throw new Error(
+            `Unknown network "${network}". Provide a mirrorNodeUrl in the config.`,
+        );
+    }
+    return url;
 }
 
 /**
@@ -60,21 +60,22 @@ export function resolveMirrorNodeUrl(
  * @returns A HieroConfig or null if required env vars are missing
  */
 export function resolveConfigFromEnv(): HieroConfig | null {
-  const network = process.env['HIERO_NETWORK'] ?? process.env['HEDERA_NETWORK'];
-  const operatorId =
-    process.env['HIERO_OPERATOR_ID'] ?? process.env['HEDERA_OPERATOR_ID'];
-  const operatorKey =
-    process.env['HIERO_OPERATOR_KEY'] ?? process.env['HEDERA_OPERATOR_KEY'];
-  const mirrorNodeUrl = process.env['HIERO_MIRROR_NODE_URL'];
+    const network =
+        process.env["HIERO_NETWORK"] ?? process.env["HEDERA_NETWORK"];
+    const operatorId =
+        process.env["HIERO_OPERATOR_ID"] ?? process.env["HEDERA_OPERATOR_ID"];
+    const operatorKey =
+        process.env["HIERO_OPERATOR_KEY"] ?? process.env["HEDERA_OPERATOR_KEY"];
+    const mirrorNodeUrl = process.env["HIERO_MIRROR_NODE_URL"];
 
-  if (!network || !operatorId || !operatorKey) {
-    return null;
-  }
+    if (!network || !operatorId || !operatorKey) {
+        return null;
+    }
 
-  return {
-    network,
-    operatorId,
-    operatorKey,
-    mirrorNodeUrl,
-  };
+    return {
+        network,
+        operatorId,
+        operatorKey,
+        mirrorNodeUrl,
+    };
 }

@@ -3,12 +3,12 @@
  * Maps to Java: com.openelements.hiero.base.data.ExchangeRate
  */
 export interface ExchangeRate {
-  /** HBAR equivalent */
-  readonly hbarEquivalent: number;
-  /** Cent equivalent (USD) */
-  readonly centEquivalent: number;
-  /** Expiration timestamp */
-  readonly expirationTime: string;
+    /** HBAR equivalent */
+    readonly hbarEquivalent: number;
+    /** Cent equivalent (USD) */
+    readonly centEquivalent: number;
+    /** Expiration timestamp */
+    readonly expirationTime: string;
 }
 
 /**
@@ -16,10 +16,10 @@ export interface ExchangeRate {
  * Maps to Java: com.openelements.hiero.base.data.ExchangeRates
  */
 export interface ExchangeRates {
-  /** Current exchange rate */
-  readonly currentRate: ExchangeRate;
-  /** Next exchange rate */
-  readonly nextRate: ExchangeRate;
+    /** Current exchange rate */
+    readonly currentRate: ExchangeRate;
+    /** Next exchange rate */
+    readonly nextRate: ExchangeRate;
 }
 
 /**
@@ -27,28 +27,28 @@ export interface ExchangeRates {
  * Maps to Java: com.openelements.hiero.base.data.NetworkStake
  */
 export interface NetworkStake {
-  /** Maximum stake rewarded in tinybars */
-  readonly maxStakeRewarded: number;
-  /** Maximum staking reward rate per HBAR */
-  readonly maxStakingRewardRatePerHbar: number;
-  /** Maximum total reward in tinybars */
-  readonly maxTotalReward: number;
-  /** Threshold for minimum node stake */
-  readonly nodeRewardFeeFraction: number;
-  /** Reserved staking rewards in tinybars */
-  readonly reservedStakingRewards: number;
-  /** Reward balance threshold */
-  readonly rewardBalanceThreshold: number;
-  /** Total stake rewarded */
-  readonly stakeTotal: number;
-  /** Staking period start */
-  readonly stakingPeriod: string;
-  /** Staking period duration in minutes */
-  readonly stakingPeriodDuration: number;
-  /** Staking periods stored */
-  readonly stakingPeriodsStored: number;
-  /** Unreserved staking reward balance */
-  readonly unreservedStakingRewardBalance: number;
+    /** Maximum stake rewarded in tinybars */
+    readonly maxStakeRewarded: number;
+    /** Maximum staking reward rate per HBAR */
+    readonly maxStakingRewardRatePerHbar: number;
+    /** Maximum total reward in tinybars */
+    readonly maxTotalReward: number;
+    /** Threshold for minimum node stake */
+    readonly nodeRewardFeeFraction: number;
+    /** Reserved staking rewards in tinybars */
+    readonly reservedStakingRewards: number;
+    /** Reward balance threshold */
+    readonly rewardBalanceThreshold: number;
+    /** Total stake rewarded */
+    readonly stakeTotal: number;
+    /** Staking period start */
+    readonly stakingPeriod: string;
+    /** Staking period duration in minutes */
+    readonly stakingPeriodDuration: number;
+    /** Staking periods stored */
+    readonly stakingPeriodsStored: number;
+    /** Unreserved staking reward balance */
+    readonly unreservedStakingRewardBalance: number;
 }
 
 /**
@@ -56,10 +56,10 @@ export interface NetworkStake {
  * Maps to Java: com.openelements.hiero.base.data.NetworkSupplies
  */
 export interface NetworkSupplies {
-  /** Released supply in tinybars */
-  readonly releasedSupply: string;
-  /** Total supply in tinybars */
-  readonly totalSupply: string;
-  /** Timestamp */
-  readonly timestamp: string;
+    /** Released supply in tinybars */
+    readonly releasedSupply: string;
+    /** Total supply in tinybars */
+    readonly totalSupply: string;
+    /** Timestamp */
+    readonly timestamp: string;
 }

@@ -1,1 +1,1 @@
-export { MirrorNodeClient } from './mirror-node-client.js';
+export { MirrorNodeClient } from "./mirror-node-client.js";

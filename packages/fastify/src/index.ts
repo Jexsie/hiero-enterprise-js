@@ -1,57 +1,57 @@
-import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import type { HieroConfig } from '@hiero-enterprise/core';
+import type { FastifyInstance, FastifyPluginOptions } from "fastify";
+import type { HieroConfig } from "@hiero-enterprise/core";
 import {
-  HieroContext,
-  resolveMirrorNodeUrl,
-  MirrorNodeClient,
-  AccountClient,
-  FileClient,
-  FungibleTokenClient,
-  NftClient,
-  SmartContractClient,
-  TopicClient,
-  AccountRepository,
-  NftRepository,
-  TokenRepository,
-  TopicRepository,
-  TransactionRepository,
-  NetworkRepository,
-} from '@hiero-enterprise/core';
+    HieroContext,
+    resolveMirrorNodeUrl,
+    MirrorNodeClient,
+    AccountClient,
+    FileClient,
+    FungibleTokenClient,
+    NftClient,
+    SmartContractClient,
+    TopicClient,
+    AccountRepository,
+    NftRepository,
+    TokenRepository,
+    TopicRepository,
+    TransactionRepository,
+    NetworkRepository,
+} from "@hiero-enterprise/core";
 
 /**
  * All services made available through the Fastify plugin.
  */
 export interface HieroServices {
-  context: HieroContext;
-  mirrorNodeClient: MirrorNodeClient;
-  accountClient: AccountClient;
-  fileClient: FileClient;
-  fungibleTokenClient: FungibleTokenClient;
-  nftClient: NftClient;
-  smartContractClient: SmartContractClient;
-  topicClient: TopicClient;
-  accountRepository: AccountRepository;
-  nftRepository: NftRepository;
-  tokenRepository: TokenRepository;
-  topicRepository: TopicRepository;
-  transactionRepository: TransactionRepository;
-  networkRepository: NetworkRepository;
+    context: HieroContext;
+    mirrorNodeClient: MirrorNodeClient;
+    accountClient: AccountClient;
+    fileClient: FileClient;
+    fungibleTokenClient: FungibleTokenClient;
+    nftClient: NftClient;
+    smartContractClient: SmartContractClient;
+    topicClient: TopicClient;
+    accountRepository: AccountRepository;
+    nftRepository: NftRepository;
+    tokenRepository: TokenRepository;
+    topicRepository: TopicRepository;
+    transactionRepository: TransactionRepository;
+    networkRepository: NetworkRepository;
 }
 
 /**
  * Augment Fastify instance to include Hiero services.
  */
-declare module 'fastify' {
-  interface FastifyInstance {
-    hiero: HieroServices;
-  }
+declare module "fastify" {
+    interface FastifyInstance {
+        hiero: HieroServices;
+    }
 }
 
 /**
  * Plugin options — accepts a HieroConfig or reads from environment.
  */
 export interface HieroPluginOptions extends FastifyPluginOptions {
-  config?: HieroConfig;
+    config?: HieroConfig;
 }
 
 /**
@@ -75,39 +75,39 @@ export interface HieroPluginOptions extends FastifyPluginOptions {
  * ```
  */
 export async function hieroPlugin(
-  fastify: FastifyInstance,
-  opts: HieroPluginOptions,
+    fastify: FastifyInstance,
+    opts: HieroPluginOptions,
 ): Promise<void> {
-  const context = HieroContext.initialize(opts.config);
-  const mirrorNodeUrl = resolveMirrorNodeUrl(
-    context.config.network,
-    context.config.mirrorNodeUrl,
-  );
-  const mirrorNodeClient = new MirrorNodeClient(mirrorNodeUrl);
+    const context = HieroContext.initialize(opts.config);
+    const mirrorNodeUrl = resolveMirrorNodeUrl(
+        context.config.network,
+        context.config.mirrorNodeUrl,
+    );
+    const mirrorNodeClient = new MirrorNodeClient(mirrorNodeUrl);
 
-  const services: HieroServices = {
-    context,
-    mirrorNodeClient,
-    accountClient: new AccountClient(context),
-    fileClient: new FileClient(context),
-    fungibleTokenClient: new FungibleTokenClient(context),
-    nftClient: new NftClient(context),
-    smartContractClient: new SmartContractClient(context),
-    topicClient: new TopicClient(context),
-    accountRepository: new AccountRepository(mirrorNodeClient),
-    nftRepository: new NftRepository(mirrorNodeClient),
-    tokenRepository: new TokenRepository(mirrorNodeClient),
-    topicRepository: new TopicRepository(mirrorNodeClient),
-    transactionRepository: new TransactionRepository(mirrorNodeClient),
-    networkRepository: new NetworkRepository(mirrorNodeClient),
-  };
+    const services: HieroServices = {
+        context,
+        mirrorNodeClient,
+        accountClient: new AccountClient(context),
+        fileClient: new FileClient(context),
+        fungibleTokenClient: new FungibleTokenClient(context),
+        nftClient: new NftClient(context),
+        smartContractClient: new SmartContractClient(context),
+        topicClient: new TopicClient(context),
+        accountRepository: new AccountRepository(mirrorNodeClient),
+        nftRepository: new NftRepository(mirrorNodeClient),
+        tokenRepository: new TokenRepository(mirrorNodeClient),
+        topicRepository: new TopicRepository(mirrorNodeClient),
+        transactionRepository: new TransactionRepository(mirrorNodeClient),
+        networkRepository: new NetworkRepository(mirrorNodeClient),
+    };
 
-  fastify.decorate('hiero', services);
+    fastify.decorate("hiero", services);
 
-  // Clean up SDK client on close
-  fastify.addHook('onClose', () => {
-    HieroContext.reset();
-  });
+    // Clean up SDK client on close
+    fastify.addHook("onClose", () => {
+        HieroContext.reset();
+    });
 }
 
-export type { HieroConfig } from '@hiero-enterprise/core';
+export type { HieroConfig } from "@hiero-enterprise/core";
