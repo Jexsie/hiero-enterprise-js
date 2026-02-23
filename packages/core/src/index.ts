@@ -2,7 +2,7 @@
 // Core services, repositories, and data models for Hiero/Hedera networks
 
 // Data models
-export * from "./data/index.js";
+export * from "./types/index.js";
 
 // Configuration
 export * from "./config/index.js";

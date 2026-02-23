@@ -1,5 +1,5 @@
 /**
- * Configuration for connecting to a Hiero/Hedera network.
+ * Configuration for connecting to a Hiero network.
  */
 export interface HieroConfig {
     /** Network to connect to (e.g., "testnet", "mainnet", "previewnet", or custom) */

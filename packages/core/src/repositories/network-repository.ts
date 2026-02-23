@@ -2,7 +2,7 @@ import type {
     ExchangeRates,
     NetworkStake,
     NetworkSupplies,
-} from "../data/index.js";
+} from "../types/index.js";
 import type { MirrorNodeClient } from "../mirror/index.js";
 
 /**

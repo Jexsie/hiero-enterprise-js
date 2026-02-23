@@ -18,7 +18,7 @@ import type {
     ExchangeRates,
     NetworkStake,
     NetworkSupplies,
-} from "../data/index.js";
+} from "../types/index.js";
 
 /**
  * A test-friendly HieroConfig with default values.

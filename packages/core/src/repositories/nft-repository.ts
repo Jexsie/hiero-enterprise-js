@@ -1,4 +1,4 @@
-import type { Nft, Page } from "../data/index.js";
+import type { Nft, Page } from "../types/index.js";
 import type { MirrorNodeClient } from "../mirror/index.js";
 
 /**

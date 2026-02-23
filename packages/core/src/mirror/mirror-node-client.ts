@@ -19,7 +19,7 @@ import type {
     FixedFee,
     FractionalFee,
     RoyaltyFee,
-} from "../data/index.js";
+} from "../types/index.js";
 import { HieroError } from "../errors/index.js";
 
 /**

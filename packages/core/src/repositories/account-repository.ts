@@ -1,4 +1,4 @@
-import type { AccountInfo, Balance } from "../data/index.js";
+import type { AccountInfo, Balance } from "../types/index.js";
 import type { MirrorNodeClient } from "../mirror/index.js";
 
 /**

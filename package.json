@@ -10,7 +10,6 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "lint": "pnpm run lint:types && pnpm run lint:eslint",
-        "lint:types": "pnpm -r run build",
         "lint:eslint": "eslint .",
         "lint:fix": "eslint . --fix",
         "format": "prettier --write .",
