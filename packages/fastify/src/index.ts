@@ -3,6 +3,7 @@ import type { HieroConfig } from "@hiero-enterprise/core";
 import {
     HieroContext,
     resolveMirrorNodeUrl,
+    assertEnvConfigValid,
     MirrorNodeClient,
     AccountClient,
     FileClient,
@@ -77,6 +78,9 @@ export async function hieroPlugin(
     fastify: FastifyInstance,
     opts: HieroPluginOptions,
 ): Promise<void> {
+    if (!opts.config) {
+        assertEnvConfigValid();
+    }
     const context = HieroContext.initialize(opts.config);
     const mirrorNodeUrl = resolveMirrorNodeUrl(
         context.config.network,

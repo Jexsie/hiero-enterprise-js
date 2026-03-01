@@ -78,3 +78,42 @@ export function resolveConfigFromEnv(): HieroConfig | null {
         mirrorNodeUrl,
     };
 }
+
+/**
+ * Validates the environment and throws a detailed error explaining exactly what is missing.
+ */
+export function assertEnvConfigValid(): void {
+    const network =
+        process.env["HIERO_NETWORK"] ?? process.env["HEDERA_NETWORK"];
+    const operatorId =
+        process.env["HIERO_OPERATOR_ID"] ?? process.env["HEDERA_OPERATOR_ID"];
+    const operatorKey =
+        process.env["HIERO_OPERATOR_KEY"] ?? process.env["HEDERA_OPERATOR_KEY"];
+
+    const missing = [];
+    if (!network)
+        missing.push(
+            "HIERO_NETWORK (e.g., 'testnet', 'mainnet', 'previewnet')",
+        );
+    if (!operatorId) missing.push("HIERO_OPERATOR_ID (e.g., '0.0.12345')");
+    if (!operatorKey) missing.push("HIERO_OPERATOR_KEY (e.g., '302e02...')");
+
+    if (missing.length > 0) {
+        throw new Error(
+            `\n` +
+                `=================================================================\n` +
+                `❌ Missing Required Hiero Configuration\n` +
+                `=================================================================\n\n` +
+                `To initialize the Hiero context, you must either pass a config object\n` +
+                `explicitly or set the following environment variables:\n\n` +
+                missing.map((m) => `  - ${m}`).join("\n") +
+                `\n\n` +
+                `Example .env file:\n` +
+                `-----------------------------------------------------------------\n` +
+                `HIERO_NETWORK=testnet\n` +
+                `HIERO_OPERATOR_ID=0.0.xxxxx\n` +
+                `HIERO_OPERATOR_KEY=302e020100300506032b657004220420...\n` +
+                `=================================================================\n`,
+        );
+    }
+}

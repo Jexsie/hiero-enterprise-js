@@ -3,6 +3,7 @@ import type { HieroConfig } from "@hiero-enterprise/core";
 import {
     HieroContext,
     resolveMirrorNodeUrl,
+    assertEnvConfigValid,
     MirrorNodeClient,
     AccountClient,
     FileClient,
@@ -70,6 +71,9 @@ declare global {
  * ```
  */
 export function hieroMiddleware(config?: HieroConfig) {
+    if (!config) {
+        assertEnvConfigValid();
+    }
     // Initialize once, share across all requests
     const context = HieroContext.initialize(config);
     const mirrorNodeUrl = resolveMirrorNodeUrl(

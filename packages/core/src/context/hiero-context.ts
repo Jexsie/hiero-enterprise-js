@@ -1,6 +1,6 @@
 import { Client, AccountId, PrivateKey } from "@hashgraph/sdk";
 import type { HieroConfig } from "../config/index.js";
-import { resolveConfigFromEnv } from "../config/index.js";
+import { resolveConfigFromEnv, assertEnvConfigValid } from "../config/index.js";
 import { HieroError } from "../errors/index.js";
 import type {
     TransactionListener,
@@ -79,13 +79,10 @@ export class HieroContext {
             return HieroContext.instance;
         }
 
-        const resolved = config ?? resolveConfigFromEnv();
-        if (!resolved) {
-            throw new HieroError(
-                "No Hiero configuration found. Provide a config object or set HIERO_NETWORK, HIERO_OPERATOR_ID, and HIERO_OPERATOR_KEY environment variables.",
-                { code: "MISSING_CONFIG" },
-            );
+        if (!config) {
+            assertEnvConfigValid();
         }
+        const resolved = config ?? resolveConfigFromEnv()!;
 
         HieroContext.instance = new HieroContext(resolved);
         return HieroContext.instance;

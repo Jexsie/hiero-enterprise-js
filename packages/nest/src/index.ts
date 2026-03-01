@@ -3,6 +3,7 @@ import {
     HieroContext,
     resolveConfigFromEnv,
     resolveMirrorNodeUrl,
+    assertEnvConfigValid,
     MirrorNodeClient,
     AccountClient,
     FileClient,
@@ -50,12 +51,10 @@ export class HieroModule {
      * @returns Dynamic NestJS module definition
      */
     static forRoot(config?: HieroConfig): NestDynamicModule {
-        const resolved = config ?? resolveConfigFromEnv();
-        if (!resolved) {
-            throw new Error(
-                "HieroModule.forRoot(): No config provided and env vars not set.",
-            );
+        if (!config) {
+            assertEnvConfigValid();
         }
+        const resolved = config ?? resolveConfigFromEnv()!;
 
         const context = HieroContext.initialize(resolved);
         const mirrorNodeUrl = resolveMirrorNodeUrl(
