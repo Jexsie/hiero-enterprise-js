@@ -1,3 +1,4 @@
+import fp from "fastify-plugin";
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import type { HieroConfig } from "@hiero-enterprise/core";
 import {
@@ -74,7 +75,7 @@ export interface HieroPluginOptions extends FastifyPluginOptions {
  * });
  * ```
  */
-export async function hieroPlugin(
+const plugin = async function (
     fastify: FastifyInstance,
     opts: HieroPluginOptions,
 ): Promise<void> {
@@ -111,6 +112,10 @@ export async function hieroPlugin(
     fastify.addHook("onClose", () => {
         HieroContext.reset();
     });
-}
+};
+
+export const hieroPlugin = fp(plugin, {
+    name: "@hiero-enterprise/fastify",
+});
 
 export type { HieroConfig } from "@hiero-enterprise/core";

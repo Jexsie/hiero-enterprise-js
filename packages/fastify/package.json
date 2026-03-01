@@ -17,7 +17,8 @@
         "clean": "rm -rf dist"
     },
     "dependencies": {
-        "@hiero-enterprise/core": "workspace:*"
+        "@hiero-enterprise/core": "workspace:*",
+        "fastify-plugin": "^4.5.1"
     },
     "peerDependencies": {
         "fastify": ">=4"
