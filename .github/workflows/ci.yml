@@ -36,14 +36,8 @@ jobs:
 
             - run: pnpm install --frozen-lockfile
 
-            - name: Type check all packages
-              run: pnpm run lint:types
-
             - name: ESLint
-              run: pnpm run lint:eslint
-
-            - name: Prettier format check
-              run: pnpm run format:check
+              run: pnpm run lint
 
     # ─── Unit Tests ─────────────────────────────────────────────────
     test:

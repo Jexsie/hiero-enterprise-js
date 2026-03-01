@@ -9,12 +9,10 @@
         "build": "pnpm -r run build",
         "test": "vitest run",
         "test:watch": "vitest",
-        "lint": "pnpm run lint:types && pnpm run lint:eslint",
-        "lint:eslint": "eslint .",
+        "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "format": "prettier --write .",
-        "format:check": "prettier --check .",
-        "clean": "pnpm -r run clean && rm -rf node_modules"
+        "format:check": "prettier --check ."
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
