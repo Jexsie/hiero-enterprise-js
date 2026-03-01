@@ -64,15 +64,4 @@ describe("resolveConfigFromEnv", () => {
         });
         process.env = env;
     });
-
-    it("resolves HEDERA_ prefixed env vars as fallback", () => {
-        process.env = {
-            HEDERA_NETWORK: "mainnet",
-            HEDERA_OPERATOR_ID: "0.0.2",
-            HEDERA_OPERATOR_KEY: "key456",
-        };
-        const config = resolveConfigFromEnv();
-        expect(config?.network).toBe("mainnet");
-        process.env = env;
-    });
 });

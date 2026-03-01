@@ -5,9 +5,9 @@
     "description": "Sample Express app using @hiero-enterprise/express",
     "type": "module",
     "scripts": {
-        "dev": "tsx src/app.ts",
+        "dev": "tsx --env-file=.env src/app.ts",
         "build": "tsc",
-        "start": "node dist/app.js"
+        "start": "node --env-file=.env dist/app.js"
     },
     "dependencies": {
         "@hiero-enterprise/express": "workspace:*",

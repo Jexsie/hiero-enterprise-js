@@ -1,7 +1,8 @@
 import "reflect-metadata";
 import { Module, Controller, Get, Post, Param, Body } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
-import type {
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import {
     AccountClient,
     TopicClient,
     AccountRepository,
@@ -9,8 +10,8 @@ import type {
     TokenRepository,
     TopicRepository,
     NetworkRepository,
+    HieroModule,
 } from "@hiero-enterprise/nest";
-import { HieroModule } from "@hiero-enterprise/nest";
 
 // ─── Controllers ──────────────────────────────────────────────
 

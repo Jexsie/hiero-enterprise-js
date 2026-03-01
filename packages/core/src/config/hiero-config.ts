@@ -51,20 +51,17 @@ export function resolveMirrorNodeUrl(
  * Resolve a HieroConfig from environment variables.
  *
  * Reads from:
- *   HIERO_NETWORK / HEDERA_NETWORK
- *   HIERO_OPERATOR_ID / HEDERA_OPERATOR_ID
- *   HIERO_OPERATOR_KEY / HEDERA_OPERATOR_KEY
+ *   HIERO_NETWORK
+ *   HIERO_OPERATOR_ID
+ *   HIERO_OPERATOR_KEY
  *   HIERO_MIRROR_NODE_URL
  *
  * @returns A HieroConfig or null if required env vars are missing
  */
 export function resolveConfigFromEnv(): HieroConfig | null {
-    const network =
-        process.env["HIERO_NETWORK"] ?? process.env["HEDERA_NETWORK"];
-    const operatorId =
-        process.env["HIERO_OPERATOR_ID"] ?? process.env["HEDERA_OPERATOR_ID"];
-    const operatorKey =
-        process.env["HIERO_OPERATOR_KEY"] ?? process.env["HEDERA_OPERATOR_KEY"];
+    const network = process.env["HIERO_NETWORK"];
+    const operatorId = process.env["HIERO_OPERATOR_ID"];
+    const operatorKey = process.env["HIERO_OPERATOR_KEY"];
     const mirrorNodeUrl = process.env["HIERO_MIRROR_NODE_URL"];
 
     if (!network || !operatorId || !operatorKey) {
@@ -83,12 +80,9 @@ export function resolveConfigFromEnv(): HieroConfig | null {
  * Validates the environment and throws a detailed error explaining exactly what is missing.
  */
 export function assertEnvConfigValid(): void {
-    const network =
-        process.env["HIERO_NETWORK"] ?? process.env["HEDERA_NETWORK"];
-    const operatorId =
-        process.env["HIERO_OPERATOR_ID"] ?? process.env["HEDERA_OPERATOR_ID"];
-    const operatorKey =
-        process.env["HIERO_OPERATOR_KEY"] ?? process.env["HEDERA_OPERATOR_KEY"];
+    const network = process.env["HIERO_NETWORK"];
+    const operatorId = process.env["HIERO_OPERATOR_ID"];
+    const operatorKey = process.env["HIERO_OPERATOR_KEY"];
 
     const missing = [];
     if (!network)
