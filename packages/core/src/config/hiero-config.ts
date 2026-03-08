@@ -1,3 +1,5 @@
+import { config as loadDotenvFile } from "dotenv";
+
 /**
  * Configuration for connecting to a Hiero network.
  */
@@ -48,9 +50,21 @@ export function resolveMirrorNodeUrl(
 }
 
 /**
+ * Loads any .env file present in the current working directory into
+ * process.env. Silently skips if no .env file is found.
+ *
+ * This mirrors the Java enterprise library's use of:
+ *   Dotenv.configure().ignoreIfMissing().load()
+ */
+function loadDotenv(): void {
+    loadDotenvFile();
+}
+
+/**
  * Resolve a HieroConfig from environment variables.
  *
- * Reads from:
+ * Automatically attempts to load a `.env` file from the current working
+ * directory before reading variables. Reads from:
  *   HIERO_NETWORK
  *   HIERO_OPERATOR_ID
  *   HIERO_OPERATOR_KEY
@@ -59,6 +73,8 @@ export function resolveMirrorNodeUrl(
  * @returns A HieroConfig or null if required env vars are missing
  */
 export function resolveConfigFromEnv(): HieroConfig | null {
+    loadDotenv();
+
     const network = process.env["HIERO_NETWORK"];
     const operatorId = process.env["HIERO_OPERATOR_ID"];
     const operatorKey = process.env["HIERO_OPERATOR_KEY"];
@@ -80,6 +96,8 @@ export function resolveConfigFromEnv(): HieroConfig | null {
  * Validates the environment and throws a detailed error explaining exactly what is missing.
  */
 export function assertEnvConfigValid(): void {
+    loadDotenv();
+
     const network = process.env["HIERO_NETWORK"];
     const operatorId = process.env["HIERO_OPERATOR_ID"];
     const operatorKey = process.env["HIERO_OPERATOR_KEY"];
@@ -98,15 +116,21 @@ export function assertEnvConfigValid(): void {
                 `=================================================================\n` +
                 `❌ Missing Required Hiero Configuration\n` +
                 `=================================================================\n\n` +
-                `To initialize the Hiero context, you must either pass a config object\n` +
-                `explicitly or set the following environment variables:\n\n` +
+                `The following environment variables are not set:\n\n` +
                 missing.map((m) => `  - ${m}`).join("\n") +
                 `\n\n` +
-                `Example .env file:\n` +
-                `-----------------------------------------------------------------\n` +
-                `HIERO_NETWORK=testnet\n` +
-                `HIERO_OPERATOR_ID=0.0.xxxxx\n` +
-                `HIERO_OPERATOR_KEY=302e020100300506032b657004220420...\n` +
+                `You can fix this by EITHER:\n\n` +
+                `  1. Creating a .env file in your app's root directory\n` +
+                `     (the directory where you run "npm start" / "pnpm start"):\n\n` +
+                `     HIERO_NETWORK=testnet\n` +
+                `     HIERO_OPERATOR_ID=0.0.xxxxx\n` +
+                `     HIERO_OPERATOR_KEY=302e020100300506032b657004220420...\n\n` +
+                `  2. Or exporting them in your shell:\n\n` +
+                `     export HIERO_NETWORK=testnet\n` +
+                `     export HIERO_OPERATOR_ID=0.0.xxxxx\n` +
+                `     export HIERO_OPERATOR_KEY=302e020100300506032b657004220420...\n\n` +
+                `  3. Or passing a config object directly:\n\n` +
+                `     HieroModule.forRoot({ network: 'testnet', ... })\n` +
                 `=================================================================\n`,
         );
     }
