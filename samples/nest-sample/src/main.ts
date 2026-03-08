@@ -15,6 +15,36 @@ import {
 
 // ─── Controllers ──────────────────────────────────────────────
 
+@Controller()
+class RootController {
+    @Get()
+    root() {
+        return {
+            service: "Hiero NestJS Sample",
+            message:
+                "Server is running. Try one of the endpoints below to view data.",
+            endpoints: {
+                accounts: [
+                    "GET  /api/balance",
+                    "GET  /api/accounts/:id",
+                    "GET  /api/accounts/:id/nfts",
+                    "POST /api/accounts",
+                ],
+                tokens: ["GET /api/tokens/:id"],
+                topics: [
+                    "GET  /api/topics/:id/messages",
+                    "POST /api/topics",
+                    "POST /api/topics/:id/messages",
+                ],
+                network: [
+                    "GET /api/network/exchange-rates",
+                    "GET /api/network/supply",
+                ],
+            },
+        };
+    }
+}
+
 @Controller("api")
 class AccountController {
     constructor(
@@ -114,6 +144,7 @@ class NetworkController {
 @Module({
     imports: [HieroModule.forRoot()],
     controllers: [
+        RootController,
         AccountController,
         TokenController,
         TopicController,
@@ -130,7 +161,7 @@ async function bootstrap() {
     await app.listen(port);
     console.log(`🏗️  Hiero NestJS sample running on http://localhost:${port}`);
     console.log();
-    console.log("  Endpoints:");
+    console.log("  Available endpoints:");
     console.log("    GET  /api/balance");
     console.log("    GET  /api/accounts/:id");
     console.log("    GET  /api/accounts/:id/nfts");
@@ -141,6 +172,11 @@ async function bootstrap() {
     console.log("    POST /api/topics/:id/messages");
     console.log("    GET  /api/network/exchange-rates");
     console.log("    GET  /api/network/supply");
+    console.log();
+    console.log("  Try opening in your browser:");
+    console.log(`    http://localhost:${port}/api/balance`);
+    console.log(`    http://localhost:${port}/api/network/supply`);
+    console.log();
 }
 
 bootstrap();
