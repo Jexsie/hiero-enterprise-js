@@ -72,19 +72,30 @@ export class TopicClient {
         const start = Date.now();
 
         try {
-            const adminKey = options.adminKey
-                ? PrivateKey.fromString(options.adminKey)
-                : this.context.operatorKey;
+            const tx = new TopicCreateTransaction();
+            let keyToSign: PrivateKey | undefined;
 
-            const tx = new TopicCreateTransaction().setAdminKey(
-                adminKey.publicKey,
-            );
+            if (options.adminKey) {
+                keyToSign = PrivateKey.fromString(options.adminKey);
+                tx.setAdminKey(keyToSign.publicKey);
+            } else {
+                tx.setAdminKey(this.context.operatorKey.publicKey);
+            }
 
             if (options.memo) {
                 tx.setTopicMemo(options.memo);
             }
 
-            const response = await tx.execute(this.context.client);
+            let response;
+            if (keyToSign) {
+                const frozenTx = tx.freezeWith(this.context.client);
+                response = await (
+                    await frozenTx.sign(keyToSign)
+                ).execute(this.context.client);
+            } else {
+                response = await tx.execute(this.context.client);
+            }
+
             const receipt = await response.getReceipt(this.context.client);
             const topicId = receipt.topicId!.toString();
 
@@ -124,20 +135,33 @@ export class TopicClient {
         const start = Date.now();
 
         try {
-            const adminKey = options.adminKey
-                ? PrivateKey.fromString(options.adminKey)
-                : this.context.operatorKey;
-            const submitKey = PrivateKey.fromString(options.submitKey);
+            const tx = new TopicCreateTransaction();
+            let keyToSign: PrivateKey | undefined;
 
-            const tx = new TopicCreateTransaction()
-                .setAdminKey(adminKey.publicKey)
-                .setSubmitKey(submitKey.publicKey);
+            if (options.adminKey) {
+                keyToSign = PrivateKey.fromString(options.adminKey);
+                tx.setAdminKey(keyToSign.publicKey);
+            } else {
+                tx.setAdminKey(this.context.operatorKey.publicKey);
+            }
+
+            const submitKey = PrivateKey.fromString(options.submitKey);
+            tx.setSubmitKey(submitKey.publicKey);
 
             if (options.memo) {
                 tx.setTopicMemo(options.memo);
             }
 
-            const response = await tx.execute(this.context.client);
+            let response;
+            if (keyToSign) {
+                const frozenTx = tx.freezeWith(this.context.client);
+                response = await (
+                    await frozenTx.sign(keyToSign)
+                ).execute(this.context.client);
+            } else {
+                response = await tx.execute(this.context.client);
+            }
+
             const receipt = await response.getReceipt(this.context.client);
             const topicId = receipt.topicId!.toString();
 

@@ -49,7 +49,9 @@ export class FileClient {
         try {
             // If contents fit in a single chunk, create directly
             const firstChunk = contents.slice(0, MAX_CHUNK_SIZE);
-            const tx = new FileCreateTransaction().setContents(firstChunk);
+            const tx = new FileCreateTransaction()
+                .setKeys([this.context.operatorKey.publicKey])
+                .setContents(firstChunk);
 
             if (expirationTime) {
                 tx.setExpirationTime(expirationTime);

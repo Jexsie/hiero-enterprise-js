@@ -43,6 +43,9 @@ export default defineConfig(
             // Allow non-null assertions (common pattern with SDK receipts)
             "@typescript-eslint/no-non-null-assertion": "off",
 
+            // Warn if deprecated function are used
+            "@typescript-eslint/no-deprecated": "warn",
+
             // Allow empty interfaces / object types (used for extensibility)
             "@typescript-eslint/no-empty-object-type": "off",
 

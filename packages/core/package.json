@@ -18,7 +18,8 @@
     },
     "scripts": {
         "build": "tsc",
-        "clean": "rm -rf dist"
+        "clean": "rm -rf dist",
+        "test:integration": "vitest run -c vitest.config.integration.ts"
     },
     "dependencies": {
         "@hashgraph/sdk": "^2.55.0",
