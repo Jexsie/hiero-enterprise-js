@@ -24,8 +24,8 @@ export interface CreateAccountOptions {
     maxAutomaticTokenAssociations?: number;
     /** Account memo */
     memo?: string;
-    /** The type of account (and underlying key) to generate. Defaults to EVM (ECDSA). */
-    accountType?: AccountType;
+    /** Generate an EVM-compatible account (and underlying key). Defaults to HIERO NATIVE (ED25519). */
+    evm?: boolean;
 }
 
 /**
@@ -55,21 +55,19 @@ export class AccountClient {
         const start = Date.now();
 
         try {
-            const type = options.accountType ?? AccountType.EVM;
-            const newKey =
-                type === AccountType.EVM
-                    ? PrivateKey.generateECDSA()
-                    : PrivateKey.generateED25519();
+            const newKey = options.evm
+                ? PrivateKey.generateECDSA()
+                : PrivateKey.generateED25519();
 
             const tx = new AccountCreateTransaction()
                 .setKeyWithoutAlias(newKey.publicKey)
                 .setInitialBalance(new Hbar(options.initialBalance ?? 0));
 
-            if (type === AccountType.EVM) {
+            if (options.evm) {
                 tx.setAlias(newKey.publicKey.toEvmAddress());
             }
 
-            if (options.maxAutomaticTokenAssociations !== undefined) {
+            if (options.maxAutomaticTokenAssociations) {
                 tx.setMaxAutomaticTokenAssociations(
                     options.maxAutomaticTokenAssociations,
                 );
@@ -82,12 +80,12 @@ export class AccountClient {
             const receipt = await response.getReceipt(this.context.client);
 
             const result: Account = {
-                accountId: receipt.accountId!.toString(),
-                publicKey: newKey.publicKey.toString(),
-                privateKey: newKey.toString(),
+                accountId: receipt.accountId!,
+                publicKey: newKey.publicKey,
+                privateKey: newKey,
             };
 
-            if (type === AccountType.EVM) {
+            if (options.evm) {
                 result.evmAddress = newKey.publicKey.toEvmAddress();
             }
 
@@ -244,9 +242,9 @@ export class AccountClient {
      * @param accountKey - Private key of the account being deleted
      */
     async deleteAccount(
-        accountId: string,
-        accountKey: string,
-        transferAccountId?: string,
+        accountId: string | AccountId,
+        accountKey: PrivateKey,
+        transferAccountId?: string | AccountId,
     ): Promise<void> {
         const event: TransactionEvent = {
             type: "AccountDelete",
@@ -258,7 +256,6 @@ export class AccountClient {
         const start = Date.now();
 
         try {
-            const key = PrivateKey.fromString(accountKey);
             const transferTo =
                 transferAccountId ?? this.context.operatorAccountId.toString();
 
@@ -268,7 +265,7 @@ export class AccountClient {
                 .freezeWith(this.context.client);
 
             const response = await (
-                await tx.sign(key)
+                await tx.sign(accountKey)
             ).execute(this.context.client);
 
             await this.context.emitAfterTransaction({
@@ -294,7 +291,7 @@ export class AccountClient {
      * @param accountId - Account to query
      * @returns The account balance
      */
-    async getAccountBalance(accountId: string): Promise<Balance> {
+    async getAccountBalance(accountId: string | AccountId): Promise<Balance> {
         try {
             const balance = await new AccountBalanceQuery()
                 .setAccountId(accountId)
@@ -326,8 +323,6 @@ export class AccountClient {
      * @returns The operator account balance
      */
     async getOperatorAccountBalance(): Promise<Balance> {
-        return this.getAccountBalance(
-            this.context.operatorAccountId.toString(),
-        );
+        return this.getAccountBalance(this.context.operatorAccountId);
     }
 }

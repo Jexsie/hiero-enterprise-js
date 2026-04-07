@@ -7,9 +7,10 @@ import {
     TokenBurnTransaction,
     TransferTransaction,
     NftId,
-    TokenId,
-    PrivateKey,
     TokenSupplyType,
+    TokenId,
+    type AccountId,
+    type PrivateKey,
 } from "@hashgraph/sdk";
 import type { HieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
@@ -26,13 +27,13 @@ export interface CreateNftTypeOptions {
     /** Maximum number of NFTs (default: unlimited) */
     maxSupply?: number;
     /** Treasury account ID (defaults to operator) */
-    treasuryAccountId?: string;
+    treasuryAccountId?: string | AccountId;
     /** Treasury account private key */
-    treasuryKey?: string;
+    treasuryKey?: PrivateKey;
     /** Supply key (defaults to operator key) */
-    supplyKey?: string;
+    supplyKey?: PrivateKey;
     /** Admin key (defaults to operator key) */
-    adminKey?: string;
+    adminKey?: PrivateKey;
     /** Collection memo */
     memo?: string;
 }
@@ -68,12 +69,8 @@ export class NftClient {
         const start = Date.now();
 
         try {
-            const supplyKey = options.supplyKey
-                ? PrivateKey.fromString(options.supplyKey)
-                : this.context.operatorKey;
-            const adminKey = options.adminKey
-                ? PrivateKey.fromString(options.adminKey)
-                : this.context.operatorKey;
+            const supplyKey = options.supplyKey ?? this.context.operatorKey;
+            const adminKey = options.adminKey ?? this.context.operatorKey;
 
             const tx = new TokenCreateTransaction()
                 .setTokenName(options.name)
@@ -82,8 +79,7 @@ export class NftClient {
                 .setDecimals(0)
                 .setInitialSupply(0)
                 .setTreasuryAccountId(
-                    options.treasuryAccountId ??
-                        this.context.operatorAccountId.toString(),
+                    options.treasuryAccountId ?? this.context.operatorAccountId,
                 )
                 .setSupplyKey(supplyKey.publicKey)
                 .setAdminKey(adminKey.publicKey);
@@ -98,9 +94,7 @@ export class NftClient {
 
             let frozenTx = tx.freezeWith(this.context.client);
             if (options.treasuryKey) {
-                frozenTx = await frozenTx.sign(
-                    PrivateKey.fromString(options.treasuryKey),
-                );
+                frozenTx = await frozenTx.sign(options.treasuryKey);
             }
 
             const response = await frozenTx.execute(this.context.client);
@@ -130,23 +124,22 @@ export class NftClient {
      * Associate an NFT type with an account.
      */
     async associateNft(
-        tokenId: string,
-        accountId: string,
-        accountKey: string,
+        tokenId: string | TokenId,
+        accountId: string | AccountId,
+        accountKey: PrivateKey,
     ): Promise<void> {
         const event = this.createEvent("NftAssociate", "associateNft");
         await this.context.emitBeforeTransaction(event);
         const start = Date.now();
 
         try {
-            const key = PrivateKey.fromString(accountKey);
             const tx = new TokenAssociateTransaction()
                 .setAccountId(accountId)
                 .setTokenIds([tokenId])
                 .freezeWith(this.context.client);
 
             const response = await (
-                await tx.sign(key)
+                await tx.sign(accountKey)
             ).execute(this.context.client);
 
             await this.context.emitAfterTransaction({
@@ -170,23 +163,22 @@ export class NftClient {
      * Dissociate an NFT type from an account.
      */
     async dissociateNft(
-        tokenId: string,
-        accountId: string,
-        accountKey: string,
+        tokenId: string | TokenId,
+        accountId: string | AccountId,
+        accountKey: PrivateKey,
     ): Promise<void> {
         const event = this.createEvent("NftDissociate", "dissociateNft");
         await this.context.emitBeforeTransaction(event);
         const start = Date.now();
 
         try {
-            const key = PrivateKey.fromString(accountKey);
             const tx = new TokenDissociateTransaction()
                 .setAccountId(accountId)
                 .setTokenIds([tokenId])
                 .freezeWith(this.context.client);
 
             const response = await (
-                await tx.sign(key)
+                await tx.sign(accountKey)
             ).execute(this.context.client);
 
             await this.context.emitAfterTransaction({
@@ -215,18 +207,16 @@ export class NftClient {
      * @returns Serial number of the minted NFT
      */
     async mintNft(
-        tokenId: string,
+        tokenId: string | TokenId,
         metadata: Uint8Array,
-        supplyKey?: string,
+        supplyKey?: PrivateKey,
     ): Promise<number> {
         const event = this.createEvent("NftMint", "mintNft");
         await this.context.emitBeforeTransaction(event);
         const start = Date.now();
 
         try {
-            const key = supplyKey
-                ? PrivateKey.fromString(supplyKey)
-                : this.context.operatorKey;
+            const key = supplyKey ?? this.context.operatorKey;
             const tx = new TokenMintTransaction()
                 .setTokenId(tokenId)
                 .addMetadata(metadata)
@@ -266,18 +256,16 @@ export class NftClient {
      * @returns Array of serial numbers
      */
     async mintNfts(
-        tokenId: string,
+        tokenId: string | TokenId,
         metadataList: Uint8Array[],
-        supplyKey?: string,
+        supplyKey?: PrivateKey,
     ): Promise<number[]> {
         const event = this.createEvent("NftMintBatch", "mintNfts");
         await this.context.emitBeforeTransaction(event);
         const start = Date.now();
 
         try {
-            const key = supplyKey
-                ? PrivateKey.fromString(supplyKey)
-                : this.context.operatorKey;
+            const key = supplyKey ?? this.context.operatorKey;
             const tx = new TokenMintTransaction().setTokenId(tokenId);
 
             for (const metadata of metadataList) {
@@ -319,9 +307,9 @@ export class NftClient {
      * @param supplyKey - Supply key (defaults to operator)
      */
     async burnNft(
-        tokenId: string,
+        tokenId: string | TokenId,
         serialNumber: number,
-        supplyKey?: string,
+        supplyKey?: PrivateKey,
     ): Promise<void> {
         return this.burnNfts(tokenId, [serialNumber], supplyKey);
     }
@@ -334,18 +322,16 @@ export class NftClient {
      * @param supplyKey - Supply key (defaults to operator)
      */
     async burnNfts(
-        tokenId: string,
+        tokenId: string | TokenId,
         serialNumbers: number[],
-        supplyKey?: string,
+        supplyKey?: PrivateKey,
     ): Promise<void> {
         const event = this.createEvent("NftBurn", "burnNfts");
         await this.context.emitBeforeTransaction(event);
         const start = Date.now();
 
         try {
-            const key = supplyKey
-                ? PrivateKey.fromString(supplyKey)
-                : this.context.operatorKey;
+            const key = supplyKey ?? this.context.operatorKey;
             const tx = new TokenBurnTransaction()
                 .setTokenId(tokenId)
                 .setSerials(serialNumbers)
@@ -382,11 +368,11 @@ export class NftClient {
      * @param toAccountId - Receiver account
      */
     async transferNft(
-        tokenId: string,
+        tokenId: string | TokenId,
         serialNumber: number,
-        fromAccountId: string,
-        fromKey: string,
-        toAccountId: string,
+        fromAccountId: string | AccountId,
+        fromKey: PrivateKey,
+        toAccountId: string | AccountId,
     ): Promise<void> {
         return this.transferNfts(
             tokenId,
@@ -407,29 +393,33 @@ export class NftClient {
      * @param toAccountId - Receiver account
      */
     async transferNfts(
-        tokenId: string,
+        tokenId: string | TokenId,
         serialNumbers: number[],
-        fromAccountId: string,
-        fromKey: string,
-        toAccountId: string,
+        fromAccountId: string | AccountId,
+        fromKey: PrivateKey,
+        toAccountId: string | AccountId,
     ): Promise<void> {
         const event = this.createEvent("NftTransfer", "transferNfts");
         await this.context.emitBeforeTransaction(event);
         const start = Date.now();
 
         try {
-            const key = PrivateKey.fromString(fromKey);
             const tx = new TransferTransaction();
 
             for (const serial of serialNumbers) {
-                const nftId = new NftId(TokenId.fromString(tokenId), serial);
+                const nftId = new NftId(
+                    typeof tokenId === "string"
+                        ? TokenId.fromString(tokenId)
+                        : tokenId,
+                    serial,
+                );
                 tx.addNftTransfer(nftId, fromAccountId, toAccountId);
             }
 
             tx.freezeWith(this.context.client);
 
             const response = await (
-                await tx.sign(key)
+                await tx.sign(fromKey)
             ).execute(this.context.client);
 
             await this.context.emitAfterTransaction({

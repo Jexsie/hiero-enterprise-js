@@ -18,7 +18,6 @@ describe("AccountClient [Integration]", () => {
         const initialBalance = 15; // Hbars
         const account = await client.createAccount({
             initialBalance,
-            accountType: AccountType.NATIVE,
             memo: "E2E Test Native",
         });
 

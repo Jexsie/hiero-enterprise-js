@@ -6,6 +6,7 @@ import {
     AccountDeleteTransaction,
     AccountBalanceQuery,
     TransferTransaction,
+    PrivateKey,
 } from "@hashgraph/sdk";
 import { AccountType } from "../../src/types/index.js";
 
@@ -80,21 +81,21 @@ describe("AccountClient", () => {
     });
 
     describe("createAccount", () => {
-        it("creates an account with default options (EVM ECDSA)", async () => {
+        it("creates an account with default options (Hiero native ED25519)", async () => {
             const account = await client.createAccount();
 
             // Check response mapping
-            expect(account.accountId).toBe("0.0.999");
+            expect(account.accountId.toString()).toBe("0.0.999");
             expect(account.publicKey).toBeDefined();
             expect(account.privateKey).toBeDefined();
-            expect(account.evmAddress).toBeDefined();
+            expect(account.evmAddress).toBeUndefined();
 
             // Check SDK transaction
             const mockInstance = vi.mocked(AccountCreateTransaction).mock
                 .results[0].value;
             expect(mockInstance.setInitialBalance).toHaveBeenCalled();
             expect(mockInstance.setKeyWithoutAlias).toHaveBeenCalled();
-            expect(mockInstance.setAlias).toHaveBeenCalled(); // EVM default must set alias
+            expect(mockInstance.setAlias).not.toHaveBeenCalled();
             expect(mockInstance.execute).toHaveBeenCalledWith(context.client);
             expect(
                 mockInstance.setMaxAutomaticTokenAssociations,
@@ -102,12 +103,12 @@ describe("AccountClient", () => {
             expect(mockInstance.setAccountMemo).not.toHaveBeenCalled();
         });
 
-        it("creates an account with custom options and NATIVE type", async () => {
+        it("creates an account with custom options and an EVM type", async () => {
             const account = await client.createAccount({
                 initialBalance: 5,
                 maxAutomaticTokenAssociations: 10,
                 memo: "test memo",
-                accountType: AccountType.NATIVE,
+                evm: true,
             });
 
             const mockInstance = vi.mocked(AccountCreateTransaction).mock
@@ -118,8 +119,14 @@ describe("AccountClient", () => {
             expect(mockInstance.setAccountMemo).toHaveBeenCalledWith(
                 "test memo",
             );
-            expect(mockInstance.setAlias).not.toHaveBeenCalled(); // NATIVE does not get EVM alias explicitly
-            expect(account.evmAddress).toBeUndefined(); // Should omit evm mapping
+            expect(mockInstance.setAlias).toHaveBeenCalled();
+            expect(account.evmAddress).toBeDefined();
+            expect(account.privateKey).toBeDefined();
+            expect(account.publicKey).toBeDefined();
+            expect(account.accountId.toString()).toBe("0.0.999");
+            expect(
+                mockInstance.setMaxAutomaticTokenAssociations,
+            ).toHaveBeenCalled();
             expect(mockInstance.execute).toHaveBeenCalledWith(context.client);
         });
     });
@@ -180,7 +187,10 @@ describe("AccountClient", () => {
         it("deletes an account transferring to operator by default", async () => {
             const dummyKey =
                 "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208";
-            await client.deleteAccount("0.0.999", dummyKey);
+            await client.deleteAccount(
+                "0.0.999",
+                PrivateKey.fromStringDer(dummyKey),
+            );
 
             const mockInstance = vi.mocked(AccountDeleteTransaction).mock
                 .results[0].value;
@@ -197,7 +207,11 @@ describe("AccountClient", () => {
         it("deletes an account and transfers to custom account", async () => {
             const dummyKey =
                 "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208";
-            await client.deleteAccount("0.0.999", dummyKey, "0.0.456");
+            await client.deleteAccount(
+                "0.0.999",
+                PrivateKey.fromStringDer(dummyKey),
+                "0.0.456",
+            );
 
             const mockInstance = vi.mocked(AccountDeleteTransaction).mock
                 .results[0].value;
@@ -225,12 +239,13 @@ describe("AccountClient", () => {
     describe("getOperatorAccountBalance", () => {
         it("fetches the operator balance", async () => {
             const balance = await client.getOperatorAccountBalance();
-
-            expect(balance.accountId).toBe("0.0.2"); // Operator ID
+            expect(balance.accountId.toString()).toBe("0.0.2"); // Operator ID
 
             const mockInstance =
                 vi.mocked(AccountBalanceQuery).mock.results[0].value;
-            expect(mockInstance.setAccountId).toHaveBeenCalledWith("0.0.2");
+            expect(mockInstance.setAccountId).toHaveBeenCalledWith(
+                context.operatorAccountId,
+            );
         });
     });
 });

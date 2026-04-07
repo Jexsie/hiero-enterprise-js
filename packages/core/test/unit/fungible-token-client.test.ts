@@ -9,6 +9,7 @@ import {
     TokenMintTransaction,
     TokenBurnTransaction,
     TransferTransaction,
+    PrivateKey,
 } from "@hashgraph/sdk";
 
 vi.mock("@hashgraph/sdk", async (importOriginal) => {
@@ -75,7 +76,7 @@ describe("FungibleTokenClient", () => {
             network: "testnet",
             operatorId: "0.0.2",
             operatorKey:
-                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208", // Dummy ED25519 DER
+                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
         });
         client = new FungibleTokenClient(context);
     });
@@ -85,6 +86,8 @@ describe("FungibleTokenClient", () => {
             const tokenId = await client.createToken({
                 name: "Test Token",
                 symbol: "TST",
+                treasuryAccountId: context.operatorAccountId,
+                treasuryKey: context.operatorKey,
             });
 
             expect(tokenId).toBe("0.0.999");
@@ -97,11 +100,13 @@ describe("FungibleTokenClient", () => {
                 TokenType.FungibleCommon,
             );
             expect(txMock.setDecimals).toHaveBeenCalledWith(0);
-            expect(txMock.setInitialSupply).toHaveBeenCalledWith(0);
-            expect(txMock.setTreasuryAccountId).toHaveBeenCalledWith("0.0.2"); // Defaults to operator
-            expect(txMock.setSupplyKey).toHaveBeenCalled();
-            expect(txMock.setAdminKey).toHaveBeenCalled();
+            expect(txMock.setTreasuryAccountId).toHaveBeenCalledWith(
+                context.operatorAccountId,
+            );
+            expect(txMock.setSupplyKey).not.toHaveBeenCalled();
+            expect(txMock.setAdminKey).not.toHaveBeenCalled();
             expect(txMock.freezeWith).toHaveBeenCalledWith(context.client);
+            expect(txMock.sign).toHaveBeenCalledWith(context.operatorKey);
             expect(txMock.execute).toHaveBeenCalledWith(context.client);
         });
 
@@ -114,6 +119,9 @@ describe("FungibleTokenClient", () => {
                 maxSupply: 5000,
                 memo: "the memo",
                 treasuryAccountId: "0.0.555",
+                treasuryKey: PrivateKey.fromStringDer(
+                    "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
+                ),
             });
 
             const txMock = vi.mocked(TokenCreateTransaction).mock.results[0]
@@ -128,8 +136,9 @@ describe("FungibleTokenClient", () => {
 
     describe("associateToken", () => {
         it("associates a token with an account", async () => {
-            const dummyKey =
-                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208";
+            const dummyKey = PrivateKey.fromStringDer(
+                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
+            );
             await client.associateToken("0.0.999", "0.0.555", dummyKey);
 
             const txMock = vi.mocked(TokenAssociateTransaction).mock.results[0]
@@ -143,8 +152,9 @@ describe("FungibleTokenClient", () => {
 
     describe("dissociateToken", () => {
         it("dissociates a token from an account", async () => {
-            const dummyKey =
-                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208";
+            const dummyKey = PrivateKey.fromStringDer(
+                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
+            );
             await client.dissociateToken("0.0.999", "0.0.555", dummyKey);
 
             const txMock = vi.mocked(TokenDissociateTransaction).mock.results[0]
@@ -158,7 +168,7 @@ describe("FungibleTokenClient", () => {
 
     describe("mintToken", () => {
         it("mints additional token supply", async () => {
-            await client.mintToken("0.0.999", 500);
+            await client.mintToken("0.0.999", 500, context.operatorKey);
 
             const txMock =
                 vi.mocked(TokenMintTransaction).mock.results[0].value;
@@ -171,7 +181,7 @@ describe("FungibleTokenClient", () => {
 
     describe("burnToken", () => {
         it("burns token supply", async () => {
-            await client.burnToken("0.0.999", 100);
+            await client.burnToken("0.0.999", 100, context.operatorKey);
 
             const txMock =
                 vi.mocked(TokenBurnTransaction).mock.results[0].value;
@@ -184,8 +194,9 @@ describe("FungibleTokenClient", () => {
 
     describe("transferToken", () => {
         it("transfers tokens between accounts", async () => {
-            const dummyKey =
-                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208";
+            const dummyKey = PrivateKey.fromStringDer(
+                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
+            );
 
             await client.transferToken(
                 "0.0.999",

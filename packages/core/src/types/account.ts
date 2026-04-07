@@ -1,3 +1,9 @@
+import {
+    type PrivateKey,
+    type AccountId,
+    type PublicKey,
+} from "@hashgraph/sdk";
+
 /**
  * The type of account (and underlying key) to generate.
  */
@@ -11,13 +17,13 @@ export enum AccountType {
  */
 export interface Account {
     /** The account ID (e.g., "0.0.12345") */
-    accountId: string;
+    accountId: string | AccountId;
     /** The public key associated with the account */
-    publicKey: string;
+    publicKey: string | PublicKey;
     /** The private key (only available if the account was created by this client) */
-    privateKey?: string;
+    privateKey?: PrivateKey;
     /** The EVM address derived from the public key */
-    evmAddress?: string;
+    evmAddress?: string | PublicKey;
 }
 
 /**

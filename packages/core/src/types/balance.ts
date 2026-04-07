@@ -1,9 +1,11 @@
+import type { AccountId } from "@hashgraph/sdk";
+
 /**
  * HBAR and token balance for an account.
  */
 export interface Balance {
     /** Account ID */
-    accountId: string;
+    accountId: string | AccountId;
     /** HBAR balance in tinybars */
     hbars: number;
     /** Token balances associated with this account */

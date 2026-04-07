@@ -3,7 +3,8 @@ import {
     TopicUpdateTransaction,
     TopicDeleteTransaction,
     TopicMessageSubmitTransaction,
-    PrivateKey,
+    type PrivateKey,
+    type TopicId,
 } from "@hashgraph/sdk";
 import type { HieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
@@ -16,7 +17,7 @@ export interface CreateTopicOptions {
     /** Topic memo */
     memo?: string;
     /** Admin key (defaults to operator key) */
-    adminKey?: string;
+    adminKey?: PrivateKey;
 }
 
 /**
@@ -24,7 +25,7 @@ export interface CreateTopicOptions {
  */
 export interface CreatePrivateTopicOptions extends CreateTopicOptions {
     /** Submit key for authorization */
-    submitKey: string;
+    submitKey: PrivateKey;
 }
 
 /**
@@ -34,11 +35,11 @@ export interface UpdateTopicOptions {
     /** New memo */
     memo?: string;
     /** New admin key */
-    newAdminKey?: string;
+    newAdminKey?: PrivateKey;
     /** New submit key */
-    newSubmitKey?: string;
+    newSubmitKey?: PrivateKey;
     /** Current admin key for authorization */
-    adminKey?: string;
+    adminKey?: PrivateKey;
 }
 
 /**
@@ -76,7 +77,7 @@ export class TopicClient {
             let keyToSign: PrivateKey | undefined;
 
             if (options.adminKey) {
-                keyToSign = PrivateKey.fromString(options.adminKey);
+                keyToSign = options.adminKey;
                 tx.setAdminKey(keyToSign.publicKey);
             } else {
                 tx.setAdminKey(this.context.operatorKey.publicKey);
@@ -139,13 +140,13 @@ export class TopicClient {
             let keyToSign: PrivateKey | undefined;
 
             if (options.adminKey) {
-                keyToSign = PrivateKey.fromString(options.adminKey);
+                keyToSign = options.adminKey;
                 tx.setAdminKey(keyToSign.publicKey);
             } else {
                 tx.setAdminKey(this.context.operatorKey.publicKey);
             }
 
-            const submitKey = PrivateKey.fromString(options.submitKey);
+            const submitKey = options.submitKey;
             tx.setSubmitKey(submitKey.publicKey);
 
             if (options.memo) {
@@ -191,7 +192,7 @@ export class TopicClient {
      * @param options - Properties to update
      */
     async updateTopic(
-        topicId: string,
+        topicId: string | TopicId,
         options: UpdateTopicOptions,
     ): Promise<void> {
         const event = this.createEvent("TopicUpdate", "updateTopic");
@@ -205,14 +206,10 @@ export class TopicClient {
                 tx.setTopicMemo(options.memo);
             }
             if (options.newAdminKey) {
-                tx.setAdminKey(
-                    PrivateKey.fromString(options.newAdminKey).publicKey,
-                );
+                tx.setAdminKey(options.newAdminKey.publicKey);
             }
             if (options.newSubmitKey) {
-                tx.setSubmitKey(
-                    PrivateKey.fromString(options.newSubmitKey).publicKey,
-                );
+                tx.setSubmitKey(options.newSubmitKey.publicKey);
             }
 
             const frozenTx = tx.freezeWith(this.context.client);
@@ -220,7 +217,7 @@ export class TopicClient {
             let response;
             if (options.adminKey) {
                 response = await (
-                    await frozenTx.sign(PrivateKey.fromString(options.adminKey))
+                    await frozenTx.sign(options.adminKey)
                 ).execute(this.context.client);
             } else {
                 response = await frozenTx.execute(this.context.client);
@@ -251,9 +248,9 @@ export class TopicClient {
      * @param currentAdminKey - Current admin key for authorization
      */
     async updateAdminKey(
-        topicId: string,
-        newAdminKey: string,
-        currentAdminKey?: string,
+        topicId: string | TopicId,
+        newAdminKey: PrivateKey,
+        currentAdminKey?: PrivateKey,
     ): Promise<void> {
         return this.updateTopic(topicId, {
             newAdminKey,
@@ -269,9 +266,9 @@ export class TopicClient {
      * @param adminKey - Admin key for authorization
      */
     async updateSubmitKey(
-        topicId: string,
-        submitKey: string,
-        adminKey?: string,
+        topicId: string | TopicId,
+        submitKey: PrivateKey,
+        adminKey?: PrivateKey,
     ): Promise<void> {
         return this.updateTopic(topicId, {
             newSubmitKey: submitKey,
@@ -285,7 +282,10 @@ export class TopicClient {
      * @param topicId - Topic to delete
      * @param adminKey - Admin key for authorization
      */
-    async deleteTopic(topicId: string, adminKey?: string): Promise<void> {
+    async deleteTopic(
+        topicId: string | TopicId,
+        adminKey?: PrivateKey,
+    ): Promise<void> {
         const event = this.createEvent("TopicDelete", "deleteTopic");
         await this.context.emitBeforeTransaction(event);
         const start = Date.now();
@@ -298,7 +298,7 @@ export class TopicClient {
             let response;
             if (adminKey) {
                 response = await (
-                    await tx.sign(PrivateKey.fromString(adminKey))
+                    await tx.sign(adminKey)
                 ).execute(this.context.client);
             } else {
                 response = await tx.execute(this.context.client);
@@ -329,9 +329,9 @@ export class TopicClient {
      * @param submitKey - Submit key (required for private topics)
      */
     async submitMessage(
-        topicId: string,
+        topicId: string | TopicId,
         message: string | Uint8Array,
-        submitKey?: string,
+        submitKey?: PrivateKey,
     ): Promise<void> {
         const event = this.createEvent("TopicSubmitMessage", "submitMessage");
         await this.context.emitBeforeTransaction(event);
@@ -346,7 +346,7 @@ export class TopicClient {
             let response;
             if (submitKey) {
                 response = await (
-                    await tx.sign(PrivateKey.fromString(submitKey))
+                    await tx.sign(submitKey)
                 ).execute(this.context.client);
             } else {
                 response = await tx.execute(this.context.client);

@@ -12,6 +12,7 @@ import {
     TransferTransaction,
     NftId,
     TokenId,
+    PrivateKey,
 } from "@hashgraph/sdk";
 
 vi.mock("@hashgraph/sdk", async (importOriginal) => {
@@ -104,7 +105,9 @@ describe("NftClient", () => {
             expect(txMock.setTokenType).toHaveBeenCalledWith(
                 TokenType.NonFungibleUnique,
             );
-            expect(txMock.setTreasuryAccountId).toHaveBeenCalledWith("0.0.2");
+            expect(txMock.setTreasuryAccountId).toHaveBeenCalledWith(
+                context.operatorAccountId,
+            );
             expect(txMock.setSupplyKey).toHaveBeenCalled();
             expect(txMock.setAdminKey).toHaveBeenCalled();
             expect(txMock.freezeWith).toHaveBeenCalledWith(context.client);
@@ -128,8 +131,9 @@ describe("NftClient", () => {
 
     describe("associateNft", () => {
         it("associates an NFT with an account", async () => {
-            const dummyKey =
-                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208";
+            const dummyKey = PrivateKey.fromStringDer(
+                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
+            );
             await client.associateNft("0.0.999", "0.0.555", dummyKey);
 
             const txMock = vi.mocked(TokenAssociateTransaction).mock.results[0]
@@ -143,8 +147,9 @@ describe("NftClient", () => {
 
     describe("dissociateNft", () => {
         it("dissociates an NFT from an account", async () => {
-            const dummyKey =
-                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208";
+            const dummyKey = PrivateKey.fromStringDer(
+                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
+            );
             await client.dissociateNft("0.0.999", "0.0.555", dummyKey);
 
             const txMock = vi.mocked(TokenDissociateTransaction).mock.results[0]
@@ -196,8 +201,9 @@ describe("NftClient", () => {
 
     describe("transferNfts", () => {
         it("transfers NFTs", async () => {
-            const dummyKey =
-                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208";
+            const dummyKey = PrivateKey.fromStringDer(
+                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
+            );
 
             // Need to clear the spy instance because TransferTransaction shares it across tests
             vi.mocked(TransferTransaction).mockClear();

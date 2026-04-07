@@ -4,6 +4,16 @@
 // Data models
 export * from "./types/index.js";
 
+// SDK Primitives
+export {
+    PrivateKey,
+    PublicKey,
+    AccountId,
+    TokenId,
+    TopicId,
+    Hbar,
+} from "@hashgraph/sdk";
+
 // Configuration
 export * from "./config/index.js";
 

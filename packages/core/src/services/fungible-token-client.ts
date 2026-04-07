@@ -6,7 +6,9 @@ import {
     TokenMintTransaction,
     TokenBurnTransaction,
     TransferTransaction,
-    PrivateKey,
+    type PrivateKey,
+    type TokenId,
+    type AccountId,
 } from "@hashgraph/sdk";
 import type { HieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
@@ -24,14 +26,14 @@ export interface CreateTokenOptions {
     decimals?: number;
     /** Initial supply (default: 0) */
     initialSupply?: number;
-    /** Treasury account ID (defaults to operator) */
-    treasuryAccountId?: string;
-    /** Treasury account private key (required if treasury != operator) */
-    treasuryKey?: string;
-    /** Supply key (defaults to operator key) */
-    supplyKey?: string;
-    /** Admin key (defaults to operator key) */
-    adminKey?: string;
+    /** Treasury account ID */
+    treasuryAccountId: string | AccountId;
+    /** Treasury account private key */
+    treasuryKey: PrivateKey;
+    /** Supply key (required if the key is meant to be mutable) */
+    supplyKey?: PrivateKey;
+    /** Admin key (required if the key is meant to be mutable) */
+    adminKey?: PrivateKey;
     /** Maximum supply (0 = infinite) */
     maxSupply?: number;
     /** Token memo */
@@ -62,6 +64,20 @@ export class FungibleTokenClient {
      *
      * @param options - Token creation options
      * @returns The token ID of the created token
+     *
+     * @example
+     * ```typescript
+     * const tokenClient = new FungibleTokenClient(context);
+     * const tokenId = await tokenClient.createToken({
+     *   name: "Test Token",
+     *   symbol: "TST",
+     *   decimals: 2,
+     *   initialSupply: 1000,
+     *   maxSupply: 5000,
+     *   memo: "the memo",
+     *   treasuryAccountId: "0.0.555",
+     * });
+     * ```
      */
     async createToken(options: CreateTokenOptions): Promise<string> {
         const event = this.createEvent("TokenCreate", "createToken");
@@ -69,41 +85,33 @@ export class FungibleTokenClient {
         const start = Date.now();
 
         try {
-            const supplyKey = options.supplyKey
-                ? PrivateKey.fromString(options.supplyKey)
-                : this.context.operatorKey;
-            const adminKey = options.adminKey
-                ? PrivateKey.fromString(options.adminKey)
-                : this.context.operatorKey;
-
             const tx = new TokenCreateTransaction()
                 .setTokenName(options.name)
                 .setTokenSymbol(options.symbol)
                 .setTokenType(TokenType.FungibleCommon)
                 .setDecimals(options.decimals ?? 0)
                 .setInitialSupply(options.initialSupply ?? 0)
-                .setTreasuryAccountId(
-                    options.treasuryAccountId ??
-                        this.context.operatorAccountId.toString(),
-                )
-                .setSupplyKey(supplyKey.publicKey)
-                .setAdminKey(adminKey.publicKey);
+                .setTreasuryAccountId(options.treasuryAccountId);
 
-            if (options.maxSupply !== undefined && options.maxSupply > 0) {
+            if (options.supplyKey) {
+                tx.setSupplyKey(options.supplyKey.publicKey);
+            }
+
+            if (options.adminKey) {
+                tx.setAdminKey(options.adminKey.publicKey);
+            }
+
+            if (options.maxSupply && options.maxSupply > 0) {
                 tx.setMaxSupply(options.maxSupply);
             }
             if (options.memo) {
                 tx.setTokenMemo(options.memo);
             }
 
-            let frozenTx = tx.freezeWith(this.context.client);
-            if (options.treasuryKey) {
-                frozenTx = await frozenTx.sign(
-                    PrivateKey.fromString(options.treasuryKey),
-                );
-            }
+            tx.freezeWith(this.context.client);
+            await tx.sign(options.treasuryKey);
 
-            const response = await frozenTx.execute(this.context.client);
+            const response = await tx.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
             const tokenId = receipt.tokenId!.toString();
 
@@ -134,23 +142,22 @@ export class FungibleTokenClient {
      * @param accountKey - Private key of the account
      */
     async associateToken(
-        tokenId: string,
-        accountId: string,
-        accountKey: string,
+        tokenId: string | TokenId,
+        accountId: string | AccountId,
+        accountKey: PrivateKey,
     ): Promise<void> {
         const event = this.createEvent("TokenAssociate", "associateToken");
         await this.context.emitBeforeTransaction(event);
         const start = Date.now();
 
         try {
-            const key = PrivateKey.fromString(accountKey);
             const tx = new TokenAssociateTransaction()
                 .setAccountId(accountId)
                 .setTokenIds([tokenId])
                 .freezeWith(this.context.client);
 
             const response = await (
-                await tx.sign(key)
+                await tx.sign(accountKey)
             ).execute(this.context.client);
 
             await this.context.emitAfterTransaction({
@@ -178,23 +185,22 @@ export class FungibleTokenClient {
      * @param accountKey - Private key of the account
      */
     async dissociateToken(
-        tokenId: string,
-        accountId: string,
-        accountKey: string,
+        tokenId: string | TokenId,
+        accountId: string | AccountId,
+        accountKey: PrivateKey,
     ): Promise<void> {
         const event = this.createEvent("TokenDissociate", "dissociateToken");
         await this.context.emitBeforeTransaction(event);
         const start = Date.now();
 
         try {
-            const key = PrivateKey.fromString(accountKey);
             const tx = new TokenDissociateTransaction()
                 .setAccountId(accountId)
                 .setTokenIds([tokenId])
                 .freezeWith(this.context.client);
 
             const response = await (
-                await tx.sign(key)
+                await tx.sign(accountKey)
             ).execute(this.context.client);
 
             await this.context.emitAfterTransaction({
@@ -222,25 +228,22 @@ export class FungibleTokenClient {
      * @param supplyKey - Supply key (defaults to operator key)
      */
     async mintToken(
-        tokenId: string,
+        tokenId: string | TokenId,
         amount: number,
-        supplyKey?: string,
+        supplyKey: PrivateKey,
     ): Promise<void> {
         const event = this.createEvent("TokenMint", "mintToken");
         await this.context.emitBeforeTransaction(event);
         const start = Date.now();
 
         try {
-            const key = supplyKey
-                ? PrivateKey.fromString(supplyKey)
-                : this.context.operatorKey;
             const tx = new TokenMintTransaction()
                 .setTokenId(tokenId)
                 .setAmount(amount)
                 .freezeWith(this.context.client);
 
             const response = await (
-                await tx.sign(key)
+                await tx.sign(supplyKey)
             ).execute(this.context.client);
 
             await this.context.emitAfterTransaction({
@@ -268,25 +271,22 @@ export class FungibleTokenClient {
      * @param supplyKey - Supply key (defaults to operator key)
      */
     async burnToken(
-        tokenId: string,
-        amount: number,
-        supplyKey?: string,
+        tokenId: string | TokenId,
+        amount: number | bigint | Long,
+        supplyKey: PrivateKey,
     ): Promise<void> {
         const event = this.createEvent("TokenBurn", "burnToken");
         await this.context.emitBeforeTransaction(event);
         const start = Date.now();
 
         try {
-            const key = supplyKey
-                ? PrivateKey.fromString(supplyKey)
-                : this.context.operatorKey;
             const tx = new TokenBurnTransaction()
                 .setTokenId(tokenId)
                 .setAmount(amount)
                 .freezeWith(this.context.client);
 
             const response = await (
-                await tx.sign(key)
+                await tx.sign(supplyKey)
             ).execute(this.context.client);
 
             await this.context.emitAfterTransaction({
@@ -316,10 +316,10 @@ export class FungibleTokenClient {
      * @param amount - Amount to transfer
      */
     async transferToken(
-        tokenId: string,
-        fromAccountId: string,
-        fromKey: string,
-        toAccountId: string,
+        tokenId: string | TokenId,
+        fromAccountId: string | AccountId,
+        fromKey: PrivateKey,
+        toAccountId: string | AccountId,
         amount: number,
     ): Promise<void> {
         const event = this.createEvent("TokenTransfer", "transferToken");
@@ -327,14 +327,13 @@ export class FungibleTokenClient {
         const start = Date.now();
 
         try {
-            const key = PrivateKey.fromString(fromKey);
             const tx = new TransferTransaction()
                 .addTokenTransfer(tokenId, fromAccountId, -amount)
                 .addTokenTransfer(tokenId, toAccountId, amount)
                 .freezeWith(this.context.client);
 
             const response = await (
-                await tx.sign(key)
+                await tx.sign(fromKey)
             ).execute(this.context.client);
 
             await this.context.emitAfterTransaction({

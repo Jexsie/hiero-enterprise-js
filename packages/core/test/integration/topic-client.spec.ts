@@ -50,13 +50,13 @@ describe("TopicClient [Integration]", () => {
         // 1. Create it with custom admin key so it is locked
         const privateTopicId = await client.createTopic({
             memo: "To Be Deleted",
-            adminKey: customAdminKey.toString(),
+            adminKey: customAdminKey,
         });
 
         await waitForMirrorNodeRecord();
 
         // 2. Delete it securely
-        await client.deleteTopic(privateTopicId, customAdminKey.toString());
+        await client.deleteTopic(privateTopicId, customAdminKey);
 
         await waitForMirrorNodeRecord();
 
