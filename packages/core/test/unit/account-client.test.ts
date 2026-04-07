@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { HieroContext } from "../src/context/hiero-context.js";
-import { AccountClient } from "../src/services/account-client.js";
+import { HieroContext } from "../../src/context/hiero-context.js";
+import { AccountClient } from "../../src/services/account-client.js";
 import {
     AccountCreateTransaction,
     AccountDeleteTransaction,
     AccountBalanceQuery,
     TransferTransaction,
 } from "@hashgraph/sdk";
-import { AccountType } from "../src/types/index.js";
+import { AccountType } from "../../src/types/index.js";
 
 // Mock the SDK
 vi.mock("@hashgraph/sdk", async (importOriginal) => {

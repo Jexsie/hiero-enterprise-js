@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { HieroContext } from "../src/context/hiero-context.js";
+import { HieroContext } from "../../src/context/hiero-context.js";
 import { Client } from "@hashgraph/sdk";
-import * as configModule from "../src/config/index.js";
+import * as configModule from "../../src/config/index.js";
 
 // Mock the SDK
 vi.mock("@hashgraph/sdk", async (importOriginal) => {

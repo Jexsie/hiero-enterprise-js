@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { setupIntegrationTestEnv } from "./env.js";
-import { waitForMirrorNodeRecord } from "./mirror-node.js";
+import { setupIntegrationTestEnv } from "../utils/env.js";
+import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
 import { AccountClient } from "../../src/services/account-client.js";
 import { AccountType } from "../../src/types/index.js";
 import { PrivateKey } from "@hashgraph/sdk";

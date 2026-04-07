@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     resolveConfigFromEnv,
     resolveMirrorNodeUrl,
-} from "../src/config/hiero-config.js";
+} from "../../src/config/hiero-config.js";
 
 describe("resolveMirrorNodeUrl", () => {
     it("resolves known networks", () => {

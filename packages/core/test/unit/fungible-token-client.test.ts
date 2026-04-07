@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { HieroContext } from "../src/context/hiero-context.js";
-import { FungibleTokenClient } from "../src/services/fungible-token-client.js";
+import { HieroContext } from "../../src/context/hiero-context.js";
+import { FungibleTokenClient } from "../../src/services/fungible-token-client.js";
 import {
     TokenCreateTransaction,
     TokenType,

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { HieroContext } from "../src/context/hiero-context.js";
-import { TopicClient } from "../src/services/topic-client.js";
+import { HieroContext } from "../../src/context/hiero-context.js";
+import { TopicClient } from "../../src/services/topic-client.js";
 import {
     TopicCreateTransaction,
     TopicUpdateTransaction,

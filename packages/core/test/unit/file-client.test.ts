@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { HieroContext } from "../src/context/hiero-context.js";
-import { FileClient } from "../src/services/file-client.js";
+import { HieroContext } from "../../src/context/hiero-context.js";
+import { FileClient } from "../../src/services/file-client.js";
 import {
     FileCreateTransaction,
     FileContentsQuery,

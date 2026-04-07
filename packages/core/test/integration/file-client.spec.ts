@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { setupIntegrationTestEnv } from "./env.js";
-import { waitForMirrorNodeRecord } from "./mirror-node.js";
+import { setupIntegrationTestEnv } from "../utils/env.js";
+import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
 import { FileClient } from "../../src/services/file-client.js";
 
 describe("FileClient [Integration]", () => {

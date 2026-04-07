@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { HieroContext } from "../src/context/hiero-context.js";
+import { HieroContext } from "../../src/context/hiero-context.js";
 import type {
     TransactionListener,
     TransactionEvent,
-} from "../src/listeners/index.js";
-import { AccountClient } from "../src/services/account-client.js";
+} from "../../src/listeners/index.js";
+import { AccountClient } from "../../src/services/account-client.js";
 
 // Mock the hashgraph SDK so we don't hit the real network
 vi.mock("@hashgraph/sdk", async (importOriginal) => {

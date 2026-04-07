@@ -27,6 +27,19 @@ export default defineConfig(
     // ─── Project-specific rules ─────────────────────────────────
     {
         files: ["**/*.{js,ts}"],
+        languageOptions: {
+            parserOptions: {
+                project: ["./tsconfig.eslint.json"],
+                tsconfigRootDir: import.meta.dirname,
+            },
+        },
+        rules: {
+            // Warn if deprecated functions are used
+            "@typescript-eslint/no-deprecated": "error",
+        },
+    },
+    {
+        files: ["**/*.{js,ts}"],
         rules: {
             // Allow unused vars when prefixed with _
             "@typescript-eslint/no-unused-vars": [
@@ -42,9 +55,6 @@ export default defineConfig(
 
             // Allow non-null assertions (common pattern with SDK receipts)
             "@typescript-eslint/no-non-null-assertion": "off",
-
-            // Warn if deprecated function are used
-            "@typescript-eslint/no-deprecated": "warn",
 
             // Allow empty interfaces / object types (used for extensibility)
             "@typescript-eslint/no-empty-object-type": "off",

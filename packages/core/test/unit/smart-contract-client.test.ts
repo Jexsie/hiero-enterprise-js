@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { HieroContext } from "../src/context/hiero-context.js";
-import { SmartContractClient } from "../src/services/smart-contract-client.js";
+import { HieroContext } from "../../src/context/hiero-context.js";
+import { SmartContractClient } from "../../src/services/smart-contract-client.js";
 import {
     ContractCreateTransaction,
     ContractExecuteTransaction,

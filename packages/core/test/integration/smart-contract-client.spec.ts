@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { setupIntegrationTestEnv, SOLO_OPERATOR_ID } from "./env.js";
-import { waitForMirrorNodeRecord } from "./mirror-node.js";
+import { setupIntegrationTestEnv, SOLO_OPERATOR_ID } from "../utils/env.js";
+import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
 import { SmartContractClient } from "../../src/services/smart-contract-client.js";
 
 describe("SmartContractClient [Integration]", () => {
