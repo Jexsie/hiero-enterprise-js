@@ -11,16 +11,17 @@ import {
 vi.mock("@hashgraph/sdk", async (importOriginal) => {
     const actual = await importOriginal<typeof import("@hashgraph/sdk")>();
 
-    const createTxMock = () => ({
-        setTopicMemo: vi.fn().mockReturnThis(),
-        setAdminKey: vi.fn().mockReturnThis(),
-        setSubmitKey: vi.fn().mockReturnThis(),
+    const createTxMock = () => {
+        const mock: any = {
+            setTopicMemo: vi.fn().mockReturnThis(),
+            setAdminKey: vi.fn().mockReturnThis(),
+            setSubmitKey: vi.fn().mockReturnThis(),
 
-        setTopicId: vi.fn().mockReturnThis(),
-        setMessage: vi.fn().mockReturnThis(),
+            setTopicId: vi.fn().mockReturnThis(),
+            setMessage: vi.fn().mockReturnThis(),
 
-        freezeWith: vi.fn().mockReturnThis(),
-        sign: vi.fn().mockResolvedValue({
+            freezeWith: vi.fn().mockReturnThis(),
+            sign: vi.fn().mockImplementation(async () => mock),
             execute: vi.fn().mockResolvedValue({
                 transactionId: { toString: () => "0.0.123@1234567890" },
                 getReceipt: vi.fn().mockResolvedValue({
@@ -28,15 +29,9 @@ vi.mock("@hashgraph/sdk", async (importOriginal) => {
                     topicId: { toString: () => "0.0.999" },
                 }),
             }),
-        }),
-        execute: vi.fn().mockResolvedValue({
-            transactionId: { toString: () => "0.0.123@1234567890" },
-            getReceipt: vi.fn().mockResolvedValue({
-                status: { toString: () => "SUCCESS" },
-                topicId: { toString: () => "0.0.999" },
-            }),
-        }),
-    });
+        };
+        return mock;
+    };
 
     return {
         ...actual,

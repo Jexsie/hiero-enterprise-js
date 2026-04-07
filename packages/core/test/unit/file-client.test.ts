@@ -14,6 +14,7 @@ vi.mock("@hashgraph/sdk", async (importOriginal) => {
     const actual = await importOriginal<typeof import("@hashgraph/sdk")>();
 
     const mockTx = {
+        setKeys: vi.fn().mockReturnThis(),
         setContents: vi.fn().mockReturnThis(),
         setExpirationTime: vi.fn().mockReturnThis(),
         setFileId: vi.fn().mockReturnThis(),
