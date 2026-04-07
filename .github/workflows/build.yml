@@ -39,34 +39,7 @@ jobs:
             - name: ESLint
               run: pnpm run lint
 
-    # ─── Unit Tests ─────────────────────────────────────────────────
-    test:
-        name: Unit Tests
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                node-version: [20, 22]
-        steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-            - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
-              with:
-                  version: 10
-
-            - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-              with:
-                  node-version: ${{ matrix.node-version }}
-                  cache: pnpm
-
-            - run: pnpm install --frozen-lockfile
-
-            - name: Build packages
-              run: pnpm run build
-
-            - name: Run unit tests
-              run: pnpm run test
-
-    # ─── Integration Tests (Hiero Solo) ────────────────────────────
+    # ─── Unit and Integration Tests (Hiero Solo) ────────────────────────────
 
     integration:
         name: Integration Tests
@@ -112,10 +85,10 @@ jobs:
                     sleep 5
                   done
 
-            - name: Run integration tests
+            - name: Run unit and integration tests
               env:
                   HIERO_NETWORK: hiero-solo-action
                   HIERO_OPERATOR_ID: ${{ steps.solo.outputs.accountId }}
                   HIERO_OPERATOR_KEY: ${{ steps.solo.outputs.privateKey }}
                   HIERO_MIRROR_NODE_URL: http://localhost:5551
-              run: pnpm run test:integration
+              run: pnpm run test
