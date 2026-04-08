@@ -5,7 +5,19 @@
 
 version: 2
 updates:
-  - package-ecosystem: "" # See documentation for possible values
-    directory: "/" # Location of package manifests
-    schedule:
-      interval: "weekly"
+    # 1. Updates JavaScript/TypeScript dependencies
+    - package-ecosystem: "npm"
+      directory: "/" # Location of package.json
+      schedule:
+          interval: "daily" # Daily check for faster security patching
+      open-pull-requests-limit: 10
+      groups:
+          dependencies:
+              patterns:
+                  - "*" # Groups bot PRs together
+
+    # 2. Updates GitHub Actions dependencies (Required for OpenSSF Scorecard)
+    - package-ecosystem: "github-actions"
+      directory: "/"
+      schedule:
+          interval: "weekly"
