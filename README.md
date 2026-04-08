@@ -1,9 +1,10 @@
 # Hiero Enterprise JS
 
 [![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/hiero-hackers/hiero-enterprise-js/badge)](https://scorecard.dev/viewer/?uri=github.com/hiero-hackers/hiero-enterprise-js)
 [![Node.js](https://img.shields.io/badge/Node.js-≥20-green.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![DCO](https://img.shields.io/badge/DCO-1.1-brightgreen.svg)](./DCO)
 
 A TypeScript library that simplifies building Node.js applications on the [Hiero](https://hiero.org) (Hedera) distributed ledger network. Provides managed services for accounts, tokens, NFTs, smart contracts, topics, and mirror node queries — with first-class integrations for Express, Fastify, and NestJS.
