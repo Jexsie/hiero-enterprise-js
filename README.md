@@ -9,8 +9,6 @@
 
 A TypeScript library that simplifies building Node.js applications on the [Hiero](https://hiero.org) (Hedera) distributed ledger network. Provides managed services for accounts, tokens, NFTs, smart contracts, topics, and mirror node queries — with first-class integrations for Express, Fastify, and NestJS.
 
-> **Port of [hiero-enterprise-java](https://github.com/OpenElements/hiero-enterprise-java)** — same concepts, idiomatic TypeScript API.
-
 ## Packages
 
 | Package | Description |
