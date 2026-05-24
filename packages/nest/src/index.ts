@@ -32,14 +32,18 @@ import {
 export const HIERO_CONFIG = "HIERO_CONFIG";
 export const HIERO_CONTEXT = "HIERO_CONTEXT";
 
+type NestImport =
+    | Type<unknown>
+    | DynamicModule
+    | Promise<DynamicModule>
+    | ForwardReference;
+
 /**
  * Options for async configuration of HieroModule.
  */
 export interface HieroModuleAsyncOptions {
     /** Imports needed for config injection */
-    imports?: Array<
-        Type | DynamicModule | Promise<DynamicModule> | ForwardReference
-    >;
+    imports?: NestImport[];
     /** Factory function returning HieroConfig */
     useFactory: (...args: unknown[]) => HieroConfig | Promise<HieroConfig>;
     /** Dependencies to inject into the factory */
