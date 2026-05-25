@@ -93,6 +93,9 @@ export class HieroModule {
      */
     static forRoot(config?: HieroConfig): DynamicModule {
         if (!config) {
+            // If no config provided, validate env vars and resolve config from env
+            // This will throw an error if required env vars are missing or invalid
+            // with steps to fix the issue.
             assertEnvConfigValid();
         }
         const resolved = config ?? resolveConfigFromEnv()!;
