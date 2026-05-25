@@ -34,8 +34,12 @@ export class MirrorNodeClient {
         baseUrl: string,
         options?: { timeoutMs?: number; maxRetries?: number },
     ) {
-        // Remove trailing slash
-        this.baseUrl = baseUrl.replace(/\/+$/, "");
+        // Remove trailing slashes
+        let url = baseUrl;
+        while (url.endsWith("/")) {
+            url = url.slice(0, -1);
+        }
+        this.baseUrl = url;
         this.timeoutMs = options?.timeoutMs ?? 10_000;
         this.maxRetries = options?.maxRetries ?? 3;
     }

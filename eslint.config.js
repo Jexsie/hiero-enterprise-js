@@ -2,6 +2,7 @@ import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import prettierConfig from "eslint-config-prettier";
 import prettierPlugin from "eslint-plugin-prettier";
+import security from "eslint-plugin-security";
 import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 
@@ -10,6 +11,7 @@ export default defineConfig(
 
     ...tseslint.configs.recommended,
     eslint.configs.recommended,
+    security.configs.recommended,
     prettierConfig,
 
     // Node.js globals (process, console, Buffer, fetch, etc.)
