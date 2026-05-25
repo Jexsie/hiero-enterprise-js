@@ -20,6 +20,8 @@ It gives each major Node.js framework a native integration that matches how deve
 
 ## Quick Start
 
+> **Note:** These packages are not yet published to npm. The guide below shows how installation will work once they are. To run the project locally for development, see [CONTRIBUTING.md](./CONTRIBUTING.md).
+
 ```bash
 # pick the package for your framework
 npm install @hiero-enterprise/express
