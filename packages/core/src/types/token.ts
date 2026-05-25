@@ -1,7 +1,7 @@
 /**
  * Full token information from the mirror node.
  */
-export interface TokenInfo {
+export interface MirrorTokenInfo {
     /** Token ID */
     tokenId: string;
     /** Token name */
@@ -9,7 +9,7 @@ export interface TokenInfo {
     /** Token symbol */
     symbol: string;
     /** Token type: FUNGIBLE_COMMON or NON_FUNGIBLE_UNIQUE */
-    type: TokenType;
+    type: MirrorTokenType;
     /** Decimal places (fungible tokens only) */
     decimals: number;
     /** Total supply currently in circulation */
@@ -37,7 +37,7 @@ export interface TokenInfo {
     /** Whether the token is paused */
     paused: boolean;
     /** Custom fees */
-    customFees: CustomFee[];
+    customFees: MirrorCustomFee[];
     /** Creation timestamp */
     createdTimestamp?: string;
     /** Expiration timestamp */
@@ -47,9 +47,9 @@ export interface TokenInfo {
 }
 
 /**
- * Token type enum.
+ * Mirror node token type (string representation from REST API).
  */
-export type TokenType = "FUNGIBLE_COMMON" | "NON_FUNGIBLE_UNIQUE";
+export type MirrorTokenType = "FUNGIBLE_COMMON" | "NON_FUNGIBLE_UNIQUE";
 
 /**
  * Token transfer in a transaction.
@@ -64,9 +64,9 @@ export interface TokenTransfer {
 }
 
 /**
- * Custom fee attached to a token.
+ * Custom fee attached to a token (mirror node representation).
  */
-export interface CustomFee {
+export interface MirrorCustomFee {
     /** Fee type */
     type: "fixed" | "fractional" | "royalty";
     /** Fee collector account */
@@ -78,7 +78,7 @@ export interface CustomFee {
 /**
  * Fixed fee — a flat fee charged per transaction.
  */
-export interface FixedFee extends CustomFee {
+export interface MirrorFixedFee extends MirrorCustomFee {
     type: "fixed";
     /** Amount of the fee */
     amount: number;
@@ -89,7 +89,7 @@ export interface FixedFee extends CustomFee {
 /**
  * Fractional fee — a percentage of the transferred amount.
  */
-export interface FractionalFee extends CustomFee {
+export interface MirrorFractionalFee extends MirrorCustomFee {
     type: "fractional";
     /** Numerator of the fraction */
     numerator: number;
@@ -106,7 +106,7 @@ export interface FractionalFee extends CustomFee {
 /**
  * Royalty fee — charged on NFT transfers as a percentage of the value exchanged.
  */
-export interface RoyaltyFee extends CustomFee {
+export interface MirrorRoyaltyFee extends MirrorCustomFee {
     type: "royalty";
     /** Numerator of the fraction */
     numerator: number;

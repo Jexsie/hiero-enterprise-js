@@ -21,11 +21,13 @@
         "eslint": "^10.0.0",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-prettier": "^5.5.5",
+        "globals": "^17.6.0",
         "prettier": "^3.8.1",
         "typescript": "^5.7.0",
         "typescript-eslint": "^8.56.0"
     },
     "engines": {
-        "node": ">=20"
+        "node": ">=20.12.0",
+        "pnpm": ">=9"
     }
 }

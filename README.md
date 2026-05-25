@@ -5,51 +5,41 @@
 [![Node.js](https://img.shields.io/badge/Node.js-≥20-green.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
-[![DCO](https://img.shields.io/badge/DCO-1.1-brightgreen.svg)](./DCO)
 
-A TypeScript library that simplifies building Node.js applications on the [Hiero](https://hiero.org) (Hedera) distributed ledger network. Provides managed services for accounts, tokens, NFTs, smart contracts, topics, and mirror node queries — with first-class integrations for Express, Fastify, and NestJS.
+Integrating a Hiero sdk into a production Node.js service has historically meant a lot of glue code that has nothing to do with your actual business logic: instantiating clients, managing config, plumbing operator keys, handling errors. Hiero Enterprise JS does that work for you. Drop in the middleware or module for your framework of choice and your routes get typed access to accounts, tokens, NFTs, smart contracts, topics, and mirror node queries — without any of the setup code.
+
+It gives each major Node.js framework a native integration that matches how developers already think about that framework — middleware for Express/Fastify, dependency injection for NestJS. Write operations (creating accounts, minting tokens) go through the network client directly. Read operations (looking up balances, browsing NFTs) go through the mirror node REST API, which is faster and doesn't carry transaction fees. Both are exposed through a consistent interface so you don't have to think about which path to use.
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
-| `@hiero-enterprise/core` | Data models, services, repositories, config, context, errors |
 | `@hiero-enterprise/express` | Express middleware — `req.hiero.*` |
 | `@hiero-enterprise/fastify` | Fastify plugin — `fastify.hiero.*` |
-| `@hiero-enterprise/nest` | NestJS module — `HieroModule.forRoot()` with DI |
+| `@hiero-enterprise/nest` | NestJS module — `HieroModule.forRoot()` with full DI |
 
 ## Quick Start
 
-### 1. Install
+> **Note:** These packages are not yet published to npm. The guide below shows how installation will work once they are. To run the project locally for development, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ```bash
-# Pick your framework package (each depends on core)
+# pick the package for your framework
 npm install @hiero-enterprise/express
-# or
 npm install @hiero-enterprise/fastify
-# or
 npm install @hiero-enterprise/nest
 ```
 
-### 2. Configure
-
-Set environment variables:
+Set your operator credentials as environment variables:
 
 ```bash
 HIERO_NETWORK=testnet
-HIERO_OPERATOR_ID=0.0.YOUR_ACCOUNT_ID
-HIERO_OPERATOR_KEY=302e020100300506032b6570042204...
+HIERO_OPERATOR_ID=0.0.12345
+HIERO_OPERATOR_KEY=302e020100300506032b6570...
 ```
 
-Or pass config explicitly:
+Or pass config directly when registering the integration.
 
-```ts
-{ network: 'testnet', operatorId: '0.0.12345', operatorKey: '302e...' }
-```
-
-### 3. Use
-
-#### Express
+**Express**
 
 ```ts
 import express from 'express';
@@ -64,7 +54,7 @@ app.get('/balance', async (req, res) => {
 });
 ```
 
-#### Fastify
+**Fastify**
 
 ```ts
 import Fastify from 'fastify';
@@ -78,7 +68,7 @@ app.get('/balance', async () => {
 });
 ```
 
-#### NestJS
+**NestJS**
 
 ```ts
 import { Module } from '@nestjs/common';
@@ -98,27 +88,59 @@ export class BalanceController {
 }
 ```
 
-## Available Services
+## Architecture
 
-| Service | Methods |
-|---------|---------|
-| `AccountClient` | `createAccount`, `deleteAccount`, `getAccountBalance`, `getOperatorAccountBalance` |
-| `FileClient` | `createFile`, `readFile`, `updateFile`, `deleteFile`, `updateExpirationTime`, `isDeleted`, `getSize`, `getExpirationTime` |
-| `FungibleTokenClient` | `createToken`, `associateToken`, `dissociateToken`, `mintToken`, `burnToken`, `transferToken` |
-| `NftClient` | `createNftType`, `associateNft`, `dissociateNft`, `mintNft`, `mintNfts`, `burnNft`, `burnNfts`, `transferNft`, `transferNfts` |
-| `SmartContractClient` | `createContract`, `createContractFromBytecode`, `callContractFunction`, `deleteContract` |
-| `TopicClient` | `createTopic`, `createPrivateTopic`, `updateTopic`, `updateAdminKey`, `updateSubmitKey`, `deleteTopic`, `submitMessage` |
+```
+  Express / Fastify / NestJS
+  req.hiero.*  |  fastify.hiero.*  |  @Inject()
+          │                    │
+          ▼                    ▼
+  ┌──────────────┐    ┌─────────────────┐
+  │   Clients    │    │  Repositories   │
+  │              │    │                 │
+  │  Account     │    │  Account        │
+  │  File        │    │  NFT            │
+  │  Token       │    │  Token          │
+  │  NFT         │    │  Topic          │
+  │  Contract    │    │  Transaction    │
+  │  Topic       │    │  Network        │
+  └──────┬───────┘    └────────┬────────┘
+         │                     │
+         ▼                     ▼
+  ┌──────────────┐    ┌─────────────────┐
+  │ HieroContext │    │ MirrorNodeClient│
+  │   Hiero SDK  │    │   REST / HTTP   │
+  └──────┬───────┘    └────────┬────────┘
+         │                     │
+         └──────────┬──────────┘
+                    ▼
+           Hiero Network
+        (testnet / mainnet)
+```
 
-## Available Repositories (Mirror Node Queries)
+Clients handle write operations through the Hiero SDK — transactions that go on-chain. Repositories handle reads through the mirror node, which doesn't cost fees and returns historical or indexed data. `HieroContext` owns the SDK client and operator credentials; both sides share it so there's one config source.
 
-| Repository | Methods |
-|------------|---------|
-| `AccountRepository` | `findByAccountId`, `findByAlias`, `getBalance` |
-| `NftRepository` | `findByOwner`, `findByType`, `findBySerial`, `findByOwnerAndType` |
-| `TokenRepository` | `findById`, `findByAccountId` |
-| `TopicRepository` | `findByTopicId`, `findByTopicIdAndSequenceNumber` |
-| `TransactionRepository` | `findByAccount`, `findByAccountAndType`, `findById` |
-| `NetworkRepository` | `findExchangeRates`, `findNetworkSupplies`, `findStakingRewards` |
+## Services
+
+| Client | What it covers |
+|--------|---------------|
+| `AccountClient` | Create, delete, check balances |
+| `FileClient` | Store and retrieve file content on-chain |
+| `FungibleTokenClient` | Create, mint, burn, and transfer fungible tokens |
+| `NftClient` | Create NFT types, mint (single + batch), burn, transfer |
+| `SmartContractClient` | Deploy and call EVM-compatible smart contracts |
+| `TopicClient` | Create topics, manage keys, submit messages |
+
+## Mirror Node Queries
+
+| Repository | What it covers |
+|------------|---------------|
+| `AccountRepository` | Look up accounts by ID or alias, fetch balances |
+| `NftRepository` | Browse NFTs by owner, type, or serial number |
+| `TokenRepository` | Fetch token metadata or tokens held by an account |
+| `TopicRepository` | Read topic messages by sequence number |
+| `TransactionRepository` | Query transactions by account or type |
+| `NetworkRepository` | Exchange rates, supply stats, staking rewards |
 
 ## Testing
 
@@ -126,58 +148,21 @@ export class BalanceController {
 import { testConfig, createMockMirrorNodeClient } from '@hiero-enterprise/core/testing';
 ```
 
-The testing subpath provides:
-- `testConfig` — safe dummy credentials for test environments
-- `createMockMirrorNodeClient()` — fully typed mock returning sensible defaults
+`testConfig` gives you safe dummy credentials that pass validation without hitting the network. `createMockMirrorNodeClient()` returns a fully typed mock with sensible defaults, so you can test your service layer without spinning up a node.
 
 ## Samples
 
-Full working sample projects are available in the [`samples/`](./samples) directory:
+Working examples are in [`samples/`](./samples). Each one is a minimal but real service you can run against testnet.
 
-| Sample | Framework | How to run |
-|--------|-----------|------------|
-| [express-sample](./samples/express-sample) | Express | `pnpm --filter hiero-express-sample dev` |
-| [fastify-sample](./samples/fastify-sample) | Fastify | `pnpm --filter hiero-fastify-sample dev` |
-| [nest-sample](./samples/nest-sample) | NestJS | `pnpm --filter hiero-nest-sample dev` |
-
-## Architecture
-
-```
-┌──────────────────────────────────────────────┐
-│  Framework Integration                       │
-│  (Express / Fastify / NestJS)                │
-├──────────────────────────────────────────────┤
-│  Services                    Repositories    │
-│  (AccountClient, ...)       (AccountRepo,..) │
-├──────────────────────────────────────────────┤
-│  HieroContext         MirrorNodeClient       │
-│  (SDK Client)         (REST HTTP)            │
-├──────────────────────────────────────────────┤
-│  HieroConfig    HieroError    Data Models    │
-└──────────────────────────────────────────────┘
-```
-
-## Development
-
-```bash
-pnpm install          # Install dependencies
-pnpm run build        # Build all packages
-pnpm run test         # Run unit tests
-pnpm run lint         # Type check + ESLint
-pnpm run format       # Format with Prettier
-pnpm run format:check # Check formatting (CI)
-pnpm run clean        # Clean build artifacts
-```
+| Sample | Framework |
+|--------|-----------|
+| [express-sample](./samples/express-sample) | Express |
+| [fastify-sample](./samples/fastify-sample) | Fastify |
+| [nest-sample](./samples/nest-sample) | NestJS |
 
 ## Contributing
 
-We welcome contributions! Please read our [Contributing Guide](./CONTRIBUTING.md) for details on:
-
-- Bug reports and feature requests
-- Development workflow and coding standards
-- DCO sign-off requirements (`git commit -s`)
-- GPG signed commits
-- Pull request process
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to report bugs, request features, and submit pull requests. All commits require a DCO sign-off (`git commit -s`) and GPG signing.
 
 ## License
 

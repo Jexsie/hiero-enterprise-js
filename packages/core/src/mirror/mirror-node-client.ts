@@ -1,10 +1,10 @@
 import type {
-    AccountInfo,
+    MirrorAccountInfo,
     Balance,
     TokenBalance,
     Nft,
-    TokenInfo,
-    TopicMessage,
+    MirrorTokenInfo,
+    MirrorTopicMessage,
     TransactionInfo,
     Transfer,
     TokenTransferInfo,
@@ -15,10 +15,10 @@ import type {
     NetworkStake,
     NetworkSupplies,
     Page,
-    CustomFee,
-    FixedFee,
-    FractionalFee,
-    RoyaltyFee,
+    MirrorCustomFee,
+    MirrorFixedFee,
+    MirrorFractionalFee,
+    MirrorRoyaltyFee,
 } from "../types/index.js";
 import { HieroError } from "../errors/index.js";
 
@@ -27,10 +27,17 @@ import { HieroError } from "../errors/index.js";
  */
 export class MirrorNodeClient {
     private readonly baseUrl: string;
+    private readonly timeoutMs: number;
+    private readonly maxRetries: number;
 
-    constructor(baseUrl: string) {
+    constructor(
+        baseUrl: string,
+        options?: { timeoutMs?: number; maxRetries?: number },
+    ) {
         // Remove trailing slash
         this.baseUrl = baseUrl.replace(/\/+$/, "");
+        this.timeoutMs = options?.timeoutMs ?? 10_000;
+        this.maxRetries = options?.maxRetries ?? 3;
     }
 
     // ─── HTTP Helper ─────────────────────────────────────────────
@@ -58,7 +65,7 @@ export class MirrorNodeClient {
 
     // ─── Accounts ────────────────────────────────────────────────
 
-    async queryAccount(accountId: string): Promise<AccountInfo> {
+    async queryAccount(accountId: string): Promise<MirrorAccountInfo> {
         const raw = await this.fetch<MirrorAccountResponse>(
             `/api/v1/accounts/${accountId}`,
         );
@@ -110,14 +117,16 @@ export class MirrorNodeClient {
 
     // ─── Tokens ──────────────────────────────────────────────────
 
-    async queryTokenById(tokenId: string): Promise<TokenInfo> {
+    async queryTokenById(tokenId: string): Promise<MirrorTokenInfo> {
         const raw = await this.fetch<MirrorTokenResponse>(
             `/api/v1/tokens/${tokenId}`,
         );
         return convertTokenInfo(raw);
     }
 
-    async queryTokensByAccountId(accountId: string): Promise<Page<TokenInfo>> {
+    async queryTokensByAccountId(
+        accountId: string,
+    ): Promise<Page<MirrorTokenInfo>> {
         // The mirror node exposes token relationships via balances
         const raw = await this.fetch<MirrorPageResponse<MirrorTokenResponse>>(
             `/api/v1/tokens?account.id=${accountId}`,
@@ -127,8 +136,10 @@ export class MirrorNodeClient {
 
     // ─── Topics ──────────────────────────────────────────────────
 
-    async queryTopicMessages(topicId: string): Promise<Page<TopicMessage>> {
-        const raw = await this.fetch<MirrorPageResponse<MirrorTopicMessage>>(
+    async queryTopicMessages(
+        topicId: string,
+    ): Promise<Page<MirrorTopicMessage>> {
+        const raw = await this.fetch<MirrorPageResponse<MirrorTopicMessageRaw>>(
             `/api/v1/topics/${topicId}/messages`,
         );
         return convertPage(raw, convertTopicMessage);
@@ -137,8 +148,8 @@ export class MirrorNodeClient {
     async queryTopicMessageBySequence(
         topicId: string,
         sequenceNumber: number,
-    ): Promise<TopicMessage> {
-        const raw = await this.fetch<MirrorTopicMessage>(
+    ): Promise<MirrorTopicMessage> {
+        const raw = await this.fetch<MirrorTopicMessageRaw>(
             `/api/v1/topics/${topicId}/messages/${sequenceNumber}`,
         );
         return convertTopicMessage(raw);
@@ -281,23 +292,23 @@ interface MirrorTokenResponse {
     deleted: boolean;
     pause_status?: string;
     custom_fees?: {
-        fixed_fees?: MirrorFixedFee[];
-        fractional_fees?: MirrorFractionalFee[];
-        royalty_fees?: MirrorRoyaltyFee[];
+        fixed_fees?: MirrorFixedFeeRaw[];
+        fractional_fees?: MirrorFractionalFeeRaw[];
+        royalty_fees?: MirrorRoyaltyFeeRaw[];
     };
     created_timestamp?: string;
     expiry_timestamp?: string;
     memo?: string;
 }
 
-interface MirrorFixedFee {
+interface MirrorFixedFeeRaw {
     amount: number;
     collector_account_id: string;
     denominating_token_id?: string;
     all_collectors_are_exempt: boolean;
 }
 
-interface MirrorFractionalFee {
+interface MirrorFractionalFeeRaw {
     numerator: number;
     denominator: number;
     minimum?: number;
@@ -307,7 +318,7 @@ interface MirrorFractionalFee {
     all_collectors_are_exempt: boolean;
 }
 
-interface MirrorRoyaltyFee {
+interface MirrorRoyaltyFeeRaw {
     numerator: number;
     denominator: number;
     fallback_fee?: { amount: number; denominating_token_id?: string };
@@ -315,7 +326,7 @@ interface MirrorRoyaltyFee {
     all_collectors_are_exempt: boolean;
 }
 
-interface MirrorTopicMessage {
+interface MirrorTopicMessageRaw {
     topic_id: string;
     sequence_number: number;
     message: string;
@@ -415,7 +426,7 @@ function convertPage<TRaw, TOut>(
     };
 }
 
-function convertAccountInfo(raw: MirrorAccountResponse): AccountInfo {
+function convertAccountInfo(raw: MirrorAccountResponse): MirrorAccountInfo {
     return {
         accountId: raw.account,
         evmAddress: raw.evm_address,
@@ -439,12 +450,12 @@ function convertBalance(
 ): Balance {
     const tokens: TokenBalance[] = (raw.balance?.tokens ?? []).map((t) => ({
         tokenId: t.token_id,
-        balance: t.balance,
+        balance: String(t.balance),
         decimals: t.decimals,
     }));
     return {
         accountId,
-        hbars: raw.balance?.balance ?? 0,
+        hbars: String(raw.balance?.balance ?? 0),
         tokens,
     };
 }
@@ -462,8 +473,8 @@ function convertNft(raw: MirrorNft): Nft {
     };
 }
 
-function convertTokenInfo(raw: MirrorTokenResponse): TokenInfo {
-    const customFees: CustomFee[] = [];
+function convertTokenInfo(raw: MirrorTokenResponse): MirrorTokenInfo {
+    const customFees: MirrorCustomFee[] = [];
     if (raw.custom_fees) {
         for (const f of raw.custom_fees.fixed_fees ?? []) {
             customFees.push({
@@ -472,7 +483,7 @@ function convertTokenInfo(raw: MirrorTokenResponse): TokenInfo {
                 collectorAccountId: f.collector_account_id,
                 allCollectorsAreExempt: f.all_collectors_are_exempt,
                 denominatingTokenId: f.denominating_token_id,
-            } as FixedFee);
+            } as MirrorFixedFee);
         }
         for (const f of raw.custom_fees.fractional_fees ?? []) {
             customFees.push({
@@ -484,7 +495,7 @@ function convertTokenInfo(raw: MirrorTokenResponse): TokenInfo {
                 netOfTransfers: f.net_of_transfers,
                 collectorAccountId: f.collector_account_id,
                 allCollectorsAreExempt: f.all_collectors_are_exempt,
-            } as FractionalFee);
+            } as MirrorFractionalFee);
         }
         for (const f of raw.custom_fees.royalty_fees ?? []) {
             customFees.push({
@@ -500,7 +511,7 @@ function convertTokenInfo(raw: MirrorTokenResponse): TokenInfo {
                     : undefined,
                 collectorAccountId: f.collector_account_id,
                 allCollectorsAreExempt: f.all_collectors_are_exempt,
-            } as RoyaltyFee);
+            } as MirrorRoyaltyFee);
         }
     }
 
@@ -532,10 +543,10 @@ function convertTokenInfo(raw: MirrorTokenResponse): TokenInfo {
     };
 }
 
-function convertTopicMessage(raw: MirrorTopicMessage): TopicMessage {
+function convertTopicMessage(raw: MirrorTopicMessageRaw): MirrorTopicMessage {
     return {
         topicId: raw.topic_id,
-        sequenceNumber: raw.sequence_number,
+        sequenceNumber: String(raw.sequence_number),
         message: raw.message,
         runningHash: raw.running_hash,
         consensusTimestamp: raw.consensus_timestamp,

@@ -12,6 +12,7 @@
             "import": "./dist/index.js"
         }
     },
+    "files": ["dist"],
     "scripts": {
         "build": "tsc",
         "clean": "rm -rf dist"
@@ -24,5 +25,8 @@
     },
     "devDependencies": {
         "@types/express": "^5.0.0"
+    },
+    "engines": {
+        "node": ">=20.12.0"
     }
 }

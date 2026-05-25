@@ -8,12 +8,12 @@
 import type { HieroConfig } from "../config/index.js";
 import type { MirrorNodeClient } from "../mirror/index.js";
 import type {
-    AccountInfo,
+    MirrorAccountInfo,
     Balance,
     Nft,
     Page,
-    TokenInfo,
-    TopicMessage,
+    MirrorTokenInfo,
+    MirrorTopicMessage,
     TransactionInfo,
     ExchangeRates,
     NetworkStake,
@@ -67,7 +67,7 @@ function emptyPage<T>(): Page<T> {
     return { data: [], links: { next: null } };
 }
 
-function createMockAccountInfo(): AccountInfo {
+function createMockAccountInfo(): MirrorAccountInfo {
     return {
         accountId: "0.0.12345",
         balance: 100_000_000,
@@ -78,7 +78,7 @@ function createMockAccountInfo(): AccountInfo {
 function createMockBalance(): Balance {
     return {
         accountId: "0.0.12345",
-        hbars: 100_000_000,
+        hbars: "100000000",
         tokens: [],
     };
 }
@@ -93,10 +93,10 @@ function createMockNft(): Nft {
     };
 }
 
-function createMockTokenInfo(): TokenInfo {
+function createMockTokenInfo(): MirrorTokenInfo {
     return {
         tokenId: "0.0.99999",
-        name: "TestToken",
+        name: "Test Token",
         symbol: "TST",
         type: "FUNGIBLE_COMMON",
         decimals: 2,
@@ -109,11 +109,11 @@ function createMockTokenInfo(): TokenInfo {
     };
 }
 
-function createMockTopicMessage(): TopicMessage {
+function createMockTopicMessage(): MirrorTopicMessage {
     return {
         topicId: "0.0.88888",
-        sequenceNumber: 1,
-        message: "SGVsbG8=",
+        sequenceNumber: "1",
+        message: "",
         runningHash: "",
         consensusTimestamp: "1234567890.000000000",
     };
@@ -123,9 +123,9 @@ function createMockTransactionInfo(): TransactionInfo {
     return {
         transactionId: "0.0.12345@1234567890.000000000",
         type: "CRYPTOTRANSFER",
-        name: "CryptoTransfer",
+        name: "cryptotransfer",
         result: "SUCCESS",
-        consensusTimestamp: "1234567890.000000000",
+        consensusTimestamp: "1234567890.000000001",
         validStartTimestamp: "1234567890.000000000",
         successful: true,
         chargedTxFee: 100000,
@@ -140,12 +140,12 @@ function createMockExchangeRates(): ExchangeRates {
     return {
         currentRate: {
             hbarEquivalent: 30000,
-            centEquivalent: 1200,
+            centEquivalent: 120000,
             expirationTime: "1234567890",
         },
         nextRate: {
             hbarEquivalent: 30000,
-            centEquivalent: 1200,
+            centEquivalent: 120000,
             expirationTime: "1234567890",
         },
     };

@@ -7,9 +7,9 @@ import {
     PublicKey,
     Hbar,
     PrivateKey,
-} from "@hashgraph/sdk";
+} from "@hiero-ledger/sdk";
 import { AccountType } from "../types/index.js";
-import type { Account, Balance } from "../types/index.js";
+import type { Account, CreatedAccount, Balance } from "../types/index.js";
 import type { HieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
@@ -18,8 +18,8 @@ import { normalizeError } from "../errors/index.js";
  * Options for creating a new account.
  */
 export interface CreateAccountOptions {
-    /** Initial balance in HBAR (default: 0) */
-    initialBalance?: number;
+    /** Initial balance in HBAR (default: 0). Accepts Hbar instance for tinybar precision. */
+    initialBalance?: number | Hbar;
     /** Maximum automatic token associations (default: 0) */
     maxAutomaticTokenAssociations?: number;
     /** Account memo */
@@ -42,9 +42,11 @@ export class AccountClient {
      * Create a new account on the network.
      *
      * @param options - Optional account creation parameters
-     * @returns The newly created account
+     * @returns The newly created account with private key
      */
-    async createAccount(options: CreateAccountOptions = {}): Promise<Account> {
+    async createAccount(
+        options: CreateAccountOptions = {},
+    ): Promise<CreatedAccount> {
         const event: TransactionEvent = {
             type: "AccountCreate",
             serviceName: "AccountClient",
@@ -59,9 +61,14 @@ export class AccountClient {
                 ? PrivateKey.generateECDSA()
                 : PrivateKey.generateED25519();
 
+            const hbarBalance =
+                options.initialBalance instanceof Hbar
+                    ? options.initialBalance
+                    : new Hbar(options.initialBalance ?? 0);
+
             const tx = new AccountCreateTransaction()
                 .setKeyWithoutAlias(newKey.publicKey)
-                .setInitialBalance(new Hbar(options.initialBalance ?? 0));
+                .setInitialBalance(hbarBalance);
 
             if (options.evm) {
                 tx.setAlias(newKey.publicKey.toEvmAddress());
@@ -79,9 +86,9 @@ export class AccountClient {
             const response = await tx.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
 
-            const result: Account = {
-                accountId: receipt.accountId!,
-                publicKey: newKey.publicKey,
+            const result: CreatedAccount = {
+                accountId: receipt.accountId!.toString(),
+                publicKey: newKey.publicKey.toString(),
                 privateKey: newKey,
             };
 
@@ -120,7 +127,7 @@ export class AccountClient {
     async createAccountWithPublicKey(
         publicKeyStr: string,
         type: AccountType,
-        initialBalance: number = 0,
+        initialBalance: number | Hbar = 0,
         memo?: string,
     ): Promise<Account> {
         const event: TransactionEvent = {
@@ -138,9 +145,14 @@ export class AccountClient {
                     ? PublicKey.fromStringECDSA(publicKeyStr)
                     : PublicKey.fromStringED25519(publicKeyStr);
 
+            const hbarBalance =
+                initialBalance instanceof Hbar
+                    ? initialBalance
+                    : new Hbar(initialBalance);
+
             const tx = new AccountCreateTransaction()
                 .setKeyWithoutAlias(publicKey)
-                .setInitialBalance(new Hbar(initialBalance));
+                .setInitialBalance(hbarBalance);
 
             if (type === AccountType.EVM) {
                 tx.setAlias(publicKey.toEvmAddress());
@@ -192,10 +204,10 @@ export class AccountClient {
      */
     async autoCreateEvmAccount(
         evmAddress: string,
-        amount: number,
+        amount: number | Hbar,
     ): Promise<void> {
         const event: TransactionEvent = {
-            type: "TokenTransfer", // Reusing TokenTransfer event type for HBAR transfer
+            type: "AccountAutoCreate",
             serviceName: "AccountClient",
             methodName: "autoCreateEvmAccount",
             timestamp: new Date(),
@@ -204,14 +216,17 @@ export class AccountClient {
         const start = Date.now();
 
         try {
+            const hbarAmount =
+                amount instanceof Hbar ? amount : new Hbar(amount);
+
             const transferTx = new TransferTransaction()
                 .addHbarTransfer(
                     this.context.operatorAccountId,
-                    new Hbar(amount).negated(),
+                    hbarAmount.negated(),
                 )
                 .addHbarTransfer(
                     AccountId.fromEvmAddress(0, 0, evmAddress),
-                    new Hbar(amount),
+                    hbarAmount,
                 );
 
             const response = await transferTx.execute(this.context.client);
@@ -238,8 +253,8 @@ export class AccountClient {
      * Delete an account, transferring remaining balance to another account.
      *
      * @param accountId - Account to delete
-     * @param transferAccountId - Account to receive remaining balance (defaults to operator)
      * @param accountKey - Private key of the account being deleted
+     * @param transferAccountId - Account to receive remaining balance (defaults to operator)
      */
     async deleteAccount(
         accountId: string | AccountId,
@@ -268,10 +283,12 @@ export class AccountClient {
                 await tx.sign(accountKey)
             ).execute(this.context.client);
 
+            const receipt = await response.getReceipt(this.context.client);
+
             await this.context.emitAfterTransaction({
                 ...event,
                 transactionId: response.transactionId.toString(),
-                status: "SUCCESS",
+                status: receipt.status.toString(),
                 durationMs: Date.now() - start,
             });
         } catch (error) {
@@ -297,19 +314,20 @@ export class AccountClient {
                 .setAccountId(accountId)
                 .execute(this.context.client);
 
-            const tokens = balance.tokens
-                ? [...balance.tokens._map.entries()].map(
-                      ([tokenId, amount]) => ({
-                          tokenId: tokenId.toString(),
-                          balance: amount.toNumber(),
-                          decimals: 0, // SDK balance query doesn't return decimals
-                      }),
-                  )
-                : [];
+            const tokens = [];
+            if (balance.tokens) {
+                for (const [tokenId, amount] of balance.tokens) {
+                    tokens.push({
+                        tokenId: tokenId.toString(),
+                        balance: amount.toString(),
+                        decimals: balance.tokenDecimals?.get(tokenId) ?? 0,
+                    });
+                }
+            }
 
             return {
-                accountId,
-                hbars: balance.hbars.toTinybars().toNumber(),
+                accountId: accountId.toString(),
+                hbars: balance.hbars.toTinybars().toString(),
                 tokens,
             };
         } catch (error) {

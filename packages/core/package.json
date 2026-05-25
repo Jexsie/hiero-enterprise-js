@@ -4,6 +4,7 @@
     "description": "Core services, repositories, and data models for Hiero/Hedera networks",
     "license": "Apache-2.0",
     "type": "module",
+    "private": "true",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
@@ -16,6 +17,9 @@
             "import": "./dist/testing/index.js"
         }
     },
+    "files": [
+        "dist"
+    ],
     "scripts": {
         "build": "tsc",
         "clean": "rm -rf dist",
@@ -25,13 +29,13 @@
         "test:watch": "vitest test/unit"
     },
     "dependencies": {
-        "@hashgraph/sdk": "^2.55.0",
-        "dotenv": "^16.4.7"
+        "@hiero-ledger/sdk": "^2.84.0"
     },
     "devDependencies": {
-        "vitest": "^3.0.0"
+        "vitest": "^3.0.0",
+        "@types/node": "^24.0.0"
     },
     "engines": {
-        "node": ">=20"
+        "node": ">=20.12.0"
     }
 }

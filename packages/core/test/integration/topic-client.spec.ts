@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { setupIntegrationTestEnv } from "../utils/env.js";
 import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
 import { TopicClient } from "../../src/services/topic-client.js";
-import { PrivateKey } from "@hashgraph/sdk";
+import { PrivateKey } from "@hiero-ledger/sdk";
 
 describe("TopicClient [Integration]", () => {
     let client: TopicClient;

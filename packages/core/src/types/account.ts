@@ -1,8 +1,4 @@
-import {
-    type PrivateKey,
-    type AccountId,
-    type PublicKey,
-} from "@hashgraph/sdk";
+import type { PrivateKey } from "@hiero-ledger/sdk";
 
 /**
  * The type of account (and underlying key) to generate.
@@ -17,19 +13,27 @@ export enum AccountType {
  */
 export interface Account {
     /** The account ID (e.g., "0.0.12345") */
-    accountId: string | AccountId;
+    accountId: string;
     /** The public key associated with the account */
-    publicKey: string | PublicKey;
-    /** The private key (only available if the account was created by this client) */
-    privateKey?: PrivateKey;
+    publicKey: string;
     /** The EVM address derived from the public key */
-    evmAddress?: string | PublicKey;
+    evmAddress?: string;
+}
+
+/**
+ * Returned only by account creation methods.
+ * Contains the private key that must be stored securely by the caller.
+ * The private key is NOT available again after creation.
+ */
+export interface CreatedAccount extends Account {
+    /** The private key for the newly created account. Store securely — not retrievable again. */
+    privateKey: PrivateKey;
 }
 
 /**
  * Extended account information from the mirror node.
  */
-export interface AccountInfo {
+export interface MirrorAccountInfo {
     /** The account ID */
     accountId: string;
     /** The EVM address */

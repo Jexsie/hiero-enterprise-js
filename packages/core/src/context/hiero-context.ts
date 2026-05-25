@@ -1,4 +1,5 @@
-import { Client, AccountId, PrivateKey } from "@hashgraph/sdk";
+import type { Transaction } from "@hiero-ledger/sdk";
+import { Client, AccountId, PrivateKey } from "@hiero-ledger/sdk";
 import type { HieroConfig } from "../config/index.js";
 import { resolveConfigFromEnv, assertEnvConfigValid } from "../config/index.js";
 import { HieroError } from "../errors/index.js";
@@ -11,18 +12,22 @@ import type {
  * Central context for interacting with a Hiero network.
  * Manages the SDK Client lifecycle and provides access to the operator account.
  *
+ * This is NOT a singleton — create one instance per application lifecycle.
+ * Framework integrations (Express middleware, Fastify plugin, NestJS module)
+ * manage the instance scope.
  *
  * @example
  * ```ts
- * const ctx = HieroContext.initialize({ network: 'testnet', operatorId: '0.0.1', operatorKey: '302e...' });
+ * const ctx = new HieroContext({ network: 'testnet', operatorId: '0.0.1', operatorKey: '302e...' });
  * const client = ctx.client;
  * ```
  */
 export class HieroContext {
-    private static instance: HieroContext | null = null;
-
     /** Registered transaction listeners */
     private readonly listeners: TransactionListener[] = [];
+
+    /** The operator private key — kept private to prevent accidental leakage */
+    private readonly _operatorKey: PrivateKey;
 
     /** The underlying Hedera SDK Client */
     public readonly client: Client;
@@ -33,14 +38,15 @@ export class HieroContext {
     /** The operator account ID */
     public readonly operatorAccountId: AccountId;
 
-    /** The operator private key */
-    public readonly operatorKey: PrivateKey;
-
-    private constructor(config: HieroConfig) {
-        this.config = config;
+    constructor(config?: HieroConfig) {
+        if (!config) {
+            assertEnvConfigValid();
+        }
+        const resolved = config ?? resolveConfigFromEnv()!;
+        this.config = resolved;
 
         // Resolve network
-        const network = config.network.toLowerCase();
+        const network = resolved.network.toLowerCase();
         if (network === "mainnet" || network === "hedera-mainnet") {
             this.client = Client.forMainnet();
         } else if (network === "testnet" || network === "hedera-testnet") {
@@ -50,68 +56,80 @@ export class HieroContext {
             network === "hedera-previewnet"
         ) {
             this.client = Client.forPreviewnet();
+        } else if (resolved.mirrorNodeUrl) {
+            // Custom network — requires explicit mirror node URL
+            this.client = Client.forNetwork({});
+            this.client.setMirrorNetwork([resolved.mirrorNodeUrl]);
         } else {
-            // Custom network — attempt to parse as JSON or URL
             throw new HieroError(
-                `Custom networks are not yet supported: "${network}"`,
+                `Unknown network "${resolved.network}". Provide a mirrorNodeUrl for custom networks.`,
+                { code: "CONFIG_INVALID" },
+            );
+        }
+
+        // Parse and validate operator credentials
+        this.operatorAccountId = AccountId.fromString(resolved.operatorId);
+
+        try {
+            this._operatorKey = PrivateKey.fromStringDer(resolved.operatorKey);
+        } catch (cause) {
+            throw new HieroError(
+                `Invalid operator key format. Ensure HIERO_OPERATOR_KEY is a valid DER-encoded private key.`,
                 {
-                    code: "UNSUPPORTED_NETWORK",
+                    code: "CONFIG_INVALID",
+                    cause: cause instanceof Error ? cause : undefined,
                 },
             );
         }
 
-        // Set operator
-        this.operatorAccountId = AccountId.fromString(config.operatorId);
-        this.operatorKey = PrivateKey.fromStringDer(config.operatorKey);
-        this.client.setOperator(this.operatorAccountId, this.operatorKey);
+        this.client.setOperator(this.operatorAccountId, this._operatorKey);
+
+        // Apply SDK client tuning options
+        if (resolved.requestTimeoutMs !== undefined) {
+            this.client.setRequestTimeout(resolved.requestTimeoutMs);
+        }
+        if (resolved.maxAttempts !== undefined) {
+            this.client.setMaxAttempts(resolved.maxAttempts);
+        }
+        if (resolved.minBackoffMs !== undefined) {
+            this.client.setMinBackoff(resolved.minBackoffMs);
+        }
+        if (resolved.maxBackoffMs !== undefined) {
+            this.client.setMaxBackoff(resolved.maxBackoffMs);
+        }
     }
 
     /**
-     * Initialize the HieroContext singleton.
-     * If no config is provided, it attempts to resolve from environment variables.
+     * Get the operator's public key (safe to expose).
+     */
+    public get operatorPublicKey() {
+        return this._operatorKey.publicKey;
+    }
+
+    /**
+     * Sign a transaction with the operator key.
+     * Use this instead of accessing the private key directly.
+     */
+    public async signTransaction<T extends Transaction>(tx: T): Promise<T> {
+        return tx.sign(this._operatorKey);
+    }
+
+    /**
+     * Get the operator private key.
+     * Use with caution — prefer signTransaction() for most operations.
+     * Needed internally by service clients that build multi-sig transactions.
      *
-     * @param config - Optional explicit configuration
-     * @returns The initialized HieroContext
-     * @throws HieroError if configuration is missing or invalid
+     * @internal
      */
-    public static initialize(config?: HieroConfig): HieroContext {
-        if (HieroContext.instance) {
-            return HieroContext.instance;
-        }
-
-        if (!config) {
-            assertEnvConfigValid();
-        }
-        const resolved = config ?? resolveConfigFromEnv()!;
-
-        HieroContext.instance = new HieroContext(resolved);
-        return HieroContext.instance;
+    public getOperatorKey(): PrivateKey {
+        return this._operatorKey;
     }
 
     /**
-     * Get the current HieroContext instance.
-     *
-     * @returns The current instance
-     * @throws HieroError if not initialized
+     * Close the SDK client and release resources.
      */
-    public static get(): HieroContext {
-        if (!HieroContext.instance) {
-            throw new HieroError(
-                "HieroContext has not been initialized. Call HieroContext.initialize() first.",
-                { code: "NOT_INITIALIZED" },
-            );
-        }
-        return HieroContext.instance;
-    }
-
-    /**
-     * Reset the singleton (useful for testing or reconfiguration).
-     */
-    public static reset(): void {
-        if (HieroContext.instance) {
-            HieroContext.instance.client.close();
-            HieroContext.instance = null;
-        }
+    public close(): void {
+        this.client.close();
     }
 
     // ─── Transaction Listener Management ─────────────────────────

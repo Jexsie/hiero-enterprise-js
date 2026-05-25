@@ -11,7 +11,7 @@ import {
     TokenId,
     type AccountId,
     type PrivateKey,
-} from "@hashgraph/sdk";
+} from "@hiero-ledger/sdk";
 import type { HieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
@@ -69,8 +69,9 @@ export class NftClient {
         const start = Date.now();
 
         try {
-            const supplyKey = options.supplyKey ?? this.context.operatorKey;
-            const adminKey = options.adminKey ?? this.context.operatorKey;
+            const supplyKey = options.supplyKey;
+            const adminKey = options.adminKey;
+            const operatorPublicKey = this.context.operatorPublicKey;
 
             const tx = new TokenCreateTransaction()
                 .setTokenName(options.name)
@@ -81,8 +82,8 @@ export class NftClient {
                 .setTreasuryAccountId(
                     options.treasuryAccountId ?? this.context.operatorAccountId,
                 )
-                .setSupplyKey(supplyKey.publicKey)
-                .setAdminKey(adminKey.publicKey);
+                .setSupplyKey(supplyKey?.publicKey ?? operatorPublicKey)
+                .setAdminKey(adminKey?.publicKey ?? operatorPublicKey);
 
             if (options.maxSupply !== undefined && options.maxSupply > 0) {
                 tx.setMaxSupply(options.maxSupply);
@@ -216,15 +217,15 @@ export class NftClient {
         const start = Date.now();
 
         try {
-            const key = supplyKey ?? this.context.operatorKey;
             const tx = new TokenMintTransaction()
                 .setTokenId(tokenId)
                 .addMetadata(metadata)
                 .freezeWith(this.context.client);
 
-            const response = await (
-                await tx.sign(key)
-            ).execute(this.context.client);
+            const signed = supplyKey
+                ? await tx.sign(supplyKey)
+                : await this.context.signTransaction(tx);
+            const response = await signed.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
             const serial = receipt.serials[0].toNumber();
 
@@ -265,7 +266,6 @@ export class NftClient {
         const start = Date.now();
 
         try {
-            const key = supplyKey ?? this.context.operatorKey;
             const tx = new TokenMintTransaction().setTokenId(tokenId);
 
             for (const metadata of metadataList) {
@@ -274,9 +274,10 @@ export class NftClient {
 
             tx.freezeWith(this.context.client);
 
-            const response = await (
-                await tx.sign(key)
-            ).execute(this.context.client);
+            const signed = supplyKey
+                ? await tx.sign(supplyKey)
+                : await this.context.signTransaction(tx);
+            const response = await signed.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
             const serials = receipt.serials.map((s) => s.toNumber());
 
@@ -331,15 +332,15 @@ export class NftClient {
         const start = Date.now();
 
         try {
-            const key = supplyKey ?? this.context.operatorKey;
             const tx = new TokenBurnTransaction()
                 .setTokenId(tokenId)
                 .setSerials(serialNumbers)
                 .freezeWith(this.context.client);
 
-            const response = await (
-                await tx.sign(key)
-            ).execute(this.context.client);
+            const signed = supplyKey
+                ? await tx.sign(supplyKey)
+                : await this.context.signTransaction(tx);
+            const response = await signed.execute(this.context.client);
 
             await this.context.emitAfterTransaction({
                 ...event,

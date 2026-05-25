@@ -1,7 +1,7 @@
 /**
- * Represents a topic on the Hiero consensus service.
+ * Represents a topic on the Hiero consensus service (mirror node data).
  */
-export interface Topic {
+export interface MirrorTopic {
     /** Topic ID */
     topicId: string;
     /** Topic memo */
@@ -21,13 +21,13 @@ export interface Topic {
 }
 
 /**
- * A message submitted to a topic.
+ * A message submitted to a topic (mirror node data).
  */
-export interface TopicMessage {
+export interface MirrorTopicMessage {
     /** Topic ID */
     topicId: string;
-    /** Sequence number of the message within the topic */
-    sequenceNumber: number;
+    /** Sequence number of the message within the topic (string for precision) */
+    sequenceNumber: string;
     /** Message contents (base64 encoded) */
     message: string;
     /** Running hash of topic messages */

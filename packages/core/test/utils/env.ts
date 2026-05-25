@@ -1,4 +1,4 @@
-import { Client } from "@hashgraph/sdk";
+import { Client } from "@hiero-ledger/sdk";
 import { HieroContext } from "../../src/context/hiero-context.js";
 
 // Operator ID and Private Key from a standard Hiero Solo Network setup
@@ -15,24 +15,22 @@ export const IntegrationTracker = {
  * Initializes and wires the HieroContext specifically to a locally running Solo Network.
  */
 export function setupIntegrationTestEnv(): HieroContext {
-    HieroContext.reset();
+    const ctx = new HieroContext({
+        network: "testnet",
+        operatorId: SOLO_OPERATOR_ID,
+        operatorKey: SOLO_OPERATOR_KEY,
+        mirrorNodeUrl:
+            process.env["HIERO_MIRROR_NODE_URL"] || "http://127.0.0.1:5551",
+    });
 
-    // Create a client explicitly pointing to the local proxy/consensus nodes
+    // Override the client to point to local consensus node
     const localClient = Client.forNetwork({
         "127.0.0.1:50211": "0.0.3",
     });
+    localClient.setOperator(ctx.operatorAccountId, ctx.getOperatorKey());
 
-    const ctx = HieroContext.initialize({
-        network: "testnet", // Pass testnet to bypass strict constructor validation, overridden via `.client`
-        operatorId: SOLO_OPERATOR_ID,
-        operatorKey: SOLO_OPERATOR_KEY,
-    });
-
-    // We must forcibly override the initialized Client to hit our specific localhost socket since "testnet" configs look for remote consensus nodes.
-    // The HieroContext makes `client` readonly strictly from the TS perspective, but we break that here in the integration environment explicitly.
-    // @ts-expect-error test-only override
+    // @ts-expect-error test-only override of readonly client
     ctx.client = localClient;
-    ctx.client.setOperator(ctx.operatorAccountId, ctx.operatorKey);
 
     // Attach tracker to automatically hook the generated ID
     ctx.addTransactionListener({

@@ -1,4 +1,4 @@
-import type { TokenInfo, Page } from "../types/index.js";
+import type { MirrorTokenInfo, Page } from "../types/index.js";
 import type { MirrorNodeClient } from "../mirror/index.js";
 
 /**
@@ -10,14 +10,14 @@ export class TokenRepository {
     /**
      * Find token information by token ID.
      */
-    async findById(tokenId: string): Promise<TokenInfo> {
+    async findById(tokenId: string): Promise<MirrorTokenInfo> {
         return this.mirrorNodeClient.queryTokenById(tokenId);
     }
 
     /**
      * Find all tokens associated with an account.
      */
-    async findByAccountId(accountId: string): Promise<Page<TokenInfo>> {
+    async findByAccountId(accountId: string): Promise<Page<MirrorTokenInfo>> {
         return this.mirrorNodeClient.queryTokensByAccountId(accountId);
     }
 }

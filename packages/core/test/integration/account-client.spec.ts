@@ -3,7 +3,7 @@ import { setupIntegrationTestEnv } from "../utils/env.js";
 import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
 import { AccountClient } from "../../src/services/account-client.js";
 import { AccountType } from "../../src/types/index.js";
-import { PrivateKey } from "@hashgraph/sdk";
+import { PrivateKey } from "@hiero-ledger/sdk";
 
 describe("AccountClient [Integration]", () => {
     let client: AccountClient;

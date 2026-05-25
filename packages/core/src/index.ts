@@ -12,7 +12,7 @@ export {
     TokenId,
     TopicId,
     Hbar,
-} from "@hashgraph/sdk";
+} from "@hiero-ledger/sdk";
 
 // Configuration
 export * from "./config/index.js";

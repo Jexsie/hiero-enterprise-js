@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { HieroError } from "../errors/index.js";
 
 /**
  * Configuration for connecting to a Hiero network.
@@ -13,6 +14,20 @@ export interface HieroConfig {
     readonly operatorKey: string;
     /** Mirror node base URL (auto-resolved if not provided) */
     readonly mirrorNodeUrl?: string;
+    /** Request timeout in milliseconds (default: 120000) */
+    readonly requestTimeoutMs?: number;
+    /** gRPC deadline in milliseconds (default: 10000) */
+    readonly grpcDeadlineMs?: number;
+    /** Max transaction submission attempts (default: 10) */
+    readonly maxAttempts?: number;
+    /** Minimum backoff in milliseconds (default: 250) */
+    readonly minBackoffMs?: number;
+    /** Maximum backoff in milliseconds (default: 8000) */
+    readonly maxBackoffMs?: number;
+    /** Mirror node request timeout in milliseconds (default: 10000) */
+    readonly mirrorNodeTimeoutMs?: number;
+    /** Mirror node request max retries (default: 3) */
+    readonly mirrorNodeMaxRetries?: number;
 }
 
 /**
@@ -43,8 +58,9 @@ export function resolveMirrorNodeUrl(
     }
     const url = MIRROR_NODE_URLS[network.toLowerCase()];
     if (!url) {
-        throw new Error(
+        throw new HieroError(
             `Unknown network "${network}". Provide a mirrorNodeUrl in the config.`,
+            { code: "CONFIG_INVALID" },
         );
     }
     return url;
@@ -61,17 +77,10 @@ function loadDotenv(): void {
         if (existsSync(envPath)) {
             if (typeof process.loadEnvFile === "function") {
                 process.loadEnvFile(envPath);
-            } else {
-                console.warn(
-                    "⚠️  Hiero Configuration: Node version too old to natively load .env files.",
-                );
-                console.warn(
-                    "   Please use Node >= 20.12.0 or manually load environment variables.",
-                );
             }
         }
     } catch {
-        // .env loading failed — skip silently
+        // .env loading is best-effort
     }
 }
 
@@ -108,7 +117,7 @@ export function resolveConfigFromEnv(): HieroConfig | null {
 }
 
 /**
- * Validates the environment and throws a detailed error explaining exactly what is missing.
+ * Validates the environment and throws a HieroError explaining exactly what is missing.
  */
 export function assertEnvConfigValid(): void {
     loadDotenv();
@@ -126,27 +135,10 @@ export function assertEnvConfigValid(): void {
     if (!operatorKey) missing.push("HIERO_OPERATOR_KEY (e.g., '302e02...')");
 
     if (missing.length > 0) {
-        throw new Error(
-            `\n` +
-                `=================================================================\n` +
-                `❌ Missing Required Hiero Configuration\n` +
-                `=================================================================\n\n` +
-                `The following environment variables are not set:\n\n` +
-                missing.map((m) => `  - ${m}`).join("\n") +
-                `\n\n` +
-                `You can fix this by EITHER:\n\n` +
-                `  1. Creating a .env file in your app's root directory\n` +
-                `     (the directory where you run "npm start" / "pnpm start"):\n\n` +
-                `     HIERO_NETWORK=testnet\n` +
-                `     HIERO_OPERATOR_ID=0.0.xxxxx\n` +
-                `     HIERO_OPERATOR_KEY=302e020100300506032b657004220420...\n\n` +
-                `  2. Or exporting them in your shell:\n\n` +
-                `     export HIERO_NETWORK=testnet\n` +
-                `     export HIERO_OPERATOR_ID=0.0.xxxxx\n` +
-                `     export HIERO_OPERATOR_KEY=302e020100300506032b657004220420...\n\n` +
-                `  3. Or passing a config object directly:\n\n` +
-                `     HieroModule.forRoot({ network: 'testnet', ... })\n` +
-                `=================================================================\n`,
+        throw new HieroError(
+            `Missing required Hiero environment variables:\n  - ${missing.join("\n  - ")}\n\n` +
+                `Set them in a .env file or export them in your shell.`,
+            { code: "CONFIG_INVALID" },
         );
     }
 }

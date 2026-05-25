@@ -1,19 +1,19 @@
 // Data model barrel export
-export type { Account, AccountInfo } from "./account.js";
+export type { Account, CreatedAccount, MirrorAccountInfo } from "./account.js";
 export { AccountType } from "./account.js";
 export type { Balance, TokenBalance } from "./balance.js";
 export type {
-    TokenInfo,
-    TokenType,
+    MirrorTokenInfo,
+    MirrorTokenType,
     TokenTransfer,
-    CustomFee,
-    FixedFee,
-    FractionalFee,
-    RoyaltyFee,
+    MirrorCustomFee,
+    MirrorFixedFee,
+    MirrorFractionalFee,
+    MirrorRoyaltyFee,
 } from "./token.js";
 export type { Nft, NftMetadata } from "./nft.js";
 export type { ContractCallResult } from "./contract.js";
-export type { Topic, TopicMessage } from "./topic.js";
+export type { MirrorTopic, MirrorTopicMessage } from "./topic.js";
 export type {
     TransactionInfo,
     Transfer,
@@ -29,3 +29,4 @@ export type {
     NetworkSupplies,
 } from "./network.js";
 export type { Page, PageLinks } from "./page.js";
+export type { HieroServices } from "./services.js";

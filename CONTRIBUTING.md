@@ -41,7 +41,7 @@ Please ensure that your bug report contains the following:
 ## Requirements
 
 - `pnpm` (latest) — https://pnpm.io
-- `node` (≥20) — https://nodejs.org
+- `node` (≥22) — https://nodejs.org
 
 ## Building the Library
 

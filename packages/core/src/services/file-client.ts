@@ -5,7 +5,7 @@ import {
     FileDeleteTransaction,
     FileAppendTransaction,
     FileInfoQuery,
-} from "@hashgraph/sdk";
+} from "@hiero-ledger/sdk";
 import type { HieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
@@ -47,10 +47,9 @@ export class FileClient {
         const start = Date.now();
 
         try {
-            // If contents fit in a single chunk, create directly
             const firstChunk = contents.slice(0, MAX_CHUNK_SIZE);
             const tx = new FileCreateTransaction()
-                .setKeys([this.context.operatorKey.publicKey])
+                .setKeys([this.context.operatorPublicKey])
                 .setContents(firstChunk);
 
             if (expirationTime) {
@@ -61,20 +60,9 @@ export class FileClient {
             const receipt = await response.getReceipt(this.context.client);
             const fileId = receipt.fileId!.toString();
 
-            // If there are remaining chunks, append them
+            // Append remaining chunks if content exceeds MAX_CHUNK_SIZE
             if (contents.length > MAX_CHUNK_SIZE) {
-                let offset = MAX_CHUNK_SIZE;
-                while (offset < contents.length) {
-                    const chunk = contents.slice(
-                        offset,
-                        offset + MAX_CHUNK_SIZE,
-                    );
-                    await new FileAppendTransaction()
-                        .setFileId(fileId)
-                        .setContents(chunk)
-                        .execute(this.context.client);
-                    offset += MAX_CHUNK_SIZE;
-                }
+                await this.appendChunks(fileId, contents, MAX_CHUNK_SIZE);
             }
 
             await this.context.emitAfterTransaction({
@@ -114,6 +102,7 @@ export class FileClient {
 
     /**
      * Update the contents of a file.
+     * Automatically chunks large content using FileUpdateTransaction + FileAppendTransaction.
      *
      * @param fileId - The file to update
      * @param contents - The new file contents
@@ -129,15 +118,24 @@ export class FileClient {
         const start = Date.now();
 
         try {
+            // First chunk goes in the update transaction
+            const firstChunk = contents.slice(0, MAX_CHUNK_SIZE);
             const response = await new FileUpdateTransaction()
                 .setFileId(fileId)
-                .setContents(contents)
+                .setContents(firstChunk)
                 .execute(this.context.client);
+
+            const receipt = await response.getReceipt(this.context.client);
+
+            // Append remaining chunks
+            if (contents.length > MAX_CHUNK_SIZE) {
+                await this.appendChunks(fileId, contents, MAX_CHUNK_SIZE);
+            }
 
             await this.context.emitAfterTransaction({
                 ...event,
                 transactionId: response.transactionId.toString(),
-                status: "SUCCESS",
+                status: receipt.status.toString(),
                 durationMs: Date.now() - start,
             });
         } catch (error) {
@@ -171,10 +169,12 @@ export class FileClient {
                 .setFileId(fileId)
                 .execute(this.context.client);
 
+            const receipt = await response.getReceipt(this.context.client);
+
             await this.context.emitAfterTransaction({
                 ...event,
                 transactionId: response.transactionId.toString(),
-                status: "SUCCESS",
+                status: receipt.status.toString(),
                 durationMs: Date.now() - start,
             });
         } catch (error) {
@@ -256,6 +256,24 @@ export class FileClient {
             return info.expirationTime!.toDate();
         } catch (error) {
             throw normalizeError(error, "FileClient.getExpirationTime");
+        }
+    }
+
+    // ─── Private Helpers ─────────────────────────────────────────
+
+    private async appendChunks(
+        fileId: string,
+        contents: Uint8Array,
+        startOffset: number,
+    ): Promise<void> {
+        let offset = startOffset;
+        while (offset < contents.length) {
+            const chunk = contents.slice(offset, offset + MAX_CHUNK_SIZE);
+            await new FileAppendTransaction()
+                .setFileId(fileId)
+                .setContents(chunk)
+                .execute(this.context.client);
+            offset += MAX_CHUNK_SIZE;
         }
     }
 }

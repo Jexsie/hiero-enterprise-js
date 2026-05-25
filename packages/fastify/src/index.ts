@@ -1,6 +1,6 @@
 import fp from "fastify-plugin";
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import type { HieroConfig } from "@hiero-enterprise/core";
+import type { HieroConfig, HieroServices } from "@hiero-enterprise/core";
 import {
     HieroContext,
     resolveMirrorNodeUrl,
@@ -21,26 +21,6 @@ import {
 } from "@hiero-enterprise/core";
 
 /**
- * All services made available through the Fastify plugin.
- */
-export interface HieroServices {
-    context: HieroContext;
-    mirrorNodeClient: MirrorNodeClient;
-    accountClient: AccountClient;
-    fileClient: FileClient;
-    fungibleTokenClient: FungibleTokenClient;
-    nftClient: NftClient;
-    smartContractClient: SmartContractClient;
-    topicClient: TopicClient;
-    accountRepository: AccountRepository;
-    nftRepository: NftRepository;
-    tokenRepository: TokenRepository;
-    topicRepository: TopicRepository;
-    transactionRepository: TransactionRepository;
-    networkRepository: NetworkRepository;
-}
-
-/**
  * Augment Fastify instance to include Hiero services.
  */
 declare module "fastify" {
@@ -59,7 +39,6 @@ export interface HieroPluginOptions extends FastifyPluginOptions {
 /**
  * Fastify plugin that initializes the HieroContext and decorates the
  * Fastify instance with all Hiero services at `fastify.hiero`.
- *
  *
  * @example
  * ```ts
@@ -82,16 +61,18 @@ const plugin = async function (
     if (!opts.config) {
         assertEnvConfigValid();
     }
-    const context = HieroContext.initialize(opts.config);
+    const context = new HieroContext(opts.config);
     const mirrorNodeUrl = resolveMirrorNodeUrl(
         context.config.network,
         context.config.mirrorNodeUrl,
     );
-    const mirrorNodeClient = new MirrorNodeClient(mirrorNodeUrl);
+    const mirrorNodeClient = new MirrorNodeClient(mirrorNodeUrl, {
+        timeoutMs: context.config.mirrorNodeTimeoutMs,
+        maxRetries: context.config.mirrorNodeMaxRetries,
+    });
 
     const services: HieroServices = {
         context,
-        mirrorNodeClient,
         accountClient: new AccountClient(context),
         fileClient: new FileClient(context),
         fungibleTokenClient: new FungibleTokenClient(context),
@@ -110,7 +91,7 @@ const plugin = async function (
 
     // Clean up SDK client on close
     fastify.addHook("onClose", () => {
-        HieroContext.reset();
+        context.close();
     });
 };
 
@@ -118,4 +99,4 @@ export const hieroPlugin = fp(plugin, {
     name: "@hiero-enterprise/fastify",
 });
 
-export type { HieroConfig } from "@hiero-enterprise/core";
+export type { HieroConfig, HieroServices } from "@hiero-enterprise/core";

@@ -3,20 +3,25 @@ import tseslint from "typescript-eslint";
 import prettierConfig from "eslint-config-prettier";
 import prettierPlugin from "eslint-plugin-prettier";
 import { defineConfig, globalIgnores } from "eslint/config";
+import globals from "globals";
 
 export default defineConfig(
     globalIgnores(["**/dist/**", "**/node_modules/**", "**/*.test.ts"]),
 
-    // ─── Base JS rules ──────────────────────────────────────────
-    eslint.configs.recommended,
-
-    // ─── TypeScript rules ───────────────────────────────────────
     ...tseslint.configs.recommended,
-
-    // ─── Prettier (disables conflicting rules) ──────────────────
+    eslint.configs.recommended,
     prettierConfig,
 
-    // ─── Prettier plugin (reports formatting as errors) ─────────
+    // Node.js globals (process, console, Buffer, fetch, etc.)
+    {
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
+        },
+    },
+
+    //  Prettier plugin (reports formatting as errors)
     {
         plugins: { prettier: prettierPlugin },
         rules: {
@@ -24,7 +29,7 @@ export default defineConfig(
         },
     },
 
-    // ─── Project-specific rules ─────────────────────────────────
+    // Project-specific rules (TypeScript-specific rules that require type information)
     {
         files: ["**/*.{js,ts}"],
         languageOptions: {
@@ -41,6 +46,8 @@ export default defineConfig(
     {
         files: ["**/*.{js,ts}"],
         rules: {
+            // Disable base rule in favour of TypeScript-aware version
+            "no-unused-vars": "off",
             // Allow unused vars when prefixed with _
             "@typescript-eslint/no-unused-vars": [
                 "error",

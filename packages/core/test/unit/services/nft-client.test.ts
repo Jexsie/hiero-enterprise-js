@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { HieroContext } from "../../src/context/hiero-context.js";
-import { NftClient } from "../../src/services/nft-client.js";
+import { NftClient } from "../../../src/services/nft-client.js";
+import { createMockContext } from "../../utils/mock-context.js";
+import type { HieroContext } from "../../../src/context/hiero-context.js";
 import {
     TokenCreateTransaction,
     TokenType,
@@ -10,13 +11,10 @@ import {
     TokenMintTransaction,
     TokenBurnTransaction,
     TransferTransaction,
-    NftId,
-    TokenId,
-    PrivateKey,
-} from "@hashgraph/sdk";
+} from "@hiero-ledger/sdk";
 
-vi.mock("@hashgraph/sdk", async (importOriginal) => {
-    const actual = await importOriginal<typeof import("@hashgraph/sdk")>();
+vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("@hiero-ledger/sdk")>();
 
     const mockTx = {
         setTokenName: vi.fn().mockReturnThis(),
@@ -24,23 +22,18 @@ vi.mock("@hashgraph/sdk", async (importOriginal) => {
         setTokenType: vi.fn().mockReturnThis(),
         setDecimals: vi.fn().mockReturnThis(),
         setInitialSupply: vi.fn().mockReturnThis(),
-        setSupplyType: vi.fn().mockReturnThis(),
-        setMaxSupply: vi.fn().mockReturnThis(),
         setTreasuryAccountId: vi.fn().mockReturnThis(),
         setSupplyKey: vi.fn().mockReturnThis(),
         setAdminKey: vi.fn().mockReturnThis(),
+        setMaxSupply: vi.fn().mockReturnThis(),
+        setSupplyType: vi.fn().mockReturnThis(),
         setTokenMemo: vi.fn().mockReturnThis(),
-
         setAccountId: vi.fn().mockReturnThis(),
         setTokenIds: vi.fn().mockReturnThis(),
-
         setTokenId: vi.fn().mockReturnThis(),
-        setMetadata: vi.fn().mockReturnThis(),
-        addMetadata: vi.fn().mockReturnThis(),
         setSerials: vi.fn().mockReturnThis(),
-
+        addMetadata: vi.fn().mockReturnThis(),
         addNftTransfer: vi.fn().mockReturnThis(),
-
         freezeWith: vi.fn().mockReturnThis(),
         sign: vi.fn().mockResolvedValue({
             execute: vi.fn().mockResolvedValue({
@@ -79,13 +72,7 @@ describe("NftClient", () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        HieroContext.reset();
-        context = HieroContext.initialize({
-            network: "testnet",
-            operatorId: "0.0.2",
-            operatorKey:
-                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
-        });
+        context = createMockContext();
         client = new NftClient(context);
     });
 
@@ -131,9 +118,7 @@ describe("NftClient", () => {
 
     describe("associateNft", () => {
         it("associates an NFT with an account", async () => {
-            const dummyKey = PrivateKey.fromStringDer(
-                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
-            );
+            const dummyKey = context.getOperatorKey();
             await client.associateNft("0.0.999", "0.0.555", dummyKey);
 
             const txMock = vi.mocked(TokenAssociateTransaction).mock.results[0]
@@ -147,13 +132,11 @@ describe("NftClient", () => {
 
     describe("dissociateNft", () => {
         it("dissociates an NFT from an account", async () => {
-            const dummyKey = PrivateKey.fromStringDer(
-                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
-            );
+            const dummyKey = context.getOperatorKey();
             await client.dissociateNft("0.0.999", "0.0.555", dummyKey);
 
-            const txMock = vi.mocked(TokenDissociateTransaction).mock.results[0]
-                .value;
+            const txMock = vi.mocked(TokenDissociateTransaction).mock
+                .results[0].value;
             expect(txMock.setAccountId).toHaveBeenCalledWith("0.0.555");
             expect(txMock.setTokenIds).toHaveBeenCalledWith(["0.0.999"]);
         });
@@ -201,14 +184,7 @@ describe("NftClient", () => {
 
     describe("transferNfts", () => {
         it("transfers NFTs", async () => {
-            const dummyKey = PrivateKey.fromStringDer(
-                "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
-            );
-
-            // Need to clear the spy instance because TransferTransaction shares it across tests
-            vi.mocked(TransferTransaction).mockClear();
-            const txMockSpy = new TransferTransaction() as any;
-            txMockSpy.addNftTransfer.mockClear();
+            const dummyKey = context.getOperatorKey();
 
             await client.transferNfts(
                 "0.0.999",
@@ -218,9 +194,9 @@ describe("NftClient", () => {
                 "0.0.2",
             );
 
-            const executedTxMock =
+            const txMock =
                 vi.mocked(TransferTransaction).mock.results[0].value;
-            expect(executedTxMock.addNftTransfer).toHaveBeenCalledTimes(2);
+            expect(txMock.addNftTransfer).toHaveBeenCalledTimes(2);
         });
     });
 });

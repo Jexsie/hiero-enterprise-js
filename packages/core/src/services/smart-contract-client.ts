@@ -1,4 +1,4 @@
-import type { ContractFunctionParameters } from "@hashgraph/sdk";
+import type { ContractFunctionParameters } from "@hiero-ledger/sdk";
 import {
     ContractCreateTransaction,
     ContractCreateFlow,
@@ -6,7 +6,7 @@ import {
     ContractDeleteTransaction,
     FileId,
     Hbar,
-} from "@hashgraph/sdk";
+} from "@hiero-ledger/sdk";
 import type { ContractCallResult } from "../types/index.js";
 import type { HieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";

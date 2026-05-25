@@ -5,7 +5,7 @@ import {
     TopicMessageSubmitTransaction,
     type PrivateKey,
     type TopicId,
-} from "@hashgraph/sdk";
+} from "@hiero-ledger/sdk";
 import type { HieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
@@ -68,55 +68,7 @@ export class TopicClient {
      * @returns The topic ID
      */
     async createTopic(options: CreateTopicOptions = {}): Promise<string> {
-        const event = this.createEvent("TopicCreate", "createTopic");
-        await this.context.emitBeforeTransaction(event);
-        const start = Date.now();
-
-        try {
-            const tx = new TopicCreateTransaction();
-            let keyToSign: PrivateKey | undefined;
-
-            if (options.adminKey) {
-                keyToSign = options.adminKey;
-                tx.setAdminKey(keyToSign.publicKey);
-            } else {
-                tx.setAdminKey(this.context.operatorKey.publicKey);
-            }
-
-            if (options.memo) {
-                tx.setTopicMemo(options.memo);
-            }
-
-            let response;
-            if (keyToSign) {
-                const frozenTx = tx.freezeWith(this.context.client);
-                response = await (
-                    await frozenTx.sign(keyToSign)
-                ).execute(this.context.client);
-            } else {
-                response = await tx.execute(this.context.client);
-            }
-
-            const receipt = await response.getReceipt(this.context.client);
-            const topicId = receipt.topicId!.toString();
-
-            await this.context.emitAfterTransaction({
-                ...event,
-                transactionId: response.transactionId.toString(),
-                status: receipt.status.toString(),
-                durationMs: Date.now() - start,
-            });
-
-            return topicId;
-        } catch (error) {
-            await this.context.emitAfterTransaction({
-                ...event,
-                error:
-                    error instanceof Error ? error : new Error(String(error)),
-                durationMs: Date.now() - start,
-            });
-            throw normalizeError(error, "TopicClient.createTopic");
-        }
+        return this._createTopicInternal(options, "TopicCreate", "createTopic");
     }
 
     /**
@@ -128,61 +80,11 @@ export class TopicClient {
     async createPrivateTopic(
         options: CreatePrivateTopicOptions,
     ): Promise<string> {
-        const event = this.createEvent(
+        return this._createTopicInternal(
+            options,
             "TopicCreatePrivate",
             "createPrivateTopic",
         );
-        await this.context.emitBeforeTransaction(event);
-        const start = Date.now();
-
-        try {
-            const tx = new TopicCreateTransaction();
-            let keyToSign: PrivateKey | undefined;
-
-            if (options.adminKey) {
-                keyToSign = options.adminKey;
-                tx.setAdminKey(keyToSign.publicKey);
-            } else {
-                tx.setAdminKey(this.context.operatorKey.publicKey);
-            }
-
-            const submitKey = options.submitKey;
-            tx.setSubmitKey(submitKey.publicKey);
-
-            if (options.memo) {
-                tx.setTopicMemo(options.memo);
-            }
-
-            let response;
-            if (keyToSign) {
-                const frozenTx = tx.freezeWith(this.context.client);
-                response = await (
-                    await frozenTx.sign(keyToSign)
-                ).execute(this.context.client);
-            } else {
-                response = await tx.execute(this.context.client);
-            }
-
-            const receipt = await response.getReceipt(this.context.client);
-            const topicId = receipt.topicId!.toString();
-
-            await this.context.emitAfterTransaction({
-                ...event,
-                transactionId: response.transactionId.toString(),
-                status: receipt.status.toString(),
-                durationMs: Date.now() - start,
-            });
-
-            return topicId;
-        } catch (error) {
-            await this.context.emitAfterTransaction({
-                ...event,
-                error:
-                    error instanceof Error ? error : new Error(String(error)),
-                durationMs: Date.now() - start,
-            });
-            throw normalizeError(error, "TopicClient.createPrivateTopic");
-        }
     }
 
     /**
@@ -223,10 +125,12 @@ export class TopicClient {
                 response = await frozenTx.execute(this.context.client);
             }
 
+            const receipt = await response.getReceipt(this.context.client);
+
             await this.context.emitAfterTransaction({
                 ...event,
                 transactionId: response.transactionId.toString(),
-                status: "SUCCESS",
+                status: receipt.status.toString(),
                 durationMs: Date.now() - start,
             });
         } catch (error) {
@@ -304,10 +208,12 @@ export class TopicClient {
                 response = await tx.execute(this.context.client);
             }
 
+            const receipt = await response.getReceipt(this.context.client);
+
             await this.context.emitAfterTransaction({
                 ...event,
                 transactionId: response.transactionId.toString(),
-                status: "SUCCESS",
+                status: receipt.status.toString(),
                 durationMs: Date.now() - start,
             });
         } catch (error) {
@@ -352,10 +258,12 @@ export class TopicClient {
                 response = await tx.execute(this.context.client);
             }
 
+            const receipt = await response.getReceipt(this.context.client);
+
             await this.context.emitAfterTransaction({
                 ...event,
                 transactionId: response.transactionId.toString(),
-                status: "SUCCESS",
+                status: receipt.status.toString(),
                 durationMs: Date.now() - start,
             });
         } catch (error) {
@@ -366,6 +274,68 @@ export class TopicClient {
                 durationMs: Date.now() - start,
             });
             throw normalizeError(error, "TopicClient.submitMessage");
+        }
+    }
+
+    // ─── Private Helpers ─────────────────────────────────────────
+
+    private async _createTopicInternal(
+        options: CreateTopicOptions & { submitKey?: PrivateKey },
+        eventType: string,
+        methodName: string,
+    ): Promise<string> {
+        const event = this.createEvent(eventType, methodName);
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
+
+        try {
+            const tx = new TopicCreateTransaction();
+            let keyToSign: PrivateKey | undefined;
+
+            if (options.adminKey) {
+                keyToSign = options.adminKey;
+                tx.setAdminKey(keyToSign.publicKey);
+            } else {
+                tx.setAdminKey(this.context.operatorPublicKey);
+            }
+
+            if ("submitKey" in options && options.submitKey) {
+                tx.setSubmitKey(options.submitKey.publicKey);
+            }
+
+            if (options.memo) {
+                tx.setTopicMemo(options.memo);
+            }
+
+            let response;
+            if (keyToSign) {
+                const frozenTx = tx.freezeWith(this.context.client);
+                response = await (
+                    await frozenTx.sign(keyToSign)
+                ).execute(this.context.client);
+            } else {
+                response = await tx.execute(this.context.client);
+            }
+
+            const receipt = await response.getReceipt(this.context.client);
+            const topicId = receipt.topicId!.toString();
+
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId: response.transactionId.toString(),
+                status: receipt.status.toString(),
+                durationMs: Date.now() - start,
+            });
+
+            return topicId;
+        } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
+            throw normalizeError(error, `TopicClient.${methodName}`);
         }
     }
 }

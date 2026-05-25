@@ -1,4 +1,4 @@
-import type { TopicMessage, Page } from "../types/index.js";
+import type { MirrorTopicMessage, Page } from "../types/index.js";
 import type { MirrorNodeClient } from "../mirror/index.js";
 
 /**
@@ -10,7 +10,7 @@ export class TopicRepository {
     /**
      * Find all messages for a topic.
      */
-    async findByTopicId(topicId: string): Promise<Page<TopicMessage>> {
+    async findByTopicId(topicId: string): Promise<Page<MirrorTopicMessage>> {
         return this.mirrorNodeClient.queryTopicMessages(topicId);
     }
 
@@ -20,7 +20,7 @@ export class TopicRepository {
     async findByTopicIdAndSequenceNumber(
         topicId: string,
         sequenceNumber: number,
-    ): Promise<TopicMessage> {
+    ): Promise<MirrorTopicMessage> {
         return this.mirrorNodeClient.queryTopicMessageBySequence(
             topicId,
             sequenceNumber,

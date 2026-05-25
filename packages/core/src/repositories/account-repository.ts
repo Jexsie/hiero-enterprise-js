@@ -1,4 +1,4 @@
-import type { AccountInfo, Balance } from "../types/index.js";
+import type { MirrorAccountInfo, Balance } from "../types/index.js";
 import type { MirrorNodeClient } from "../mirror/index.js";
 
 /**
@@ -10,14 +10,14 @@ export class AccountRepository {
     /**
      * Find account information by account ID.
      */
-    async findByAccountId(accountId: string): Promise<AccountInfo> {
+    async findByAccountId(accountId: string): Promise<MirrorAccountInfo> {
         return this.mirrorNodeClient.queryAccount(accountId);
     }
 
     /**
      * Find account information by EVM alias.
      */
-    async findByAlias(alias: string): Promise<AccountInfo> {
+    async findByAlias(alias: string): Promise<MirrorAccountInfo> {
         return this.mirrorNodeClient.queryAccount(alias);
     }
 

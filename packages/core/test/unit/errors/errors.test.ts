@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { HieroError, normalizeError } from "../../src/errors/hiero-error.js";
+import { HieroError, normalizeError } from "../../../src/errors/hiero-error.js";
 
 describe("HieroError", () => {
     it("creates an error with default values", () => {
@@ -28,6 +28,14 @@ describe("HieroError", () => {
         expect(error).toBeInstanceOf(Error);
         expect(error).toBeInstanceOf(HieroError);
     });
+
+    it("stores transactionId when provided", () => {
+        const error = new HieroError("tx failed", {
+            code: "TX_ERROR",
+            transactionId: "0.0.2@1234567890.000",
+        });
+        expect(error.transactionId).toBe("0.0.2@1234567890.000");
+    });
 });
 
 describe("normalizeError", () => {
@@ -47,12 +55,22 @@ describe("normalizeError", () => {
         expect(result.cause).toBe(original);
     });
 
-    it("wraps an SDK error with status code", () => {
+    it("wraps an SDK error with status using toString()", () => {
         const sdkError = Object.assign(new Error("sdk"), {
-            status: { _code: 404 },
+            status: { toString: () => "INSUFFICIENT_PAYER_BALANCE" },
         });
         const result = normalizeError(sdkError);
-        expect(result.code).toBe("404");
+        expect(result.code).toBe("INSUFFICIENT_PAYER_BALANCE");
+    });
+
+    it("extracts transactionId from ReceiptStatusError", () => {
+        const sdkError = Object.assign(new Error("receipt"), {
+            status: { toString: () => "ACCOUNT_DELETED" },
+            transactionId: { toString: () => "0.0.2@123.456" },
+        });
+        const result = normalizeError(sdkError);
+        expect(result.code).toBe("ACCOUNT_DELETED");
+        expect(result.transactionId).toBe("0.0.2@123.456");
     });
 
     it("wraps a string", () => {

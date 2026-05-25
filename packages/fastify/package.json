@@ -12,6 +12,7 @@
             "import": "./dist/index.js"
         }
     },
+    "files": ["dist"],
     "scripts": {
         "build": "tsc",
         "clean": "rm -rf dist"
@@ -22,5 +23,8 @@
     },
     "peerDependencies": {
         "fastify": ">=4"
+    },
+    "engines": {
+        "node": ">=20.12.0"
     }
 }

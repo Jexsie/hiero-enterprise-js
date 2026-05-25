@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import type { HieroConfig } from "@hiero-enterprise/core";
+import type { HieroConfig, HieroServices } from "@hiero-enterprise/core";
 import {
     HieroContext,
     resolveMirrorNodeUrl,
@@ -20,26 +20,6 @@ import {
 } from "@hiero-enterprise/core";
 
 /**
- * All services made available through the Express middleware.
- */
-export interface HieroServices {
-    context: HieroContext;
-    mirrorNodeClient: MirrorNodeClient;
-    accountClient: AccountClient;
-    fileClient: FileClient;
-    fungibleTokenClient: FungibleTokenClient;
-    nftClient: NftClient;
-    smartContractClient: SmartContractClient;
-    topicClient: TopicClient;
-    accountRepository: AccountRepository;
-    nftRepository: NftRepository;
-    tokenRepository: TokenRepository;
-    topicRepository: TopicRepository;
-    transactionRepository: TransactionRepository;
-    networkRepository: NetworkRepository;
-}
-
-/**
  * Augment Express Request to include Hiero services.
  */
 declare global {
@@ -54,7 +34,6 @@ declare global {
 /**
  * Express middleware that initializes the HieroContext and injects all
  * Hiero services into `req.hiero`.
- *
  *
  * @example
  * ```ts
@@ -75,16 +54,18 @@ export function hieroMiddleware(config?: HieroConfig) {
         assertEnvConfigValid();
     }
     // Initialize once, share across all requests
-    const context = HieroContext.initialize(config);
+    const context = new HieroContext(config);
     const mirrorNodeUrl = resolveMirrorNodeUrl(
         context.config.network,
         context.config.mirrorNodeUrl,
     );
-    const mirrorNodeClient = new MirrorNodeClient(mirrorNodeUrl);
+    const mirrorNodeClient = new MirrorNodeClient(mirrorNodeUrl, {
+        timeoutMs: context.config.mirrorNodeTimeoutMs,
+        maxRetries: context.config.mirrorNodeMaxRetries,
+    });
 
     const services: HieroServices = {
         context,
-        mirrorNodeClient,
         accountClient: new AccountClient(context),
         fileClient: new FileClient(context),
         fungibleTokenClient: new FungibleTokenClient(context),
@@ -99,10 +80,14 @@ export function hieroMiddleware(config?: HieroConfig) {
         networkRepository: new NetworkRepository(mirrorNodeClient),
     };
 
+    // Cleanup on process exit
+    process.on("SIGTERM", () => context.close());
+    process.on("SIGINT", () => context.close());
+
     return (req: Request, _res: Response, next: NextFunction) => {
         req.hiero = services;
         next();
     };
 }
 
-export type { HieroConfig } from "@hiero-enterprise/core";
+export type { HieroConfig, HieroServices } from "@hiero-enterprise/core";
