@@ -2,9 +2,25 @@
  * Custom error class for Hiero operations.
  * Wraps SDK and network errors with additional context.
  */
+export const HieroErrorCode = {
+    ConfigInvalid: "CONFIG_INVALID",
+    MirrorNodeError: "MIRROR_NODE_ERROR",
+    MirrorNodeHttpError: "MIRROR_NODE_HTTP_ERROR",
+    NotFound: "NOT_FOUND",
+    TimedOut: "TIMED_OUT",
+    SdkError: "SDK_ERROR",
+    Unknown: "UNKNOWN",
+} as const;
+
+// eslint-disable-next-line no-redeclare
+export type HieroErrorCode =
+    (typeof HieroErrorCode)[keyof typeof HieroErrorCode];
+
 export class HieroError extends Error {
     /** Machine-readable error code */
-    public readonly code: string;
+    public readonly code: HieroErrorCode;
+    /** SDK-specific status string when the failure originated from the SDK/network */
+    public readonly sdkStatus?: string;
     /** Additional context about what operation was being performed */
     public readonly context?: string;
     /** The original error that caused this error */
@@ -15,7 +31,8 @@ export class HieroError extends Error {
     constructor(
         message: string,
         options: {
-            code?: string;
+            code?: HieroErrorCode;
+            sdkStatus?: string;
             context?: string;
             cause?: Error;
             transactionId?: string;
@@ -23,7 +40,8 @@ export class HieroError extends Error {
     ) {
         super(message);
         this.name = "HieroError";
-        this.code = options.code ?? "UNKNOWN";
+        this.code = options.code ?? HieroErrorCode.Unknown;
+        this.sdkStatus = options.sdkStatus;
         this.context = options.context;
         this.cause = options.cause;
         this.transactionId = options.transactionId;
@@ -56,7 +74,8 @@ export function normalizeError(error: unknown, context?: string): HieroError {
 
         if (receiptError.status && receiptError.transactionId) {
             return new HieroError(error.message, {
-                code: receiptError.status.toString(),
+                code: HieroErrorCode.SdkError,
+                sdkStatus: receiptError.status.toString(),
                 context,
                 cause: error,
                 transactionId: receiptError.transactionId.toString(),
@@ -65,17 +84,17 @@ export function normalizeError(error: unknown, context?: string): HieroError {
 
         // Generic SDK error with a status field
         const sdkError = error as { status?: { toString(): string } };
-        const code = sdkError.status?.toString() ?? "SDK_ERROR";
 
         return new HieroError(error.message, {
-            code,
+            code: HieroErrorCode.SdkError,
+            sdkStatus: sdkError.status?.toString(),
             context,
             cause: error,
         });
     }
 
     return new HieroError(String(error), {
-        code: "UNKNOWN",
+        code: HieroErrorCode.Unknown,
         context,
     });
 }

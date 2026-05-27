@@ -1,4 +1,4 @@
-import { HieroError } from "../errors/index.js";
+import { HieroError, HieroErrorCode } from "../errors/index.js";
 
 /**
  * Configuration for connecting to a Hiero network.
@@ -58,7 +58,7 @@ export function resolveMirrorNodeUrl(
     if (!url) {
         throw new HieroError(
             `Unknown network "${network}". Provide a mirrorNodeUrl in the config.`,
-            { code: "CONFIG_INVALID" },
+            { code: HieroErrorCode.ConfigInvalid },
         );
     }
     return url;
@@ -113,7 +113,7 @@ export function assertEnvConfigValid(): void {
         throw new HieroError(
             `Missing required Hiero environment variables:\n  - ${missing.join("\n  - ")}\n\n` +
                 `Set them in your process environment before application startup.`,
-            { code: "CONFIG_INVALID" },
+            { code: HieroErrorCode.ConfigInvalid },
         );
     }
 }

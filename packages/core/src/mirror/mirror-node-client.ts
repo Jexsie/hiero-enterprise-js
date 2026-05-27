@@ -35,7 +35,7 @@ import type {
     MirrorNetworkSupplyResponse,
     MirrorNetworkStakeResponse,
 } from "../types/index.js";
-import { HieroError } from "../errors/index.js";
+import { HieroError, HieroErrorCode } from "../errors/index.js";
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -120,7 +120,9 @@ export class MirrorNodeClient {
                     ? `Mirror node request timed out after ${this.timeoutMs}ms: ${url}`
                     : `Mirror node request failed: ${url}`,
                 {
-                    code: isAbort ? "TIMED_OUT" : "MIRROR_NODE_ERROR",
+                    code: isAbort
+                        ? HieroErrorCode.TimedOut
+                        : HieroErrorCode.MirrorNodeError,
                     context: path,
                     cause: err instanceof Error ? err : undefined,
                 },
@@ -142,7 +144,10 @@ export class MirrorNodeClient {
         if (!response.ok) {
             throw new HieroError(
                 `Mirror node returned ${response.status}: ${response.statusText}`,
-                { code: "MIRROR_NODE_HTTP_ERROR", context: path },
+                {
+                    code: HieroErrorCode.MirrorNodeHttpError,
+                    context: path,
+                },
             );
         }
         return response.json() as Promise<T>;
@@ -273,7 +278,7 @@ export class MirrorNodeClient {
         );
         if (!raw.transactions || raw.transactions.length === 0) {
             throw new HieroError(`Transaction not found: ${transactionId}`, {
-                code: "NOT_FOUND",
+                code: HieroErrorCode.NotFound,
             });
         }
         return convertTransactionInfo(raw.transactions[0]);
