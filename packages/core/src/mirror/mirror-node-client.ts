@@ -19,8 +19,46 @@ import type {
     MirrorFixedFee,
     MirrorFractionalFee,
     MirrorRoyaltyFee,
+    MirrorPageResponse,
+    MirrorAccountResponse,
+    MirrorNft,
+    MirrorTokenResponse,
+    MirrorTopicMessageRaw,
+    MirrorTransaction,
+    MirrorTransfer,
+    MirrorTokenTransfer,
+    MirrorNftTransfer,
+    MirrorStakingRewardTransfer,
+    MirrorTransactionListResponse,
+    MirrorExchangeRatesResponse,
+    MirrorExchangeRate,
+    MirrorNetworkSupplyResponse,
+    MirrorNetworkStakeResponse,
 } from "../types/index.js";
 import { HieroError } from "../errors/index.js";
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Parse the HTTP `Retry-After` header. Supports both the delta-seconds
+ * format (`120`) and HTTP-date format (`Wed, 21 Oct 2026 07:28:00 GMT`).
+ * Returns the delay in milliseconds, or `null` if the header is absent
+ * or unparseable.
+ */
+function parseRetryAfter(header: string | null): number | null {
+    if (!header) return null;
+    const seconds = Number(header);
+    if (Number.isFinite(seconds) && seconds >= 0) {
+        return Math.floor(seconds * 1000);
+    }
+    const dateMs = Date.parse(header);
+    if (Number.isFinite(dateMs)) {
+        return Math.max(0, dateMs - Date.now());
+    }
+    return null;
+}
 
 /**
  * HTTP client for querying the Hiero Mirror Node REST API.
@@ -46,18 +84,61 @@ export class MirrorNodeClient {
 
     // ─── HTTP Helper ─────────────────────────────────────────────
 
-    private async fetch<T>(path: string): Promise<T> {
+    /**
+     * Issue a GET against the mirror node with timeout + retry semantics.
+     *
+     * - Each attempt is bounded by `timeoutMs` via AbortController.
+     * - HTTP 429 and 5xx responses are retried up to `maxRetries` times,
+     *   honouring the `Retry-After` header when present.
+     * - Network errors (including AbortError caused by timeout) are
+     *   retried with exponential backoff, then surfaced as HieroError.
+     */
+    private async fetch<T>(path: string, attempt = 0): Promise<T> {
         const url = `${this.baseUrl}${path}`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+
         let response: Response;
         try {
-            response = await fetch(url);
+            response = await fetch(url, { signal: controller.signal });
         } catch (err) {
-            throw new HieroError(`Mirror node request failed: ${url}`, {
-                code: "MIRROR_NODE_ERROR",
-                context: path,
-                cause: err instanceof Error ? err : undefined,
-            });
+            clearTimeout(timer);
+            const isAbort =
+                err instanceof Error &&
+                (err.name === "AbortError" || err.name === "TimeoutError");
+
+            // Only retry timeouts here. Generic network errors (DNS, ECONNREFUSED)
+            // are surfaced immediately — they almost always indicate a misconfigured
+            // base URL rather than a transient blip.
+            if (isAbort && attempt < this.maxRetries) {
+                await sleep(this.backoffMs(attempt));
+                return this.fetch<T>(path, attempt + 1);
+            }
+
+            throw new HieroError(
+                isAbort
+                    ? `Mirror node request timed out after ${this.timeoutMs}ms: ${url}`
+                    : `Mirror node request failed: ${url}`,
+                {
+                    code: isAbort ? "TIMED_OUT" : "MIRROR_NODE_ERROR",
+                    context: path,
+                    cause: err instanceof Error ? err : undefined,
+                },
+            );
         }
+        clearTimeout(timer);
+
+        if (
+            (response.status === 429 || response.status >= 500) &&
+            attempt < this.maxRetries
+        ) {
+            const retryAfter = parseRetryAfter(
+                response.headers.get("retry-after"),
+            );
+            await sleep(retryAfter ?? this.backoffMs(attempt));
+            return this.fetch<T>(path, attempt + 1);
+        }
+
         if (!response.ok) {
             throw new HieroError(
                 `Mirror node returned ${response.status}: ${response.statusText}`,
@@ -65,6 +146,12 @@ export class MirrorNodeClient {
             );
         }
         return response.json() as Promise<T>;
+    }
+
+    private backoffMs(attempt: number): number {
+        // Exponential backoff with jitter: 100, 200, 400, 800, … ms, capped at 5s.
+        const base = Math.min(5_000, 100 * 2 ** attempt);
+        return base + Math.floor(Math.random() * 100);
     }
 
     // ─── Accounts ────────────────────────────────────────────────
@@ -234,182 +321,6 @@ export class MirrorNodeClient {
         const raw = await this.fetch<MirrorPageResponse<unknown>>(nextLink);
         return convertPage(raw, converter);
     }
-}
-
-// ─── Mirror Node Response Types ────────────────────────────────
-
-interface MirrorPageResponse<_T> {
-    [key: string]: unknown;
-    links?: { next: string | null };
-}
-
-interface MirrorAccountResponse {
-    account: string;
-    alias?: string;
-    evm_address?: string;
-    key?: { key: string };
-    balance?: { balance: number; tokens: MirrorTokenBalance[] };
-    deleted?: boolean;
-    auto_renew_period?: number;
-    memo?: string;
-    max_automatic_token_associations?: number;
-    staked_account_id?: string;
-    staked_node_id?: number;
-    stake_period_start?: string;
-    created_timestamp?: string;
-    expiry_timestamp?: string;
-}
-
-interface MirrorTokenBalance {
-    token_id: string;
-    balance: number;
-    decimals: number;
-}
-
-interface MirrorNft {
-    token_id: string;
-    serial_number: number;
-    account_id: string;
-    metadata: string;
-    created_timestamp?: string;
-    deleted: boolean;
-    delegating_spender?: string;
-    spender?: string;
-}
-
-interface MirrorTokenResponse {
-    token_id: string;
-    name: string;
-    symbol: string;
-    type: string;
-    decimals: string;
-    total_supply: string;
-    max_supply: string;
-    treasury_account_id: string;
-    admin_key?: { key: string };
-    supply_key?: { key: string };
-    freeze_key?: { key: string };
-    wipe_key?: { key: string };
-    kyc_key?: { key: string };
-    pause_key?: { key: string };
-    fee_schedule_key?: { key: string };
-    deleted: boolean;
-    pause_status?: string;
-    custom_fees?: {
-        fixed_fees?: MirrorFixedFeeRaw[];
-        fractional_fees?: MirrorFractionalFeeRaw[];
-        royalty_fees?: MirrorRoyaltyFeeRaw[];
-    };
-    created_timestamp?: string;
-    expiry_timestamp?: string;
-    memo?: string;
-}
-
-interface MirrorFixedFeeRaw {
-    amount: number;
-    collector_account_id: string;
-    denominating_token_id?: string;
-    all_collectors_are_exempt: boolean;
-}
-
-interface MirrorFractionalFeeRaw {
-    numerator: number;
-    denominator: number;
-    minimum?: number;
-    maximum?: number;
-    net_of_transfers: boolean;
-    collector_account_id: string;
-    all_collectors_are_exempt: boolean;
-}
-
-interface MirrorRoyaltyFeeRaw {
-    numerator: number;
-    denominator: number;
-    fallback_fee?: { amount: number; denominating_token_id?: string };
-    collector_account_id: string;
-    all_collectors_are_exempt: boolean;
-}
-
-interface MirrorTopicMessageRaw {
-    topic_id: string;
-    sequence_number: number;
-    message: string;
-    running_hash: string;
-    consensus_timestamp: string;
-    payer_account_id?: string;
-}
-
-interface MirrorTransaction {
-    transaction_id: string;
-    name: string;
-    result: string;
-    consensus_timestamp: string;
-    valid_start_timestamp: string;
-    charged_tx_fee: number;
-    memo_base64?: string;
-    transfers: MirrorTransfer[];
-    token_transfers: MirrorTokenTransfer[];
-    nft_transfers: MirrorNftTransfer[];
-    staking_reward_transfers: MirrorStakingRewardTransfer[];
-}
-
-interface MirrorTransfer {
-    account: string;
-    amount: number;
-    is_approval: boolean;
-}
-
-interface MirrorTokenTransfer {
-    token_id: string;
-    account: string;
-    amount: number;
-}
-
-interface MirrorNftTransfer {
-    token_id: string;
-    serial_number: number;
-    sender_account_id: string;
-    receiver_account_id: string;
-}
-
-interface MirrorStakingRewardTransfer {
-    account: string;
-    amount: number;
-}
-
-interface MirrorTransactionListResponse {
-    transactions: MirrorTransaction[];
-}
-
-interface MirrorExchangeRatesResponse {
-    current_rate: MirrorExchangeRate;
-    next_rate: MirrorExchangeRate;
-}
-
-interface MirrorExchangeRate {
-    cent_equivalent: number;
-    hbar_equivalent: number;
-    expiration_time: number;
-}
-
-interface MirrorNetworkSupplyResponse {
-    released_supply: string;
-    total_supply: string;
-    timestamp: string;
-}
-
-interface MirrorNetworkStakeResponse {
-    max_stake_rewarded: number;
-    max_staking_reward_rate_per_hbar: number;
-    max_total_reward: number;
-    node_reward_fee_fraction: number;
-    reserved_staking_rewards: number;
-    reward_balance_threshold: number;
-    stake_total: number;
-    staking_period: string;
-    staking_period_duration: number;
-    staking_periods_stored: number;
-    unreserved_staking_reward_balance: number;
 }
 
 // ─── Converters ────────────────────────────────────────────────

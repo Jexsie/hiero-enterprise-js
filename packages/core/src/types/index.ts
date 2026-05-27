@@ -30,3 +30,24 @@ export type {
 } from "./network.js";
 export type { Page, PageLinks } from "./page.js";
 export type { HieroServices } from "./services.js";
+export type {
+    MirrorPageResponse,
+    MirrorAccountResponse,
+    MirrorTokenBalance,
+    MirrorNft,
+    MirrorTokenResponse,
+    MirrorFixedFeeRaw,
+    MirrorFractionalFeeRaw,
+    MirrorRoyaltyFeeRaw,
+    MirrorTopicMessageRaw,
+    MirrorTransaction,
+    MirrorTransfer,
+    MirrorTokenTransfer,
+    MirrorNftTransfer,
+    MirrorStakingRewardTransfer,
+    MirrorTransactionListResponse,
+    MirrorExchangeRatesResponse,
+    MirrorExchangeRate,
+    MirrorNetworkSupplyResponse,
+    MirrorNetworkStakeResponse,
+} from "./mirror-node.js";

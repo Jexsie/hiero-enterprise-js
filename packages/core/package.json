@@ -4,7 +4,7 @@
     "description": "Core services, repositories, and data models for Hiero/Hedera networks",
     "license": "Apache-2.0",
     "type": "module",
-    "private": "true",
+    "private": true,
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
