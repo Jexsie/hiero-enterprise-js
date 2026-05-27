@@ -21,12 +21,16 @@ export interface Account {
 }
 
 /**
- * Returned only by account creation methods.
+ * Returned by account creation methods that generate a new key locally.
  * Contains the private key that must be stored securely by the caller.
- * The private key is NOT available again after creation.
+ * The network never returns private key material; it is generated client-side
+ * before submission and is not available again after creation.
  */
 export interface CreatedAccount extends Account {
-    /** The private key for the newly created account. Store securely — not retrievable again. */
+    /**
+     * The newly generated private key.
+     * Store it securely immediately; the key is not retrievable from the network later.
+     */
     privateKey: PrivateKey;
 }
 

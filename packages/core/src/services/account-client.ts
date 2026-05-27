@@ -15,7 +15,7 @@ import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
 
 /**
- * Options for creating a new account.
+ * Options for creating a new account with a newly generated key pair.
  */
 export interface CreateAccountOptions {
     /** Initial balance in HBAR (default: 0). Accepts Hbar instance for tinybar precision. */
@@ -39,10 +39,15 @@ export class AccountClient {
     }
 
     /**
-     * Create a new account on the network.
+     * Create a new account on the network using a freshly generated local key pair.
+     *
+     * The private key is generated client-side before submitting the transaction.
+     * Hiero returns the new account ID in the receipt, but never returns
+     * the private key. This method therefore returns the generated private key so
+     * the caller can persist it immediately.
      *
      * @param options - Optional account creation parameters
-     * @returns The newly created account with private key
+     * @returns The newly created account plus the generated private key
      */
     async createAccount(
         options: CreateAccountOptions = {},
@@ -116,13 +121,18 @@ export class AccountClient {
     }
 
     /**
-     * Creates a new account using a provided public key string.
+     * Create a new account using a caller-provided public key.
      * Supports both Ed25519 (Native) and ECDSA (EVM-compatible) keys.
+     *
+     * Use this when key management happens outside this library, for example in
+     * a wallet, HSM, KMS, or another key-generation workflow. Since the caller
+     * already controls the key, this method returns only public account fields.
      *
      * @param publicKeyStr - The public key string (raw or DER formatted)
      * @param type - The account type (EVM vs NATIVE)
      * @param initialBalance - The amount of HBAR to fund the account initially
      * @param memo - Optional memo
+     * @returns The created account without private key material
      */
     async createAccountWithPublicKey(
         publicKeyStr: string,
