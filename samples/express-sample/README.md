@@ -53,4 +53,4 @@ This single line injects all Hiero services into every request at `req.hiero`, g
 
 - **Services**: `accountClient`, `fileClient`, `fungibleTokenClient`, `nftClient`, `smartContractClient`, `topicClient`
 - **Repositories**: `accountRepository`, `nftRepository`, `tokenRepository`, `topicRepository`, `transactionRepository`, `networkRepository`
-- **Infra**: `context`, `mirrorNodeClient`
+- **Infra**: `context`

@@ -53,6 +53,6 @@ All services become available at `app.hiero`:
 
 - **Services**: `accountClient`, `fileClient`, `fungibleTokenClient`, `nftClient`, `smartContractClient`, `topicClient`
 - **Repositories**: `accountRepository`, `nftRepository`, `tokenRepository`, `topicRepository`, `transactionRepository`, `networkRepository`
-- **Infra**: `context`, `mirrorNodeClient`
+- **Infra**: `context`
 
 The plugin automatically cleans up the SDK client when the Fastify server shuts down.

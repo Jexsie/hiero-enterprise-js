@@ -145,7 +145,8 @@ Clients handle write operations through the Hiero SDK — transactions that go o
 ## Testing
 
 ```ts
-import { testConfig, createMockMirrorNodeClient } from '@hiero-enterprise/core/testing';
+import { testConfig, createMockMirrorNodeClient } from '@hiero-enterprise/express';
+// or from '@hiero-enterprise/fastify' / '@hiero-enterprise/nest'
 ```
 
 `testConfig` gives you safe dummy credentials that pass validation without hitting the network. `createMockMirrorNodeClient()` returns a fully typed mock with sensible defaults, so you can test your service layer without spinning up a node.
