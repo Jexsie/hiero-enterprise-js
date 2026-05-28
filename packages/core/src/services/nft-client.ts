@@ -12,7 +12,7 @@ import {
     type AccountId,
     type PrivateKey,
 } from "@hiero-ledger/sdk";
-import type { HieroContext } from "../context/index.js";
+import type { IHieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
 
@@ -42,9 +42,9 @@ export interface CreateNftTypeOptions {
  * Service for managing non-fungible tokens on the Hiero network (HTS).
  */
 export class NftClient {
-    private readonly context: HieroContext;
+    private readonly context: IHieroContext;
 
-    constructor(context: HieroContext) {
+    constructor(context: IHieroContext) {
         this.context = context;
     }
 

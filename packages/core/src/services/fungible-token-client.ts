@@ -11,7 +11,7 @@ import {
     type TokenId,
     type AccountId,
 } from "@hiero-ledger/sdk";
-import type { HieroContext } from "../context/index.js";
+import type { IHieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
 
@@ -45,9 +45,9 @@ export interface CreateTokenOptions {
  * Service for managing fungible tokens on the Hiero network (HTS).
  */
 export class FungibleTokenClient {
-    private readonly context: HieroContext;
+    private readonly context: IHieroContext;
 
-    constructor(context: HieroContext) {
+    constructor(context: IHieroContext) {
         this.context = context;
     }
 

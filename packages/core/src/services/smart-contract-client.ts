@@ -8,7 +8,7 @@ import {
     Hbar,
 } from "@hiero-ledger/sdk";
 import type { ContractCallResult } from "../types/index.js";
-import type { HieroContext } from "../context/index.js";
+import type { IHieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
 
@@ -16,9 +16,9 @@ import { normalizeError } from "../errors/index.js";
  * Service for managing smart contracts on the Hiero network.
  */
 export class SmartContractClient {
-    private readonly context: HieroContext;
+    private readonly context: IHieroContext;
 
-    constructor(context: HieroContext) {
+    constructor(context: IHieroContext) {
         this.context = context;
     }
 

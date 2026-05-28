@@ -6,7 +6,7 @@ import {
     FileAppendTransaction,
     FileInfoQuery,
 } from "@hiero-ledger/sdk";
-import type { HieroContext } from "../context/index.js";
+import type { IHieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
 
@@ -19,9 +19,9 @@ const MAX_CHUNK_SIZE = 4096;
  * Automatically handles chunking for files > 4KB.
  */
 export class FileClient {
-    private readonly context: HieroContext;
+    private readonly context: IHieroContext;
 
-    constructor(context: HieroContext) {
+    constructor(context: IHieroContext) {
         this.context = context;
     }
 

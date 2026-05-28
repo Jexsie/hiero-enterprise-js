@@ -7,6 +7,7 @@ import type {
     TransactionListener,
     TransactionEvent,
 } from "../listeners/index.js";
+import type { IHieroContext } from "./hiero-context.interface.js";
 
 /**
  * Central context for interacting with a Hiero network.
@@ -22,7 +23,7 @@ import type {
  * const client = ctx.client;
  * ```
  */
-export class HieroContext {
+export class HieroContext implements IHieroContext {
     /** Registered transaction listeners */
     private readonly listeners: TransactionListener[] = [];
 

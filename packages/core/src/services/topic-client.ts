@@ -6,7 +6,7 @@ import {
     type PrivateKey,
     type TopicId,
 } from "@hiero-ledger/sdk";
-import type { HieroContext } from "../context/index.js";
+import type { IHieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
 
@@ -46,9 +46,9 @@ export interface UpdateTopicOptions {
  * Service for managing topics on the Hiero consensus service.
  */
 export class TopicClient {
-    private readonly context: HieroContext;
+    private readonly context: IHieroContext;
 
-    constructor(context: HieroContext) {
+    constructor(context: IHieroContext) {
         this.context = context;
     }
 
