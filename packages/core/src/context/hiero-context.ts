@@ -10,6 +10,23 @@ import type {
 import type { IHieroContext } from "./hiero-context.interface.js";
 
 /**
+ * Parse a private key string based on the specified key type.
+ */
+function parsePrivateKey(
+    key: string,
+    keyType: "ED25519" | "ECDSA" | "DER",
+): PrivateKey {
+    switch (keyType) {
+        case "ED25519":
+            return PrivateKey.fromStringED25519(key);
+        case "DER":
+            return PrivateKey.fromStringDer(key);
+        case "ECDSA":
+            return PrivateKey.fromStringECDSA(key);
+    }
+}
+
+/**
  * Central context for interacting with a Hiero network.
  * Manages the SDK Client lifecycle and provides access to the operator account.
  *
@@ -72,10 +89,13 @@ export class HieroContext implements IHieroContext {
         this.operatorAccountId = AccountId.fromString(resolved.operatorId);
 
         try {
-            this._operatorKey = PrivateKey.fromStringDer(resolved.operatorKey);
+            this._operatorKey = parsePrivateKey(
+                resolved.operatorKey,
+                resolved.operatorKeyType,
+            );
         } catch (cause) {
             throw new HieroError(
-                `Invalid operator key format. Ensure HIERO_OPERATOR_KEY is a valid DER-encoded private key.`,
+                `Invalid operator key. Ensure HIERO_OPERATOR_KEY is valid for type "${resolved.operatorKeyType}".`,
                 {
                     code: HieroErrorCodes.ConfigInvalid,
                     cause: cause instanceof Error ? cause : undefined,

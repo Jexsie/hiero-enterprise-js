@@ -8,11 +8,13 @@ A REST API built with [Express](https://expressjs.com/) and `@hiero-enterprise/e
 # From the monorepo root
 pnpm install
 
-# Set your credentials
-export HIERO_NETWORK=testnet
-export HIERO_OPERATOR_ID=0.0.YOUR_ACCOUNT_ID
-export HIERO_OPERATOR_KEY=YOUR_PRIVATE_KEY
+# Copy the example env and fill in your credentials
+cp .env.example .env
 ```
+
+Edit the `.env` file — fill in the required fields (`HIERO_OPERATOR_ID`, `HIERO_OPERATOR_KEY`, `HIERO_OPERATOR_KEY_TYPE`) and uncomment any optional fields you need.
+
+You can get a free Hiero testnet account at https://portal.hedera.com.
 
 ## Run
 

@@ -8,8 +8,10 @@ export interface HieroConfig {
     readonly network: string;
     /** Operator account ID (e.g., "0.0.12345") */
     readonly operatorId: string;
-    /** Operator private key (DER encoded) */
+    /** Operator private key */
     readonly operatorKey: string;
+    /** Type of the operator private key — required to correctly parse the key material */
+    readonly operatorKeyType: "ED25519" | "ECDSA" | "DER";
     /** Mirror node base URL (auto-resolved if not provided) */
     readonly mirrorNodeUrl?: string;
     /** Request timeout in milliseconds (default: 120000) */
@@ -79,9 +81,14 @@ export function resolveConfigFromEnv(): HieroConfig | null {
     const network = process.env["HIERO_NETWORK"];
     const operatorId = process.env["HIERO_OPERATOR_ID"];
     const operatorKey = process.env["HIERO_OPERATOR_KEY"];
+    const operatorKeyType = process.env["HIERO_OPERATOR_KEY_TYPE"] as
+        | "ED25519"
+        | "ECDSA"
+        | "DER"
+        | undefined;
     const mirrorNodeUrl = process.env["HIERO_MIRROR_NODE_URL"];
 
-    if (!network || !operatorId || !operatorKey) {
+    if (!network || !operatorId || !operatorKey || !operatorKeyType) {
         return null;
     }
 
@@ -89,6 +96,7 @@ export function resolveConfigFromEnv(): HieroConfig | null {
         network,
         operatorId,
         operatorKey,
+        operatorKeyType,
         mirrorNodeUrl,
     };
 }
@@ -100,6 +108,7 @@ export function assertEnvConfigValid(): void {
     const network = process.env["HIERO_NETWORK"];
     const operatorId = process.env["HIERO_OPERATOR_ID"];
     const operatorKey = process.env["HIERO_OPERATOR_KEY"];
+    const operatorKeyType = process.env["HIERO_OPERATOR_KEY_TYPE"];
 
     const missing = [];
     if (!network)
@@ -107,7 +116,11 @@ export function assertEnvConfigValid(): void {
             "HIERO_NETWORK (e.g., 'testnet', 'mainnet', 'previewnet')",
         );
     if (!operatorId) missing.push("HIERO_OPERATOR_ID (e.g., '0.0.12345')");
-    if (!operatorKey) missing.push("HIERO_OPERATOR_KEY (e.g., '302e02...')");
+    if (!operatorKey) missing.push("HIERO_OPERATOR_KEY (your private key)");
+    if (!operatorKeyType)
+        missing.push(
+            "HIERO_OPERATOR_KEY_TYPE (one of: 'ED25519', 'ECDSA', 'DER')",
+        );
 
     if (missing.length > 0) {
         throw new HieroError(

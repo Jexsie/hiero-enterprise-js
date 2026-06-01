@@ -14,20 +14,21 @@ Sample projects demonstrating how to use `@hiero-enterprise/*` packages with dif
 # 1. Install & build from the repo root
 pnpm install && pnpm run build
 
-# 2. Create a .env file inside any sample directory
-cat > samples/express-sample/.env << 'EOF'
-HIERO_NETWORK=testnet
-HIERO_OPERATOR_ID=0.0.YOUR_ACCOUNT_ID
-HIERO_OPERATOR_KEY=YOUR_PRIVATE_KEY
-EOF
+# 2. Copy the .env.example to create your .env file
+cp samples/express-sample/.env.example samples/express-sample/.env
 
-# 3. Run any sample
+# 3. Edit the .env file — fill in the required fields and uncomment any optional fields you need
+#    You can get a free testnet account at https://portal.hedera.com
+
+# 4. Run any sample
 pnpm --filter hiero-express-sample dev    # port 3000
 pnpm --filter hiero-fastify-sample dev    # port 3001
 pnpm --filter hiero-nest-sample dev       # port 3002
 ```
 
-> **Note:** The `.env` file must be placed inside the sample's own directory (e.g. `samples/express-sample/.env`), not in the monorepo root.
+> **Note:** Each sample has its own `.env.example`. Copy it to `.env` inside that sample's directory (e.g. `samples/fastify-sample/.env`), not in the monorepo root.
+
+> **Tip:** You can create a free Hiero testnet account at https://portal.hedera.com to get an operator ID and private key for trying these demos.
 
 ## Available Endpoints
 

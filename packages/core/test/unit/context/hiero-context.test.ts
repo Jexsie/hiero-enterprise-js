@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { HieroContext } from "../../../src/context/hiero-context.js";
 import type { Transaction } from "@hiero-ledger/sdk";
-import { Client } from "@hiero-ledger/sdk";
+import { Client, PrivateKey } from "@hiero-ledger/sdk";
 import * as configModule from "../../../src/config/index.js";
 
 // Mock the SDK
@@ -34,7 +34,15 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
         PrivateKey: {
             fromStringDer: vi.fn((key: string) => ({
                 toString: () => key,
-                publicKey: { toString: () => "mock-public-key" },
+                publicKey: { toString: () => "mock-public-key-der" },
+            })),
+            fromStringED25519: vi.fn((key: string) => ({
+                toString: () => key,
+                publicKey: { toString: () => "mock-public-key-ed25519" },
+            })),
+            fromStringECDSA: vi.fn((key: string) => ({
+                toString: () => key,
+                publicKey: { toString: () => "mock-public-key-ecdsa" },
             })),
         },
     };
@@ -46,6 +54,7 @@ describe("HieroContext", () => {
         operatorId: "0.0.2",
         operatorKey:
             "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
+        operatorKeyType: "DER" as const,
     };
 
     beforeEach(() => {
@@ -58,7 +67,9 @@ describe("HieroContext", () => {
 
             expect(ctx.config).toEqual(validConfig);
             expect(ctx.operatorAccountId.toString()).toBe("0.0.2");
-            expect(ctx.operatorPublicKey.toString()).toBe("mock-public-key");
+            expect(ctx.operatorPublicKey.toString()).toBe(
+                "mock-public-key-der",
+            );
             expect(Client.forTestnet).toHaveBeenCalled();
             expect(ctx.client.setOperator).toHaveBeenCalled();
         });
@@ -146,6 +157,61 @@ describe("HieroContext", () => {
             const result = await ctx.signTransaction(mockTx);
             expect(mockTx.sign).toHaveBeenCalled();
             expect(result).toBe("signed");
+        });
+    });
+
+    describe("Key Type Parsing", () => {
+        it("parses DER key via PrivateKey.fromStringDer", () => {
+            const ctx = new HieroContext({
+                ...validConfig,
+                operatorKeyType: "DER",
+            });
+            expect(PrivateKey.fromStringDer).toHaveBeenCalledWith(
+                validConfig.operatorKey,
+            );
+            expect(ctx.operatorPublicKey.toString()).toBe(
+                "mock-public-key-der",
+            );
+        });
+
+        it("parses ED25519 key via PrivateKey.fromStringED25519", () => {
+            const ctx = new HieroContext({
+                ...validConfig,
+                operatorKeyType: "ED25519",
+            });
+            expect(PrivateKey.fromStringED25519).toHaveBeenCalledWith(
+                validConfig.operatorKey,
+            );
+            expect(ctx.operatorPublicKey.toString()).toBe(
+                "mock-public-key-ed25519",
+            );
+        });
+
+        it("parses ECDSA key via PrivateKey.fromStringECDSA", () => {
+            const ctx = new HieroContext({
+                ...validConfig,
+                operatorKeyType: "ECDSA",
+            });
+            expect(PrivateKey.fromStringECDSA).toHaveBeenCalledWith(
+                validConfig.operatorKey,
+            );
+            expect(ctx.operatorPublicKey.toString()).toBe(
+                "mock-public-key-ecdsa",
+            );
+        });
+
+        it("throws with a helpful message on invalid key material", () => {
+            vi.mocked(PrivateKey.fromStringDer).mockImplementationOnce(() => {
+                throw new Error("bad key");
+            });
+            expect(
+                () =>
+                    new HieroContext({
+                        ...validConfig,
+                        operatorKeyType: "DER",
+                        operatorKey: "not-a-valid-key",
+                    }),
+            ).toThrow(/Invalid operator key/);
         });
     });
 

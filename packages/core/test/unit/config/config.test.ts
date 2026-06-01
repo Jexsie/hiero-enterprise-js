@@ -54,14 +54,26 @@ describe("resolveConfigFromEnv", () => {
             HIERO_NETWORK: "testnet",
             HIERO_OPERATOR_ID: "0.0.1",
             HIERO_OPERATOR_KEY: "key123",
+            HIERO_OPERATOR_KEY_TYPE: "ECDSA",
         };
         const config = resolveConfigFromEnv();
         expect(config).toEqual({
             network: "testnet",
             operatorId: "0.0.1",
             operatorKey: "key123",
+            operatorKeyType: "ECDSA",
             mirrorNodeUrl: undefined,
         });
+        process.env = env;
+    });
+
+    it("returns null when operatorKeyType is missing", () => {
+        process.env = {
+            HIERO_NETWORK: "testnet",
+            HIERO_OPERATOR_ID: "0.0.1",
+            HIERO_OPERATOR_KEY: "key123",
+        };
+        expect(resolveConfigFromEnv()).toBeNull();
         process.env = env;
     });
 });

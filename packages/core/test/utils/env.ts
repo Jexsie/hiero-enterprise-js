@@ -19,6 +19,7 @@ export function setupIntegrationTestEnv(): HieroContext {
         network: "testnet",
         operatorId: SOLO_OPERATOR_ID,
         operatorKey: SOLO_OPERATOR_KEY,
+        operatorKeyType: "DER",
         mirrorNodeUrl:
             process.env["HIERO_MIRROR_NODE_URL"] || "http://127.0.0.1:5551",
     });

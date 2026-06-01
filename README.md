@@ -34,8 +34,17 @@ Set your operator credentials as environment variables:
 ```bash
 HIERO_NETWORK=testnet
 HIERO_OPERATOR_ID=0.0.12345
-HIERO_OPERATOR_KEY=302e020100300506032b6570...
+HIERO_OPERATOR_KEY=your_private_key_here
+HIERO_OPERATOR_KEY_TYPE=ECDSA
 ```
+
+`HIERO_OPERATOR_KEY_TYPE` is **required** and tells the SDK how to parse your private key. Hiero supports multiple key algorithms and there is no reliable way to auto-detect the format from the raw key string alone. Accepted values:
+
+| Value | Description |
+|-------|-------------|
+| `ECDSA` | ECDSA secp256k1 key — compatible with EVM wallets and most providers |
+| `ED25519` | Ed25519 key — native Hiero key type |
+| `DER` | DER-encoded key (hex with ASN.1 headers, e.g. `302e020100...`) |
 
 Or pass config directly when registering the integration.
 
