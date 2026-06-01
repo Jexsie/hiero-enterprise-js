@@ -1,0 +1,10 @@
+blank_issues_enabled: true
+
+contact_links:
+  - name: :speech_balloon: Ask a Question
+    url: https://discord.com/channels/905194001349627914/1289954446712770600
+    about: Get help from the Hiero community on Discord
+
+  - name: :book: Contribution Guide
+    url: https://github.com/hiero-hackers/hiero-enterprise-js/blob/main/README.md
+    about: Learn how to get started with contributing
