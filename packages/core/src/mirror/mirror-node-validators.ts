@@ -1,4 +1,4 @@
-import { HieroError, HieroErrorCode } from "../errors/index.js";
+import { HieroError, HieroErrorCodes } from "../errors/index.js";
 import type {
     MirrorAccountResponse,
     MirrorExchangeRatesResponse,
@@ -133,6 +133,6 @@ function assertField(
 function mismatch(path: string, detail: string): HieroError {
     return new HieroError(
         `Mirror node response schema mismatch at ${path}: ${detail}.`,
-        { code: HieroErrorCode.MirrorNodeSchemaMismatch, context: path },
+        { code: HieroErrorCodes.MirrorNodeSchemaMismatch, context: path },
     );
 }

@@ -20,7 +20,7 @@ import type {
     MirrorNetworkSupplyResponse,
     MirrorNetworkStakeResponse,
 } from "../types/index.js";
-import { HieroError, HieroErrorCode } from "../errors/index.js";
+import { HieroError, HieroErrorCodes } from "../errors/index.js";
 import {
     convertPage,
     convertAccountInfo,
@@ -129,8 +129,8 @@ export class MirrorNodeClient {
                     : `Mirror node request failed: ${url}`,
                 {
                     code: isAbort
-                        ? HieroErrorCode.TimedOut
-                        : HieroErrorCode.MirrorNodeError,
+                        ? HieroErrorCodes.TimedOut
+                        : HieroErrorCodes.MirrorNodeError,
                     context: path,
                     cause: err instanceof Error ? err : undefined,
                 },
@@ -153,7 +153,7 @@ export class MirrorNodeClient {
             throw new HieroError(
                 `Mirror node returned ${response.status}: ${response.statusText}`,
                 {
-                    code: HieroErrorCode.MirrorNodeHttpError,
+                    code: HieroErrorCodes.MirrorNodeHttpError,
                     context: path,
                 },
             );
@@ -314,7 +314,7 @@ export class MirrorNodeClient {
         );
         if (!raw.transactions || raw.transactions.length === 0) {
             throw new HieroError(`Transaction not found: ${transactionId}`, {
-                code: HieroErrorCode.NotFound,
+                code: HieroErrorCodes.NotFound,
             });
         }
         assertTransactionResponse(

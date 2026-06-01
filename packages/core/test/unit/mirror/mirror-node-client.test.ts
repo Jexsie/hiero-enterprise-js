@@ -1,6 +1,9 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { MirrorNodeClient } from "../../../src/mirror/mirror-node-client.js";
-import { HieroError, HieroErrorCode } from "../../../src/errors/hiero-error.js";
+import {
+    HieroError,
+    HieroErrorCodes,
+} from "../../../src/errors/hiero-error.js";
 
 describe("MirrorNodeClient", () => {
     let client: MirrorNodeClient;
@@ -174,7 +177,7 @@ describe("MirrorNodeClient", () => {
 
             const err = await client.queryAccount("0.0.1").catch((e) => e);
             expect(err).toBeInstanceOf(HieroError);
-            expect(err.code).toBe(HieroErrorCode.MirrorNodeSchemaMismatch);
+            expect(err.code).toBe(HieroErrorCodes.MirrorNodeSchemaMismatch);
         });
 
         it("rejects paginated response without a data array", async () => {
@@ -189,7 +192,7 @@ describe("MirrorNodeClient", () => {
                 .queryNftsByAccount("0.0.1")
                 .catch((e) => e);
             expect(err).toBeInstanceOf(HieroError);
-            expect(err.code).toBe(HieroErrorCode.MirrorNodeSchemaMismatch);
+            expect(err.code).toBe(HieroErrorCodes.MirrorNodeSchemaMismatch);
         });
 
         it("rejects token response missing 'token_id' field", async () => {
@@ -202,7 +205,7 @@ describe("MirrorNodeClient", () => {
 
             const err = await client.queryTokenById("0.0.555").catch((e) => e);
             expect(err).toBeInstanceOf(HieroError);
-            expect(err.code).toBe(HieroErrorCode.MirrorNodeSchemaMismatch);
+            expect(err.code).toBe(HieroErrorCodes.MirrorNodeSchemaMismatch);
         });
 
         it("rejects transaction list response without transactions array", async () => {
@@ -217,7 +220,7 @@ describe("MirrorNodeClient", () => {
                 .queryTransaction("0.0.1@123.000")
                 .catch((e) => e);
             expect(err).toBeInstanceOf(HieroError);
-            expect(err.code).toBe(HieroErrorCode.MirrorNodeSchemaMismatch);
+            expect(err.code).toBe(HieroErrorCodes.MirrorNodeSchemaMismatch);
         });
 
         it("rejects a non-object (array) response", async () => {
@@ -230,7 +233,7 @@ describe("MirrorNodeClient", () => {
 
             const err = await client.queryAccount("0.0.1").catch((e) => e);
             expect(err).toBeInstanceOf(HieroError);
-            expect(err.code).toBe(HieroErrorCode.MirrorNodeSchemaMismatch);
+            expect(err.code).toBe(HieroErrorCodes.MirrorNodeSchemaMismatch);
         });
     });
 });

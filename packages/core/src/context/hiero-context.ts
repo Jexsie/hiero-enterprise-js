@@ -1,8 +1,8 @@
+import { HieroErrorCodes, HieroError } from "../errors/index.js";
 import type { Transaction } from "@hiero-ledger/sdk";
 import { Client, AccountId, PrivateKey } from "@hiero-ledger/sdk";
 import type { HieroConfig } from "../config/index.js";
 import { resolveConfigFromEnv, assertEnvConfigValid } from "../config/index.js";
-import { HieroError, HieroErrorCode } from "../errors/index.js";
 import type {
     TransactionListener,
     TransactionEvent,
@@ -64,7 +64,7 @@ export class HieroContext implements IHieroContext {
         } else {
             throw new HieroError(
                 `Unknown network "${resolved.network}". Provide a mirrorNodeUrl for custom networks.`,
-                { code: HieroErrorCode.ConfigInvalid },
+                { code: HieroErrorCodes.ConfigInvalid },
             );
         }
 
@@ -77,7 +77,7 @@ export class HieroContext implements IHieroContext {
             throw new HieroError(
                 `Invalid operator key format. Ensure HIERO_OPERATOR_KEY is a valid DER-encoded private key.`,
                 {
-                    code: HieroErrorCode.ConfigInvalid,
+                    code: HieroErrorCodes.ConfigInvalid,
                     cause: cause instanceof Error ? cause : undefined,
                 },
             );

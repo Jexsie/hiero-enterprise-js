@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
     HieroError,
-    HieroErrorCode,
+    HieroErrorCodes,
     normalizeError,
 } from "../../../src/errors/hiero-error.js";
 
@@ -9,7 +9,7 @@ describe("HieroError", () => {
     it("creates an error with default values", () => {
         const error = new HieroError("test error");
         expect(error.message).toBe("test error");
-        expect(error.code).toBe(HieroErrorCode.Unknown);
+        expect(error.code).toBe(HieroErrorCodes.Unknown);
         expect(error.name).toBe("HieroError");
         expect(error.context).toBeUndefined();
         expect(error.cause).toBeUndefined();
@@ -18,11 +18,11 @@ describe("HieroError", () => {
     it("creates an error with custom options", () => {
         const cause = new Error("original");
         const error = new HieroError("wrapped", {
-            code: HieroErrorCode.ConfigInvalid,
+            code: HieroErrorCodes.ConfigInvalid,
             context: "doing something",
             cause,
         });
-        expect(error.code).toBe(HieroErrorCode.ConfigInvalid);
+        expect(error.code).toBe(HieroErrorCodes.ConfigInvalid);
         expect(error.context).toBe("doing something");
         expect(error.cause).toBe(cause);
     });
@@ -35,7 +35,7 @@ describe("HieroError", () => {
 
     it("stores transactionId when provided", () => {
         const error = new HieroError("tx failed", {
-            code: HieroErrorCode.SdkError,
+            code: HieroErrorCodes.SdkError,
             sdkStatus: "ACCOUNT_DELETED",
             transactionId: "0.0.2@1234567890.000",
         });
@@ -47,7 +47,7 @@ describe("HieroError", () => {
 describe("normalizeError", () => {
     it("returns HieroError as-is", () => {
         const original = new HieroError("original", {
-            code: HieroErrorCode.Unknown,
+            code: HieroErrorCodes.Unknown,
         });
         const result = normalizeError(original);
         expect(result).toBe(original);
@@ -58,7 +58,7 @@ describe("normalizeError", () => {
         const result = normalizeError(original, "in testing");
         expect(result).toBeInstanceOf(HieroError);
         expect(result.message).toBe("std error");
-        expect(result.code).toBe(HieroErrorCode.SdkError);
+        expect(result.code).toBe(HieroErrorCodes.SdkError);
         expect(result.context).toBe("in testing");
         expect(result.cause).toBe(original);
     });
@@ -68,7 +68,7 @@ describe("normalizeError", () => {
             status: { toString: () => "INSUFFICIENT_PAYER_BALANCE" },
         });
         const result = normalizeError(sdkError);
-        expect(result.code).toBe(HieroErrorCode.SdkError);
+        expect(result.code).toBe(HieroErrorCodes.SdkError);
         expect(result.sdkStatus).toBe("INSUFFICIENT_PAYER_BALANCE");
     });
 
@@ -78,7 +78,7 @@ describe("normalizeError", () => {
             transactionId: { toString: () => "0.0.2@123.456" },
         });
         const result = normalizeError(sdkError);
-        expect(result.code).toBe(HieroErrorCode.SdkError);
+        expect(result.code).toBe(HieroErrorCodes.SdkError);
         expect(result.sdkStatus).toBe("ACCOUNT_DELETED");
         expect(result.transactionId).toBe("0.0.2@123.456");
     });
@@ -86,7 +86,7 @@ describe("normalizeError", () => {
     it("wraps a string", () => {
         const result = normalizeError("oops");
         expect(result.message).toBe("oops");
-        expect(result.code).toBe(HieroErrorCode.Unknown);
+        expect(result.code).toBe(HieroErrorCodes.Unknown);
     });
 
     it("wraps a number", () => {

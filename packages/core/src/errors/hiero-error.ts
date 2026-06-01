@@ -2,7 +2,7 @@
  * Custom error class for Hiero operations.
  * Wraps SDK and network errors with additional context.
  */
-export const HieroErrorCode = {
+export const HieroErrorCodes = {
     ConfigInvalid: "CONFIG_INVALID",
     MirrorNodeError: "MIRROR_NODE_ERROR",
     MirrorNodeHttpError: "MIRROR_NODE_HTTP_ERROR",
@@ -13,9 +13,8 @@ export const HieroErrorCode = {
     Unknown: "UNKNOWN",
 } as const;
 
-// eslint-disable-next-line no-redeclare
 export type HieroErrorCode =
-    (typeof HieroErrorCode)[keyof typeof HieroErrorCode];
+    (typeof HieroErrorCodes)[keyof typeof HieroErrorCodes];
 
 export class HieroError extends Error {
     /** Machine-readable error code */
@@ -41,7 +40,7 @@ export class HieroError extends Error {
     ) {
         super(message);
         this.name = "HieroError";
-        this.code = options.code ?? HieroErrorCode.Unknown;
+        this.code = options.code ?? HieroErrorCodes.Unknown;
         this.sdkStatus = options.sdkStatus;
         this.context = options.context;
         this.cause = options.cause;
@@ -75,7 +74,7 @@ export function normalizeError(error: unknown, context?: string): HieroError {
 
         if (receiptError.status && receiptError.transactionId) {
             return new HieroError(error.message, {
-                code: HieroErrorCode.SdkError,
+                code: HieroErrorCodes.SdkError,
                 sdkStatus: receiptError.status.toString(),
                 context,
                 cause: error,
@@ -87,7 +86,7 @@ export function normalizeError(error: unknown, context?: string): HieroError {
         const sdkError = error as { status?: { toString(): string } };
 
         return new HieroError(error.message, {
-            code: HieroErrorCode.SdkError,
+            code: HieroErrorCodes.SdkError,
             sdkStatus: sdkError.status?.toString(),
             context,
             cause: error,
@@ -95,7 +94,7 @@ export function normalizeError(error: unknown, context?: string): HieroError {
     }
 
     return new HieroError(String(error), {
-        code: HieroErrorCode.Unknown,
+        code: HieroErrorCodes.Unknown,
         context,
     });
 }

@@ -18,7 +18,7 @@ export interface IHieroContext {
     /** The operator account ID */
     readonly operatorAccountId: AccountId;
 
-    /** The operator's public key (safe to expose) */
+    /** The operator's public key */
     readonly operatorPublicKey: PublicKey;
 
     /** Sign a transaction with the operator key */
