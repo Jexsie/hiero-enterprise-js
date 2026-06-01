@@ -30,7 +30,7 @@ describe("AccountClient [Integration]", () => {
 
         // Since we don't return the exact TxID from createAccount, we can query balance directly from consensus node:
         const balance = await client.getAccountBalance(account.accountId);
-        expect(balance.hbars).toBe(initialBalance * 100_000_000);
+        expect(balance.hbars).toBe(String(initialBalance * 100_000_000));
 
         // Let's delete it natively (funds to operator)
         await client.deleteAccount(account.accountId, account.privateKey!);
@@ -60,7 +60,7 @@ describe("AccountClient [Integration]", () => {
         expect(account.evmAddress).toBeDefined();
 
         const balance = await client.getAccountBalance(account.accountId);
-        expect(balance.hbars).toBe(5 * 100_000_000);
+        expect(balance.hbars).toBe(String(5 * 100_000_000));
     }, 25000);
 
     it("autoCreateEvmAccount successfully transfers HBAR to a cold '0x' address", async () => {

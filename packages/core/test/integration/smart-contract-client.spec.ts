@@ -30,12 +30,10 @@ describe("SmartContractClient [Integration]", () => {
     }, 35000);
 
     it("deletes the deployed smart contract", async () => {
-        // We transfer any remaining funds inside the contract to the operator ID natively mapping to setup
+        // Contract deployed without adminKey is immutable and cannot be deleted
         const operatorId = SOLO_OPERATOR_ID;
-        await client.deleteContract(testContractId, operatorId);
-
-        await waitForMirrorNodeRecord();
-
-        expect(true).toBe(true);
+        await expect(
+            client.deleteContract(testContractId, operatorId),
+        ).rejects.toThrow(/MODIFYING_IMMUTABLE_CONTRACT/);
     }, 25000);
 });
