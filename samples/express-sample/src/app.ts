@@ -42,7 +42,7 @@ app.get("/", (_req, res) => {
 app.get("/api/balance", async (req, res) => {
     try {
         const balance =
-            await req.hiero.accountClient.getOperatorAccountBalance();
+            await req.hiero.accountService.getOperatorAccountBalance();
         res.json(balance);
     } catch (error) {
         res.status(500).json({ error: String(error) });
@@ -101,7 +101,7 @@ app.get("/api/topics/:id/messages", async (req, res) => {
 app.post("/api/topics", async (req, res) => {
     try {
         const { memo } = req.body as { memo?: string };
-        const topicId = await req.hiero.topicClient.createTopic({ memo });
+        const topicId = await req.hiero.topicService.createTopic({ memo });
         res.status(201).json({ topicId });
     } catch (error) {
         res.status(500).json({ error: String(error) });
@@ -112,7 +112,7 @@ app.post("/api/topics", async (req, res) => {
 app.post("/api/topics/:id/messages", async (req, res) => {
     try {
         const { message } = req.body as { message: string };
-        await req.hiero.topicClient.submitMessage(req.params.id, message);
+        await req.hiero.topicService.submitMessage(req.params.id, message);
         res.status(202).json({ status: "submitted" });
     } catch (error) {
         res.status(500).json({ error: String(error) });

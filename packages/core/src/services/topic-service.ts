@@ -45,7 +45,7 @@ export interface UpdateTopicOptions {
 /**
  * Service for managing topics on the Hiero consensus service.
  */
-export class TopicClient {
+export class TopicService {
     private readonly context: IHieroContext;
 
     constructor(context: IHieroContext) {
@@ -55,7 +55,7 @@ export class TopicClient {
     private createEvent(type: string, methodName: string): TransactionEvent {
         return {
             type,
-            serviceName: "TopicClient",
+            serviceName: "TopicService",
             methodName,
             timestamp: new Date(),
         };
@@ -140,7 +140,7 @@ export class TopicClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "TopicClient.updateTopic");
+            throw normalizeError(error, "TopicService.updateTopic");
         }
     }
 
@@ -223,7 +223,7 @@ export class TopicClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "TopicClient.deleteTopic");
+            throw normalizeError(error, "TopicService.deleteTopic");
         }
     }
 
@@ -273,7 +273,7 @@ export class TopicClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "TopicClient.submitMessage");
+            throw normalizeError(error, "TopicService.submitMessage");
         }
     }
 
@@ -335,7 +335,7 @@ export class TopicClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, `TopicClient.${methodName}`);
+            throw normalizeError(error, `TopicService.${methodName}`);
         }
     }
 }

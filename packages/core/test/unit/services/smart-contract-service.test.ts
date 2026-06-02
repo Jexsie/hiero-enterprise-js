@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { SmartContractClient } from "../../../src/services/smart-contract-client.js";
+import { SmartContractService } from "../../../src/services/smart-contract-service.js";
 import { createMockContext } from "../../utils/mock-context.js";
 import type { IHieroContext } from "../../../src/context/index.js";
 import {
@@ -59,14 +59,14 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     };
 });
 
-describe("SmartContractClient", () => {
+describe("SmartContractService", () => {
     let context: IHieroContext;
-    let client: SmartContractClient;
+    let client: SmartContractService;
 
     beforeEach(() => {
         vi.clearAllMocks();
         context = createMockContext();
-        client = new SmartContractClient(context);
+        client = new SmartContractService(context);
     });
 
     describe("createContract", () => {

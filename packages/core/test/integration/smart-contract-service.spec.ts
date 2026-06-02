@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { setupIntegrationTestEnv, SOLO_OPERATOR_ID } from "../utils/env.js";
 import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
-import { SmartContractClient } from "../../src/services/smart-contract-client.js";
+import { SmartContractService } from "../../src/services/smart-contract-service.js";
 
-describe("SmartContractClient [Integration]", () => {
-    let client: SmartContractClient;
+describe("SmartContractService [Integration]", () => {
+    let client: SmartContractService;
     let testContractId: string;
 
     beforeAll(() => {
         const ctx = setupIntegrationTestEnv();
-        client = new SmartContractClient(ctx);
+        client = new SmartContractService(ctx);
     });
 
     it("deploys a smart contract bypassing the file service via direct bytecode", async () => {

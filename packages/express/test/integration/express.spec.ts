@@ -21,7 +21,7 @@ describe("hieroMiddleware", () => {
 
         expect(next).toHaveBeenCalledTimes(1);
         expect(req.hiero).toBeDefined();
-        expect(req.hiero.accountClient).toBeDefined();
+        expect(req.hiero.accountService).toBeDefined();
         expect(req.hiero.networkRepository).toBeDefined();
 
         req.hiero.context.close();

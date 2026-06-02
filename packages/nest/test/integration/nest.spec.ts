@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { Test } from "@nestjs/testing";
 import { describe, expect, it } from "vitest";
-import { AccountClient, HieroModule } from "../../src/index.js";
+import { AccountService, HieroModule } from "../../src/index.js";
 
 const config = {
     network: "testnet",
@@ -25,8 +25,8 @@ describe("HieroModule", () => {
             imports: [HieroModule.forRoot(config)],
         }).compile();
 
-        const accountClient = moduleRef.get(AccountClient);
-        expect(accountClient).toBeInstanceOf(AccountClient);
+        const accountService = moduleRef.get(AccountService);
+        expect(accountService).toBeInstanceOf(AccountService);
 
         await moduleRef.close();
     });

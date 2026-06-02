@@ -15,7 +15,7 @@ import { normalizeError } from "../errors/index.js";
 /**
  * Service for managing smart contracts on the Hiero network.
  */
-export class SmartContractClient {
+export class SmartContractService {
     private readonly context: IHieroContext;
 
     constructor(context: IHieroContext) {
@@ -25,7 +25,7 @@ export class SmartContractClient {
     private createEvent(type: string, methodName: string): TransactionEvent {
         return {
             type,
-            serviceName: "SmartContractClient",
+            serviceName: "SmartContractService",
             methodName,
             timestamp: new Date(),
         };
@@ -76,7 +76,7 @@ export class SmartContractClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "SmartContractClient.createContract");
+            throw normalizeError(error, "SmartContractService.createContract");
         }
     }
 
@@ -131,7 +131,7 @@ export class SmartContractClient {
             });
             throw normalizeError(
                 error,
-                "SmartContractClient.createContractFromBytecode",
+                "SmartContractService.createContractFromBytecode",
             );
         }
     }
@@ -195,7 +195,7 @@ export class SmartContractClient {
             });
             throw normalizeError(
                 error,
-                "SmartContractClient.callContractFunction",
+                "SmartContractService.callContractFunction",
             );
         }
     }
@@ -234,7 +234,7 @@ export class SmartContractClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "SmartContractClient.deleteContract");
+            throw normalizeError(error, "SmartContractService.deleteContract");
         }
     }
 }

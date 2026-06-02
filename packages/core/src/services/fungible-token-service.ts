@@ -44,7 +44,7 @@ export interface CreateTokenOptions {
 /**
  * Service for managing fungible tokens on the Hiero network (HTS).
  */
-export class FungibleTokenClient {
+export class FungibleTokenService {
     private readonly context: IHieroContext;
 
     constructor(context: IHieroContext) {
@@ -54,7 +54,7 @@ export class FungibleTokenClient {
     private createEvent(type: string, methodName: string): TransactionEvent {
         return {
             type,
-            serviceName: "FungibleTokenClient",
+            serviceName: "FungibleTokenService",
             methodName,
             timestamp: new Date(),
         };
@@ -68,7 +68,7 @@ export class FungibleTokenClient {
      *
      * @example
      * ```typescript
-     * const tokenClient = new FungibleTokenClient(context);
+     * const tokenClient = new FungibleTokenService(context);
      * const tokenId = await tokenClient.createToken({
      *   name: "Test Token",
      *   symbol: "TST",
@@ -131,7 +131,7 @@ export class FungibleTokenClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "FungibleTokenClient.createToken");
+            throw normalizeError(error, "FungibleTokenService.createToken");
         }
     }
 
@@ -175,7 +175,7 @@ export class FungibleTokenClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "FungibleTokenClient.associateToken");
+            throw normalizeError(error, "FungibleTokenService.associateToken");
         }
     }
 
@@ -219,7 +219,7 @@ export class FungibleTokenClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "FungibleTokenClient.dissociateToken");
+            throw normalizeError(error, "FungibleTokenService.dissociateToken");
         }
     }
 
@@ -263,7 +263,7 @@ export class FungibleTokenClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "FungibleTokenClient.mintToken");
+            throw normalizeError(error, "FungibleTokenService.mintToken");
         }
     }
 
@@ -307,7 +307,7 @@ export class FungibleTokenClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "FungibleTokenClient.burnToken");
+            throw normalizeError(error, "FungibleTokenService.burnToken");
         }
     }
 
@@ -355,7 +355,7 @@ export class FungibleTokenClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "FungibleTokenClient.transferToken");
+            throw normalizeError(error, "FungibleTokenService.transferToken");
         }
     }
 }

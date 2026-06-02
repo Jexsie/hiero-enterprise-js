@@ -18,19 +18,19 @@ describe("hieroPlugin", () => {
 
         app.get("/probe", async () => {
             return {
-                hasAccountClient: !!app.hiero.accountClient,
+                hasAccountService: !!app.hiero.accountService,
                 hasNetworkRepository: !!app.hiero.networkRepository,
             };
         });
 
         const response = await app.inject({ method: "GET", url: "/probe" });
         const payload = response.json() as {
-            hasAccountClient: boolean;
+            hasAccountService: boolean;
             hasNetworkRepository: boolean;
         };
 
         expect(response.statusCode).toBe(200);
-        expect(payload.hasAccountClient).toBe(true);
+        expect(payload.hasAccountService).toBe(true);
         expect(payload.hasNetworkRepository).toBe(true);
 
         await app.close();

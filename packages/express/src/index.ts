@@ -30,7 +30,7 @@ declare global {
  * app.use(hieroMiddleware({ network: 'testnet', operatorId: '0.0.1', operatorKey: '302e...' }));
  *
  * app.get('/balance', async (req, res) => {
- *   const balance = await req.hiero.accountClient.getOperatorAccountBalance();
+ *   const balance = await req.hiero.accountService.getOperatorAccountBalance();
  *   res.json(balance);
  * });
  * ```

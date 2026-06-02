@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { setupIntegrationTestEnv } from "../utils/env.js";
 import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
-import { FileClient } from "../../src/services/file-client.js";
+import { FileService } from "../../src/services/file-service.js";
 
-describe("FileClient [Integration]", () => {
-    let client: FileClient;
+describe("FileService [Integration]", () => {
+    let client: FileService;
     let testFileId: string;
 
     beforeAll(() => {
         const ctx = setupIntegrationTestEnv();
-        client = new FileClient(ctx);
+        client = new FileService(ctx);
     });
 
     it("creates a file directly and dynamically handles underlying chunks", async () => {

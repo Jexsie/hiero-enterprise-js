@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AccountClient } from "../../../src/services/account-client.js";
+import { AccountService } from "../../../src/services/account-service.js";
 import { createMockContext } from "../../utils/mock-context.js";
 import type { IHieroContext } from "../../../src/context/index.js";
 import type {
@@ -35,7 +35,7 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
 
 describe("Transaction Listeners", () => {
     let context: IHieroContext;
-    let client: AccountClient;
+    let client: AccountService;
     const beforeEvents: TransactionEvent[] = [];
     const afterEvents: TransactionEvent[] = [];
 
@@ -69,7 +69,7 @@ describe("Transaction Listeners", () => {
             },
         );
 
-        client = new AccountClient(context);
+        client = new AccountService(context);
     });
 
     it("registers and calls listener on successful transaction", async () => {

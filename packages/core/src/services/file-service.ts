@@ -18,7 +18,7 @@ const MAX_CHUNK_SIZE = 4096;
  *
  * Automatically handles chunking for files > 4KB.
  */
-export class FileClient {
+export class FileService {
     private readonly context: IHieroContext;
 
     constructor(context: IHieroContext) {
@@ -39,7 +39,7 @@ export class FileClient {
     ): Promise<string> {
         const event: TransactionEvent = {
             type: "FileCreate",
-            serviceName: "FileClient",
+            serviceName: "FileService",
             methodName: "createFile",
             timestamp: new Date(),
         };
@@ -80,7 +80,7 @@ export class FileClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "FileClient.createFile");
+            throw normalizeError(error, "FileService.createFile");
         }
     }
 
@@ -96,7 +96,7 @@ export class FileClient {
                 .setFileId(fileId)
                 .execute(this.context.client);
         } catch (error) {
-            throw normalizeError(error, "FileClient.readFile");
+            throw normalizeError(error, "FileService.readFile");
         }
     }
 
@@ -110,7 +110,7 @@ export class FileClient {
     async updateFile(fileId: string, contents: Uint8Array): Promise<void> {
         const event: TransactionEvent = {
             type: "FileUpdate",
-            serviceName: "FileClient",
+            serviceName: "FileService",
             methodName: "updateFile",
             timestamp: new Date(),
         };
@@ -145,7 +145,7 @@ export class FileClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "FileClient.updateFile");
+            throw normalizeError(error, "FileService.updateFile");
         }
     }
 
@@ -157,7 +157,7 @@ export class FileClient {
     async deleteFile(fileId: string): Promise<void> {
         const event: TransactionEvent = {
             type: "FileDelete",
-            serviceName: "FileClient",
+            serviceName: "FileService",
             methodName: "deleteFile",
             timestamp: new Date(),
         };
@@ -184,7 +184,7 @@ export class FileClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "FileClient.deleteFile");
+            throw normalizeError(error, "FileService.deleteFile");
         }
     }
 
@@ -204,7 +204,7 @@ export class FileClient {
                 .setExpirationTime(expirationTime)
                 .execute(this.context.client);
         } catch (error) {
-            throw normalizeError(error, "FileClient.updateExpirationTime");
+            throw normalizeError(error, "FileService.updateExpirationTime");
         }
     }
 
@@ -221,7 +221,7 @@ export class FileClient {
                 .execute(this.context.client);
             return info.isDeleted;
         } catch (error) {
-            throw normalizeError(error, "FileClient.isDeleted");
+            throw normalizeError(error, "FileService.isDeleted");
         }
     }
 
@@ -238,7 +238,7 @@ export class FileClient {
                 .execute(this.context.client);
             return info.size.toNumber();
         } catch (error) {
-            throw normalizeError(error, "FileClient.getSize");
+            throw normalizeError(error, "FileService.getSize");
         }
     }
 
@@ -255,7 +255,7 @@ export class FileClient {
                 .execute(this.context.client);
             return info.expirationTime!.toDate();
         } catch (error) {
-            throw normalizeError(error, "FileClient.getExpirationTime");
+            throw normalizeError(error, "FileService.getExpirationTime");
         }
     }
 

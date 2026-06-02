@@ -11,12 +11,12 @@ import {
     NetworkRepository,
 } from "../repositories/index.js";
 import {
-    AccountClient,
-    FileClient,
-    FungibleTokenClient,
-    NftClient,
-    SmartContractClient,
-    TopicClient,
+    AccountService,
+    FileService,
+    FungibleTokenService,
+    NftService,
+    SmartContractService,
+    TopicService,
 } from "../services/index.js";
 import type { HieroServices } from "../types/index.js";
 
@@ -42,12 +42,12 @@ export function createHieroRuntime(config?: HieroConfig): HieroRuntime {
     return {
         context,
         mirrorNodeClient,
-        accountClient: new AccountClient(context),
-        fileClient: new FileClient(context),
-        fungibleTokenClient: new FungibleTokenClient(context),
-        nftClient: new NftClient(context),
-        smartContractClient: new SmartContractClient(context),
-        topicClient: new TopicClient(context),
+        accountService: new AccountService(context),
+        fileService: new FileService(context),
+        fungibleTokenService: new FungibleTokenService(context),
+        nftService: new NftService(context),
+        smartContractService: new SmartContractService(context),
+        topicService: new TopicService(context),
         accountRepository: new AccountRepository(mirrorNodeClient),
         nftRepository: new NftRepository(mirrorNodeClient),
         tokenRepository: new TokenRepository(mirrorNodeClient),

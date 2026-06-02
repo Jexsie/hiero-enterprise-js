@@ -1,10 +1,10 @@
 import type { HieroContext } from "../context/index.js";
-import type { AccountClient } from "../services/account-client.js";
-import type { FileClient } from "../services/file-client.js";
-import type { FungibleTokenClient } from "../services/fungible-token-client.js";
-import type { NftClient } from "../services/nft-client.js";
-import type { SmartContractClient } from "../services/smart-contract-client.js";
-import type { TopicClient } from "../services/topic-client.js";
+import type { AccountService } from "../services/account-service.js";
+import type { FileService } from "../services/file-service.js";
+import type { FungibleTokenService } from "../services/fungible-token-service.js";
+import type { NftService } from "../services/nft-service.js";
+import type { SmartContractService } from "../services/smart-contract-service.js";
+import type { TopicService } from "../services/topic-service.js";
 import type { AccountRepository } from "../repositories/account-repository.js";
 import type { NftRepository } from "../repositories/nft-repository.js";
 import type { TokenRepository } from "../repositories/token-repository.js";
@@ -18,12 +18,12 @@ import type { NetworkRepository } from "../repositories/network-repository.js";
  */
 export interface HieroServices {
     context: HieroContext;
-    accountClient: AccountClient;
-    fileClient: FileClient;
-    fungibleTokenClient: FungibleTokenClient;
-    nftClient: NftClient;
-    smartContractClient: SmartContractClient;
-    topicClient: TopicClient;
+    accountService: AccountService;
+    fileService: FileService;
+    fungibleTokenService: FungibleTokenService;
+    nftService: NftService;
+    smartContractService: SmartContractService;
+    topicService: TopicService;
     accountRepository: AccountRepository;
     nftRepository: NftRepository;
     tokenRepository: TokenRepository;

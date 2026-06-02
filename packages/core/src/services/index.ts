@@ -1,14 +1,14 @@
-export { AccountClient } from "./account-client.js";
-export type { CreateAccountOptions } from "./account-client.js";
-export { FileClient } from "./file-client.js";
-export { FungibleTokenClient } from "./fungible-token-client.js";
-export type { CreateTokenOptions } from "./fungible-token-client.js";
-export { NftClient } from "./nft-client.js";
-export type { CreateNftTypeOptions } from "./nft-client.js";
-export { SmartContractClient } from "./smart-contract-client.js";
-export { TopicClient } from "./topic-client.js";
+export { AccountService } from "./account-service.js";
+export type { CreateAccountOptions } from "./account-service.js";
+export { FileService } from "./file-service.js";
+export { FungibleTokenService } from "./fungible-token-service.js";
+export type { CreateTokenOptions } from "./fungible-token-service.js";
+export { NftService } from "./nft-service.js";
+export type { CreateNftTypeOptions } from "./nft-service.js";
+export { SmartContractService } from "./smart-contract-service.js";
+export { TopicService } from "./topic-service.js";
 export type {
     CreateTopicOptions,
     CreatePrivateTopicOptions,
     UpdateTopicOptions,
-} from "./topic-client.js";
+} from "./topic-service.js";

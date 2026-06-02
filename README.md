@@ -58,7 +58,7 @@ const app = express();
 app.use(hieroMiddleware());
 
 app.get('/balance', async (req, res) => {
-  const balance = await req.hiero.accountClient.getOperatorAccountBalance();
+  const balance = await req.hiero.accountService.getOperatorAccountBalance();
   res.json(balance);
 });
 ```
@@ -73,7 +73,7 @@ const app = Fastify();
 await app.register(hieroPlugin);
 
 app.get('/balance', async () => {
-  return app.hiero.accountClient.getOperatorAccountBalance();
+  return app.hiero.accountService.getOperatorAccountBalance();
 });
 ```
 
@@ -81,14 +81,14 @@ app.get('/balance', async () => {
 
 ```ts
 import { Module } from '@nestjs/common';
-import { HieroModule, AccountClient } from '@hiero-enterprise/nest';
+import { HieroModule, AccountService } from '@hiero-enterprise/nest';
 
 @Module({ imports: [HieroModule.forRoot()] })
 export class AppModule {}
 
 @Controller('balance')
 export class BalanceController {
-  constructor(private readonly accounts: AccountClient) {}
+  constructor(private readonly accounts: AccountService) {}
 
   @Get()
   getBalance() {
@@ -133,12 +133,12 @@ Clients handle write operations through the Hiero SDK — transactions that go o
 
 | Client | What it covers |
 |--------|---------------|
-| `AccountClient` | Create, delete, check balances |
-| `FileClient` | Store and retrieve file content on-chain |
-| `FungibleTokenClient` | Create, mint, burn, and transfer fungible tokens |
-| `NftClient` | Create NFT types, mint (single + batch), burn, transfer |
-| `SmartContractClient` | Deploy and call EVM-compatible smart contracts |
-| `TopicClient` | Create topics, manage keys, submit messages |
+| `AccountService` | Create, delete, check balances |
+| `FileService` | Store and retrieve file content on-chain |
+| `FungibleTokenService` | Create, mint, burn, and transfer fungible tokens |
+| `NftService` | Create NFT types, mint (single + batch), burn, transfer |
+| `SmartContractService` | Deploy and call EVM-compatible smart contracts |
+| `TopicService` | Create topics, manage keys, submit messages |
 
 ## Mirror Node Queries
 

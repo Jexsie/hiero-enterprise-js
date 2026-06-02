@@ -1,17 +1,17 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { setupIntegrationTestEnv } from "../utils/env.js";
 import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
-import { AccountClient } from "../../src/services/account-client.js";
+import { AccountService } from "../../src/services/account-service.js";
 import { AccountType } from "../../src/types/index.js";
 import { PrivateKey } from "@hiero-ledger/sdk";
 
-describe("AccountClient [Integration]", () => {
-    let client: AccountClient;
+describe("AccountService [Integration]", () => {
+    let client: AccountService;
 
     beforeAll(() => {
         // Setup internal context to point directly at localhost nodes
         const ctx = setupIntegrationTestEnv();
-        client = new AccountClient(ctx);
+        client = new AccountService(ctx);
     });
 
     it("creates an ED25519 (NATIVE) account, validates balance, and confirms creation on Mirror Node", async () => {

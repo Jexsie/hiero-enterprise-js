@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { FileClient } from "../../../src/services/file-client.js";
+import { FileService } from "../../../src/services/file-service.js";
 import { createMockContext } from "../../utils/mock-context.js";
 import type { IHieroContext } from "../../../src/context/index.js";
 import {
@@ -64,14 +64,14 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     };
 });
 
-describe("FileClient", () => {
+describe("FileService", () => {
     let context: IHieroContext;
-    let client: FileClient;
+    let client: FileService;
 
     beforeEach(() => {
         vi.clearAllMocks();
         context = createMockContext();
-        client = new FileClient(context);
+        client = new FileService(context);
     });
 
     describe("createFile", () => {

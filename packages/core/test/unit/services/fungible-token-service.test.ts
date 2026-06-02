@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { FungibleTokenClient } from "../../../src/services/fungible-token-client.js";
+import { FungibleTokenService } from "../../../src/services/fungible-token-service.js";
 import { createMockContext } from "../../utils/mock-context.js";
 import type { IHieroContext } from "../../../src/context/index.js";
 import {
@@ -74,14 +74,14 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     };
 });
 
-describe("FungibleTokenClient", () => {
+describe("FungibleTokenService", () => {
     let context: IHieroContext;
-    let client: FungibleTokenClient;
+    let client: FungibleTokenService;
 
     beforeEach(() => {
         vi.clearAllMocks();
         context = createMockContext();
-        client = new FungibleTokenClient(context);
+        client = new FungibleTokenService(context);
     });
 
     describe("createToken", () => {

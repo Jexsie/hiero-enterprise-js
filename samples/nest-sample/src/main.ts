@@ -2,8 +2,8 @@ import { Module, Controller, Get, Post, Param, Body } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import {
-    AccountClient,
-    TopicClient,
+    AccountService,
+    TopicService,
     AccountRepository,
     NftRepository,
     TokenRepository,
@@ -47,14 +47,14 @@ class RootController {
 @Controller("api")
 class AccountController {
     constructor(
-        private readonly accountClient: AccountClient,
+        private readonly accountService: AccountService,
         private readonly accountRepo: AccountRepository,
         private readonly nftRepo: NftRepository,
     ) {}
 
     @Get("balance")
     getBalance() {
-        return this.accountClient.getOperatorAccountBalance();
+        return this.accountService.getOperatorAccountBalance();
     }
 
     @Get("accounts/:id")
@@ -71,7 +71,7 @@ class AccountController {
     async createAccount(
         @Body() body: { initialBalance?: number; memo?: string },
     ) {
-        const account = await this.accountClient.createAccount({
+        const account = await this.accountService.createAccount({
             initialBalance: body.initialBalance,
             memo: body.memo,
         });
@@ -98,7 +98,7 @@ class TokenController {
 @Controller("api/topics")
 class TopicController {
     constructor(
-        private readonly topicClient: TopicClient,
+        private readonly topicService: TopicService,
         private readonly topicRepo: TopicRepository,
     ) {}
 
@@ -109,7 +109,9 @@ class TopicController {
 
     @Post()
     async createTopic(@Body() body: { memo?: string }) {
-        const topicId = await this.topicClient.createTopic({ memo: body.memo });
+        const topicId = await this.topicService.createTopic({
+            memo: body.memo,
+        });
         return { topicId };
     }
 
@@ -118,7 +120,7 @@ class TopicController {
         @Param("id") id: string,
         @Body() body: { message: string },
     ) {
-        await this.topicClient.submitMessage(id, body.message);
+        await this.topicService.submitMessage(id, body.message);
         return { status: "submitted" };
     }
 }

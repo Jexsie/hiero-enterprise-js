@@ -60,13 +60,13 @@ Then inject any service into your controllers:
 @Controller('api')
 export class AccountController {
   constructor(
-    private readonly accountClient: AccountClient,
+    private readonly accountService: AccountService,
     private readonly accountRepo: AccountRepository,
   ) {}
 
   @Get('balance')
   getBalance() {
-    return this.accountClient.getOperatorAccountBalance();
+    return this.accountService.getOperatorAccountBalance();
   }
 }
 ```

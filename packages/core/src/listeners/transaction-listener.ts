@@ -4,7 +4,7 @@
 export interface TransactionEvent {
     /** Transaction type, e.g. "AccountCreate", "TokenMint" */
     type: string;
-    /** Service class name, e.g. "AccountClient" */
+    /** Service class name, e.g. "AccountService" */
     serviceName: string;
     /** Method name, e.g. "createAccount" */
     methodName: string;

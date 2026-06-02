@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NftClient } from "../../../src/services/nft-client.js";
+import { NftService } from "../../../src/services/nft-service.js";
 import { createMockContext } from "../../utils/mock-context.js";
 import type { IHieroContext } from "../../../src/context/index.js";
 import {
@@ -79,14 +79,14 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     };
 });
 
-describe("NftClient", () => {
+describe("NftService", () => {
     let context: IHieroContext;
-    let client: NftClient;
+    let client: NftService;
 
     beforeEach(() => {
         vi.clearAllMocks();
         context = createMockContext();
-        client = new NftClient(context);
+        client = new NftService(context);
     });
 
     describe("createNftType", () => {

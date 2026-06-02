@@ -1,17 +1,17 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { setupIntegrationTestEnv } from "../utils/env.js";
 import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
-import { TopicClient } from "../../src/services/topic-client.js";
+import { TopicService } from "../../src/services/topic-service.js";
 import { PrivateKey } from "@hiero-ledger/sdk";
 
-describe("TopicClient [Integration]", () => {
-    let client: TopicClient;
+describe("TopicService [Integration]", () => {
+    let client: TopicService;
     let testTopicId: string;
     let customAdminKey: PrivateKey;
 
     beforeAll(() => {
         const ctx = setupIntegrationTestEnv();
-        client = new TopicClient(ctx);
+        client = new TopicService(ctx);
         customAdminKey = PrivateKey.generateED25519();
     });
 

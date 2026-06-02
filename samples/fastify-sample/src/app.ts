@@ -39,7 +39,7 @@ app.get("/", async () => {
 
 /** Get the operator account balance */
 app.get("/api/balance", async () => {
-    return app.hiero.accountClient.getOperatorAccountBalance();
+    return app.hiero.accountService.getOperatorAccountBalance();
 });
 
 /** Query an account from the mirror node */
@@ -74,7 +74,7 @@ app.get<{ Params: { id: string } }>(
 
 /** Create a new public topic */
 app.post<{ Body: { memo?: string } }>("/api/topics", async (request, reply) => {
-    const topicId = await app.hiero.topicClient.createTopic({
+    const topicId = await app.hiero.topicService.createTopic({
         memo: request.body.memo,
     });
     reply.code(201);
@@ -85,7 +85,7 @@ app.post<{ Body: { memo?: string } }>("/api/topics", async (request, reply) => {
 app.post<{ Params: { id: string }; Body: { message: string } }>(
     "/api/topics/:id/messages",
     async (request, reply) => {
-        await app.hiero.topicClient.submitMessage(
+        await app.hiero.topicService.submitMessage(
             request.params.id,
             request.body.message,
         );

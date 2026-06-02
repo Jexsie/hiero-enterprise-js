@@ -41,7 +41,7 @@ export interface CreateNftTypeOptions {
 /**
  * Service for managing non-fungible tokens on the Hiero network (HTS).
  */
-export class NftClient {
+export class NftService {
     private readonly context: IHieroContext;
 
     constructor(context: IHieroContext) {
@@ -51,7 +51,7 @@ export class NftClient {
     private createEvent(type: string, methodName: string): TransactionEvent {
         return {
             type,
-            serviceName: "NftClient",
+            serviceName: "NftService",
             methodName,
             timestamp: new Date(),
         };
@@ -117,7 +117,7 @@ export class NftClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "NftClient.createNftType");
+            throw normalizeError(error, "NftService.createNftType");
         }
     }
 
@@ -157,7 +157,7 @@ export class NftClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "NftClient.associateNft");
+            throw normalizeError(error, "NftService.associateNft");
         }
     }
 
@@ -197,7 +197,7 @@ export class NftClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "NftClient.dissociateNft");
+            throw normalizeError(error, "NftService.dissociateNft");
         }
     }
 
@@ -246,7 +246,7 @@ export class NftClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "NftClient.mintNft");
+            throw normalizeError(error, "NftService.mintNft");
         }
     }
 
@@ -298,7 +298,7 @@ export class NftClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "NftClient.mintNfts");
+            throw normalizeError(error, "NftService.mintNfts");
         }
     }
 
@@ -358,7 +358,7 @@ export class NftClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "NftClient.burnNfts");
+            throw normalizeError(error, "NftService.burnNfts");
         }
     }
 
@@ -440,7 +440,7 @@ export class NftClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "NftClient.transferNfts");
+            throw normalizeError(error, "NftService.transferNfts");
         }
     }
 }

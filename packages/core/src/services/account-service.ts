@@ -31,7 +31,7 @@ export interface CreateAccountOptions {
 /**
  * Service for managing accounts on the Hiero network.
  */
-export class AccountClient {
+export class AccountService {
     private readonly context: IHieroContext;
 
     constructor(context: IHieroContext) {
@@ -54,7 +54,7 @@ export class AccountClient {
     ): Promise<CreatedAccount> {
         const event: TransactionEvent = {
             type: "AccountCreate",
-            serviceName: "AccountClient",
+            serviceName: "AccountService",
             methodName: "createAccount",
             timestamp: new Date(),
         };
@@ -116,7 +116,7 @@ export class AccountClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "AccountClient.createAccount");
+            throw normalizeError(error, "AccountService.createAccount");
         }
     }
 
@@ -142,7 +142,7 @@ export class AccountClient {
     ): Promise<Account> {
         const event: TransactionEvent = {
             type: "AccountCreate",
-            serviceName: "AccountClient",
+            serviceName: "AccountService",
             methodName: "createAccountWithPublicKey",
             timestamp: new Date(),
         };
@@ -200,7 +200,7 @@ export class AccountClient {
             });
             throw normalizeError(
                 error,
-                "AccountClient.createAccountWithPublicKey",
+                "AccountService.createAccountWithPublicKey",
             );
         }
     }
@@ -218,7 +218,7 @@ export class AccountClient {
     ): Promise<void> {
         const event: TransactionEvent = {
             type: "AccountAutoCreate",
-            serviceName: "AccountClient",
+            serviceName: "AccountService",
             methodName: "autoCreateEvmAccount",
             timestamp: new Date(),
         };
@@ -255,7 +255,7 @@ export class AccountClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "AccountClient.autoCreateEvmAccount");
+            throw normalizeError(error, "AccountService.autoCreateEvmAccount");
         }
     }
 
@@ -273,7 +273,7 @@ export class AccountClient {
     ): Promise<void> {
         const event: TransactionEvent = {
             type: "AccountDelete",
-            serviceName: "AccountClient",
+            serviceName: "AccountService",
             methodName: "deleteAccount",
             timestamp: new Date(),
         };
@@ -308,7 +308,7 @@ export class AccountClient {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, "AccountClient.deleteAccount");
+            throw normalizeError(error, "AccountService.deleteAccount");
         }
     }
 
@@ -341,7 +341,7 @@ export class AccountClient {
                 tokens,
             };
         } catch (error) {
-            throw normalizeError(error, "AccountClient.getAccountBalance");
+            throw normalizeError(error, "AccountService.getAccountBalance");
         }
     }
 

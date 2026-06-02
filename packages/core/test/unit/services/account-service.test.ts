@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AccountClient } from "../../../src/services/account-client.js";
+import { AccountService } from "../../../src/services/account-service.js";
 import { createMockContext } from "../../utils/mock-context.js";
 import type { IHieroContext } from "../../../src/context/index.js";
 import {
@@ -70,14 +70,14 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     };
 });
 
-describe("AccountClient", () => {
+describe("AccountService", () => {
     let context: IHieroContext;
-    let client: AccountClient;
+    let client: AccountService;
 
     beforeEach(() => {
         vi.clearAllMocks();
         context = createMockContext();
-        client = new AccountClient(context);
+        client = new AccountService(context);
     });
 
     describe("createAccount", () => {

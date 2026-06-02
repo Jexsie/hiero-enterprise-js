@@ -35,7 +35,7 @@ export interface HieroPluginOptions extends FastifyPluginOptions {
  * app.register(hieroPlugin, { config: { network: 'testnet', operatorId: '0.0.1', operatorKey: '302e...' } });
  *
  * app.get('/balance', async (request, reply) => {
- *   const balance = await app.hiero.accountClient.getOperatorAccountBalance();
+ *   const balance = await app.hiero.accountService.getOperatorAccountBalance();
  *   return balance;
  * });
  * ```
