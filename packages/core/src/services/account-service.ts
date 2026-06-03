@@ -32,7 +32,7 @@ export interface CreateAccountOptions {
      *
      * Defaults to `AccountType.ED25519`.
      */
-    keyType?: AccountType;
+    keyType?: keyof typeof AccountType;
 
     /**
      * Whether to derive an EVM alias for the account.
@@ -87,7 +87,16 @@ export class AccountService {
      * This method accepts only the public key and submits the
      * `AccountCreateTransaction` to the network.
      *
-     * @param options - Account creation parameters (publicKey is required)
+     * @param options.publicKey - The public key (raw hex or DER-encoded hex)
+     * @param options.keyType - Key algorithm: `AccountType.ED25519` (default) or `AccountType.ECDSA`
+     * @param options.alias - `true` to derive EVM alias from key, or `{ ecdsaPublicKey }` for two-key pattern
+     * @param options.initialBalance - Initial HBAR balance (default: 0)
+     * @param options.receiverSignatureRequired - Require receiver sig for inbound transfers
+     * @param options.memo - Account memo (max 100 bytes)
+     * @param options.maxAutomaticTokenAssociations - Max auto token associations (0 = none, -1 = unlimited)
+     * @param options.stakedAccountId - Account ID to stake to (mutually exclusive with stakedNodeId)
+     * @param options.stakedNodeId - Node ID to stake to (mutually exclusive with stakedAccountId)
+     * @param options.declineStakingReward - Whether to decline staking rewards
      * @returns The created account (ID, public key, and optional EVM address)
      */
     async createAccount(options: CreateAccountOptions): Promise<Account> {
@@ -143,20 +152,25 @@ export class AccountService {
                     options.receiverSignatureRequired,
                 );
             }
+
             if (options.memo != null) {
                 tx.setAccountMemo(options.memo);
             }
+
             if (options.maxAutomaticTokenAssociations != null) {
                 tx.setMaxAutomaticTokenAssociations(
                     options.maxAutomaticTokenAssociations,
                 );
             }
+
             if (options.stakedAccountId != null) {
                 tx.setStakedAccountId(options.stakedAccountId);
             }
+
             if (options.stakedNodeId != null) {
                 tx.setStakedNodeId(options.stakedNodeId);
             }
+
             if (options.declineStakingReward != null) {
                 tx.setDeclineStakingReward(options.declineStakingReward);
             }
