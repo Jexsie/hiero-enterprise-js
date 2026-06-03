@@ -69,9 +69,19 @@ class AccountController {
 
     @Post("accounts")
     async createAccount(
-        @Body() body: { initialBalance?: number; memo?: string },
+        @Body()
+        body: {
+            publicKey: string;
+            keyType?: "ED25519" | "ECDSA";
+            alias?: boolean | { ecdsaPublicKey: string };
+            initialBalance?: number;
+            memo?: string;
+        },
     ) {
         const account = await this.accountService.createAccount({
+            publicKey: body.publicKey,
+            keyType: body.keyType,
+            alias: body.alias,
             initialBalance: body.initialBalance,
             memo: body.memo,
         });
@@ -79,7 +89,6 @@ class AccountController {
             message: "Account created successfully",
             accountId: account.accountId,
             publicKey: account.publicKey,
-            privateKey: account.privateKey,
             evmAddress: account.evmAddress,
         };
     }

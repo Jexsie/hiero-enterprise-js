@@ -6,6 +6,7 @@ import type {
     TransactionListener,
     TransactionEvent,
 } from "../../../src/listeners/index.js";
+import { PrivateKey } from "@hiero-ledger/sdk";
 
 vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     const actual = await importOriginal<Record<string, unknown>>();
@@ -38,6 +39,7 @@ describe("Transaction Listeners", () => {
     let client: AccountService;
     const beforeEvents: TransactionEvent[] = [];
     const afterEvents: TransactionEvent[] = [];
+    const testPubKey = PrivateKey.generateED25519().publicKey.toString();
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -79,7 +81,7 @@ describe("Transaction Listeners", () => {
         };
 
         context.addTransactionListener(listener);
-        await client.createAccount();
+        await client.createAccount({ publicKey: testPubKey });
 
         expect(beforeEvents).toHaveLength(1);
         expect(beforeEvents[0].type).toBe("AccountCreate");
@@ -96,7 +98,7 @@ describe("Transaction Listeners", () => {
         context.addTransactionListener(listener);
         context.removeTransactionListener(listener);
 
-        await client.createAccount();
+        await client.createAccount({ publicKey: testPubKey });
 
         expect(beforeEvents).toHaveLength(0);
         expect(afterEvents).toHaveLength(0);
@@ -120,7 +122,9 @@ describe("Transaction Listeners", () => {
         };
         context.addTransactionListener(listener);
 
-        await expect(client.createAccount()).rejects.toThrow();
+        await expect(
+            client.createAccount({ publicKey: testPubKey }),
+        ).rejects.toThrow();
 
         expect(beforeEvents).toHaveLength(1);
         expect(afterEvents).toHaveLength(1);

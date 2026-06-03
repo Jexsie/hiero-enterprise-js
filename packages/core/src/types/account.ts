@@ -1,11 +1,9 @@
-import type { PrivateKey } from "@hiero-ledger/sdk";
-
 /**
- * The type of account (and underlying key) to generate.
+ * The key algorithm type for the account.
  */
 export enum AccountType {
-    NATIVE = "ED25519",
-    EVM = "ECDSA",
+    ED25519 = "ED25519",
+    ECDSA = "ECDSA",
 }
 
 /**
@@ -18,20 +16,6 @@ export interface Account {
     publicKey: string;
     /** The EVM address derived from the public key */
     evmAddress?: string;
-}
-
-/**
- * Returned by account creation methods that generate a new key locally.
- * Contains the private key that must be stored securely by the caller.
- * The network never returns private key material; it is generated client-side
- * before submission and is not available again after creation.
- */
-export interface CreatedAccount extends Account {
-    /**
-     * The newly generated private key.
-     * Store it securely immediately; the key is not retrievable from the network later.
-     */
-    privateKey: PrivateKey;
 }
 
 /**

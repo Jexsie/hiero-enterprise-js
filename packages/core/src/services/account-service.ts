@@ -1,3 +1,4 @@
+import type { PrivateKey } from "@hiero-ledger/sdk";
 import {
     AccountCreateTransaction,
     AccountDeleteTransaction,
@@ -6,26 +7,67 @@ import {
     AccountId,
     PublicKey,
     Hbar,
-    PrivateKey,
 } from "@hiero-ledger/sdk";
+import type { Account, Balance } from "../types/index.js";
 import { AccountType } from "../types/index.js";
-import type { Account, CreatedAccount, Balance } from "../types/index.js";
 import type { IHieroContext } from "../context/index.js";
 import type { TransactionEvent } from "../listeners/index.js";
 import { normalizeError } from "../errors/index.js";
 
 /**
- * Options for creating a new account with a newly generated key pair.
+ * Options for creating a new account on the Hiero network.
+ *
+ * The caller is responsible for key generation (e.g. via HSM, KMS, or wallet).
+ * Only the public key is provided here — private key material never enters
+ * this library.
  */
 export interface CreateAccountOptions {
+    /** The public key for the new account (raw hex or DER-encoded hex). */
+    publicKey: string;
+
+    /**
+     * How to parse the public key. Required for raw hex keys where the
+     * algorithm cannot be inferred. For DER-encoded keys, the specified
+     * type must match the algorithm encoded in the DER prefix.
+     *
+     * Defaults to `AccountType.ED25519`.
+     */
+    keyType?: AccountType;
+
+    /**
+     * Whether to derive an EVM alias for the account.
+     *
+     * - `true` — derives alias from `publicKey` (requires `keyType: "ECDSA"`).
+     * - `{ ecdsaPublicKey: string }` — derives alias from a separate ECDSA key
+     *   while using `publicKey` as the account's controlling key (two-key pattern).
+     *   The separate key's derived EVM address becomes the permanent, immutable alias.
+     * - `undefined` / `false` — no alias is set.
+     *
+     * Note: aliases are immutable once set. Do not set an alias if you plan
+     * to rotate keys in the future.
+     */
+    alias?: boolean | { ecdsaPublicKey: string };
+
     /** Initial balance in HBAR (default: 0). Accepts Hbar instance for tinybar precision. */
     initialBalance?: number | Hbar;
-    /** Maximum automatic token associations (default: 0) */
-    maxAutomaticTokenAssociations?: number;
-    /** Account memo */
+
+    /** Whether the receiver signature is required for transfers to this account. */
+    receiverSignatureRequired?: boolean;
+
+    /** Account memo (max 100 bytes). */
     memo?: string;
-    /** Generate an EVM-compatible account (and underlying key). Defaults to HIERO NATIVE (ED25519). */
-    evm?: boolean;
+
+    /** Maximum number of automatic token associations (default: 0, use -1 for unlimited). */
+    maxAutomaticTokenAssociations?: number;
+
+    /** Account ID to stake to for earning rewards. Mutually exclusive with `stakedNodeId`. */
+    stakedAccountId?: string;
+
+    /** Node ID to stake to for earning rewards. Mutually exclusive with `stakedAccountId`. */
+    stakedNodeId?: number;
+
+    /** Whether to decline staking rewards (default: false). */
+    declineStakingReward?: boolean;
 }
 
 /**
@@ -39,19 +81,16 @@ export class AccountService {
     }
 
     /**
-     * Create a new account on the network using a freshly generated local key pair.
+     * Create a new account on the network using a caller-provided public key.
      *
-     * The private key is generated client-side before submitting the transaction.
-     * Hiero returns the new account ID in the receipt, but never returns
-     * the private key. This method therefore returns the generated private key so
-     * the caller can persist it immediately.
+     * Key generation is the caller's responsibility (HSM, KMS, wallet, etc.).
+     * This method accepts only the public key and submits the
+     * `AccountCreateTransaction` to the network.
      *
-     * @param options - Optional account creation parameters
-     * @returns The newly created account plus the generated private key
+     * @param options - Account creation parameters (publicKey is required)
+     * @returns The created account (ID, public key, and optional EVM address)
      */
-    async createAccount(
-        options: CreateAccountOptions = {},
-    ): Promise<CreatedAccount> {
+    async createAccount(options: CreateAccountOptions): Promise<Account> {
         const event: TransactionEvent = {
             type: "AccountCreate",
             serviceName: "AccountService",
@@ -62,43 +101,84 @@ export class AccountService {
         const start = Date.now();
 
         try {
-            const newKey = options.evm
-                ? PrivateKey.generateECDSA()
-                : PrivateKey.generateED25519();
+            const keyType = options.keyType ?? AccountType.ED25519;
+            const publicKey =
+                keyType === AccountType.ED25519
+                    ? PublicKey.fromStringED25519(options.publicKey)
+                    : PublicKey.fromStringECDSA(options.publicKey);
 
+            const tx = new AccountCreateTransaction();
+
+            // Key + alias strategy
+            if (options.alias === true) {
+                if (keyType !== AccountType.ECDSA) {
+                    throw new Error(
+                        "alias: true requires keyType 'ECDSA' — ED25519 keys cannot derive an EVM alias.",
+                    );
+                }
+                tx.setECDSAKeyWithAlias(publicKey);
+            } else if (
+                typeof options.alias === "object" &&
+                options.alias?.ecdsaPublicKey
+            ) {
+                // Two-key pattern: account controlled by publicKey, alias derived from a separate ECDSA key
+                const aliasKey = PublicKey.fromStringECDSA(
+                    options.alias.ecdsaPublicKey,
+                );
+                tx.setKeyWithAlias(publicKey, aliasKey);
+            } else {
+                tx.setKeyWithoutAlias(publicKey);
+            }
+
+            // Initial balance
             const hbarBalance =
                 options.initialBalance instanceof Hbar
                     ? options.initialBalance
                     : new Hbar(options.initialBalance ?? 0);
+            tx.setInitialBalance(hbarBalance);
 
-            const tx = new AccountCreateTransaction()
-                .setKeyWithoutAlias(newKey.publicKey)
-                .setInitialBalance(hbarBalance);
-
-            if (options.evm) {
-                tx.setAlias(newKey.publicKey.toEvmAddress());
+            // Optional properties
+            if (options.receiverSignatureRequired != null) {
+                tx.setReceiverSignatureRequired(
+                    options.receiverSignatureRequired,
+                );
             }
-
-            if (options.maxAutomaticTokenAssociations) {
+            if (options.memo != null) {
+                tx.setAccountMemo(options.memo);
+            }
+            if (options.maxAutomaticTokenAssociations != null) {
                 tx.setMaxAutomaticTokenAssociations(
                     options.maxAutomaticTokenAssociations,
                 );
             }
-            if (options.memo) {
-                tx.setAccountMemo(options.memo);
+            if (options.stakedAccountId != null) {
+                tx.setStakedAccountId(options.stakedAccountId);
+            }
+            if (options.stakedNodeId != null) {
+                tx.setStakedNodeId(options.stakedNodeId);
+            }
+            if (options.declineStakingReward != null) {
+                tx.setDeclineStakingReward(options.declineStakingReward);
             }
 
             const response = await tx.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
 
-            const result: CreatedAccount = {
+            const result: Account = {
                 accountId: receipt.accountId!.toString(),
-                publicKey: newKey.publicKey.toString(),
-                privateKey: newKey,
+                publicKey: publicKey.toString(),
             };
 
-            if (options.evm) {
-                result.evmAddress = newKey.publicKey.toEvmAddress();
+            // Include EVM address if an alias was set
+            if (options.alias === true) {
+                result.evmAddress = publicKey.toEvmAddress();
+            } else if (
+                typeof options.alias === "object" &&
+                options.alias?.ecdsaPublicKey
+            ) {
+                result.evmAddress = PublicKey.fromStringECDSA(
+                    options.alias.ecdsaPublicKey,
+                ).toEvmAddress();
             }
 
             await this.context.emitAfterTransaction({
@@ -117,91 +197,6 @@ export class AccountService {
                 durationMs: Date.now() - start,
             });
             throw normalizeError(error, "AccountService.createAccount");
-        }
-    }
-
-    /**
-     * Create a new account using a caller-provided public key.
-     * Supports both Ed25519 (Native) and ECDSA (EVM-compatible) keys.
-     *
-     * Use this when key management happens outside this library, for example in
-     * a wallet, HSM, KMS, or another key-generation workflow. Since the caller
-     * already controls the key, this method returns only public account fields.
-     *
-     * @param publicKeyStr - The public key string (raw or DER formatted)
-     * @param type - The account type (EVM vs NATIVE)
-     * @param initialBalance - The amount of HBAR to fund the account initially
-     * @param memo - Optional memo
-     * @returns The created account without private key material
-     */
-    async createAccountWithPublicKey(
-        publicKeyStr: string,
-        type: AccountType,
-        initialBalance: number | Hbar = 0,
-        memo?: string,
-    ): Promise<Account> {
-        const event: TransactionEvent = {
-            type: "AccountCreate",
-            serviceName: "AccountService",
-            methodName: "createAccountWithPublicKey",
-            timestamp: new Date(),
-        };
-        await this.context.emitBeforeTransaction(event);
-        const start = Date.now();
-
-        try {
-            const publicKey =
-                type === AccountType.EVM
-                    ? PublicKey.fromStringECDSA(publicKeyStr)
-                    : PublicKey.fromStringED25519(publicKeyStr);
-
-            const hbarBalance =
-                initialBalance instanceof Hbar
-                    ? initialBalance
-                    : new Hbar(initialBalance);
-
-            const tx = new AccountCreateTransaction()
-                .setKeyWithoutAlias(publicKey)
-                .setInitialBalance(hbarBalance);
-
-            if (type === AccountType.EVM) {
-                tx.setAlias(publicKey.toEvmAddress());
-            }
-            if (memo) {
-                tx.setAccountMemo(memo);
-            }
-
-            const response = await tx.execute(this.context.client);
-            const receipt = await response.getReceipt(this.context.client);
-
-            const result: Account = {
-                accountId: receipt.accountId!.toString(),
-                publicKey: publicKey.toString(),
-            };
-
-            if (type === AccountType.EVM) {
-                result.evmAddress = publicKey.toEvmAddress();
-            }
-
-            await this.context.emitAfterTransaction({
-                ...event,
-                transactionId: response.transactionId.toString(),
-                status: receipt.status.toString(),
-                durationMs: Date.now() - start,
-            });
-
-            return result;
-        } catch (error) {
-            await this.context.emitAfterTransaction({
-                ...event,
-                error:
-                    error instanceof Error ? error : new Error(String(error)),
-                durationMs: Date.now() - start,
-            });
-            throw normalizeError(
-                error,
-                "AccountService.createAccountWithPublicKey",
-            );
         }
     }
 
