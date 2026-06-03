@@ -1,5 +1,6 @@
 import { Client } from "@hiero-ledger/sdk";
 import { HieroContext } from "../../src/context/hiero-context.js";
+import { OperatorKeyType } from "../../src/types/index.js";
 
 // Operator ID and Private Key from a standard Hiero Solo Network setup
 // (As defined by @hashgraph/solo defaults)
@@ -19,7 +20,7 @@ export function setupIntegrationTestEnv(): HieroContext {
         network: "testnet",
         operatorId: SOLO_OPERATOR_ID,
         operatorKey: SOLO_OPERATOR_KEY,
-        operatorKeyType: "DER",
+        operatorKeyType: OperatorKeyType.DER,
         mirrorNodeUrl:
             process.env["HIERO_MIRROR_NODE_URL"] || "http://127.0.0.1:5551",
     });

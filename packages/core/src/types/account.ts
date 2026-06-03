@@ -2,8 +2,18 @@
  * The key algorithm type for the account.
  */
 export enum AccountType {
-    ED25519 = "ED25519",
-    ECDSA = "ECDSA",
+    ED25519 = "ed25519",
+    ECDSA = "ecdsa",
+}
+
+/**
+ * The encoding/algorithm type for the operator private key.
+ * Used when parsing the operator key material from configuration.
+ */
+export enum OperatorKeyType {
+    ED25519 = "ed25519",
+    ECDSA = "ecdsa",
+    DER = "der",
 }
 
 /**

@@ -1,6 +1,6 @@
 // Data model barrel export
 export type { Account, MirrorAccountInfo } from "./account.js";
-export { AccountType } from "./account.js";
+export { AccountType, OperatorKeyType } from "./account.js";
 export type { Balance, TokenBalance } from "./balance.js";
 export type {
     MirrorTokenInfo,

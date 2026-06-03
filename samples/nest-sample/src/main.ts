@@ -3,6 +3,7 @@ import { NestFactory } from "@nestjs/core";
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import {
     AccountService,
+    AccountType,
     TopicService,
     AccountRepository,
     NftRepository,
@@ -72,7 +73,7 @@ class AccountController {
         @Body()
         body: {
             publicKey: string;
-            keyType?: "ED25519" | "ECDSA";
+            keyType?: AccountType;
             alias?: boolean | { ecdsaPublicKey: string };
             initialBalance?: number;
             memo?: string;

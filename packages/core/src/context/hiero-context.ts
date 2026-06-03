@@ -3,6 +3,7 @@ import type { Transaction } from "@hiero-ledger/sdk";
 import { Client, AccountId, PrivateKey } from "@hiero-ledger/sdk";
 import type { HieroConfig } from "../config/index.js";
 import { resolveConfigFromEnv, assertEnvConfigValid } from "../config/index.js";
+import { OperatorKeyType } from "../types/index.js";
 import type {
     TransactionListener,
     TransactionEvent,
@@ -12,16 +13,13 @@ import type { IHieroContext } from "./hiero-context.interface.js";
 /**
  * Parse a private key string based on the specified key type.
  */
-function parsePrivateKey(
-    key: string,
-    keyType: "ED25519" | "ECDSA" | "DER",
-): PrivateKey {
+function parsePrivateKey(key: string, keyType: OperatorKeyType): PrivateKey {
     switch (keyType) {
-        case "ED25519":
+        case OperatorKeyType.ED25519:
             return PrivateKey.fromStringED25519(key);
-        case "DER":
+        case OperatorKeyType.DER:
             return PrivateKey.fromStringDer(key);
-        case "ECDSA":
+        case OperatorKeyType.ECDSA:
             return PrivateKey.fromStringECDSA(key);
     }
 }

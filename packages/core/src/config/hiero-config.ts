@@ -1,4 +1,5 @@
 import { HieroError, HieroErrorCodes } from "../errors/index.js";
+import { OperatorKeyType } from "../types/index.js";
 
 /**
  * Configuration for connecting to a Hiero network.
@@ -11,7 +12,7 @@ export interface HieroConfig {
     /** Operator private key */
     readonly operatorKey: string;
     /** Type of the operator private key — required to correctly parse the key material */
-    readonly operatorKeyType: "ED25519" | "ECDSA" | "DER";
+    readonly operatorKeyType: OperatorKeyType;
     /** Mirror node base URL (auto-resolved if not provided) */
     readonly mirrorNodeUrl?: string;
     /** Request timeout in milliseconds (default: 120000) */
@@ -81,11 +82,9 @@ export function resolveConfigFromEnv(): HieroConfig | null {
     const network = process.env["HIERO_NETWORK"];
     const operatorId = process.env["HIERO_OPERATOR_ID"];
     const operatorKey = process.env["HIERO_OPERATOR_KEY"];
-    const operatorKeyType = process.env["HIERO_OPERATOR_KEY_TYPE"] as
-        | "ED25519"
-        | "ECDSA"
-        | "DER"
-        | undefined;
+    const operatorKeyType = process.env[
+        "HIERO_OPERATOR_KEY_TYPE"
+    ]?.toLowerCase() as OperatorKeyType | undefined;
     const mirrorNodeUrl = process.env["HIERO_MIRROR_NODE_URL"];
 
     if (!network || !operatorId || !operatorKey || !operatorKeyType) {
@@ -119,7 +118,7 @@ export function assertEnvConfigValid(): void {
     if (!operatorKey) missing.push("HIERO_OPERATOR_KEY (your private key)");
     if (!operatorKeyType)
         missing.push(
-            "HIERO_OPERATOR_KEY_TYPE (one of: 'ED25519', 'ECDSA', 'DER')",
+            "HIERO_OPERATOR_KEY_TYPE (one of: 'ed25519', 'ecdsa', 'der')",
         );
 
     if (missing.length > 0) {

@@ -147,7 +147,7 @@ describe("AccountService", () => {
                     keyType: AccountType.ED25519,
                     alias: true,
                 }),
-            ).rejects.toThrow(/requires keyType 'ECDSA'/);
+            ).rejects.toThrow(/requires keyType AccountType.ECDSA/);
         });
 
         it("sets all optional properties when provided", async () => {

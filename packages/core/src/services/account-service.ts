@@ -32,7 +32,7 @@ export interface CreateAccountOptions {
      *
      * Defaults to `AccountType.ED25519`.
      */
-    keyType?: keyof typeof AccountType;
+    keyType?: AccountType;
 
     /**
      * Whether to derive an EVM alias for the account.
@@ -122,7 +122,7 @@ export class AccountService {
             if (options.alias === true) {
                 if (keyType !== AccountType.ECDSA) {
                     throw new Error(
-                        "alias: true requires keyType 'ECDSA' — ED25519 keys cannot derive an EVM alias.",
+                        "alias: true requires keyType AccountType.ECDSA — ed25519 keys cannot derive an EVM alias.",
                     );
                 }
                 tx.setECDSAKeyWithAlias(publicKey);
