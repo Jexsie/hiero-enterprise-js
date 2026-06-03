@@ -1,5 +1,5 @@
-export { AccountService } from "./account-service.js";
-export type { CreateAccountOptions } from "./account-service.js";
+export { AccountService } from "./account/index.js";
+export type { CreateAccountOptions } from "./account/index.js";
 export { FileService } from "./file-service.js";
 export { FungibleTokenService } from "./fungible-token-service.js";
 export type { CreateTokenOptions } from "./fungible-token-service.js";

@@ -1,5 +1,5 @@
 import { HieroError, HieroErrorCodes } from "../errors/index.js";
-import { OperatorKeyType } from "../types/index.js";
+import type { OperatorKeyType } from "../types/index.js";
 
 /**
  * Configuration for connecting to a Hiero network.

@@ -1,5 +1,5 @@
 import type { HieroContext } from "../context/index.js";
-import type { AccountService } from "../services/account-service.js";
+import type { AccountService } from "../services/account/index.js";
 import type { FileService } from "../services/file-service.js";
 import type { FungibleTokenService } from "../services/fungible-token-service.js";
 import type { NftService } from "../services/nft-service.js";

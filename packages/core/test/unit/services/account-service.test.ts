@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AccountService } from "../../../src/services/account-service.js";
+import { AccountService } from "../../../src/services/account/index.js";
 import { AccountType } from "../../../src/types/index.js";
 import { createMockContext } from "../../utils/mock-context.js";
 import type { IHieroContext } from "../../../src/context/index.js";
