@@ -1,16 +1,15 @@
-import {
-    AccountCreateTransaction,
-    AccountId,
-    PublicKey,
-    Hbar,
-} from "@hiero-ledger/sdk";
+import type { TransactionReceipt } from "@hiero-ledger/sdk";
+import { AccountCreateTransaction, PublicKey, Hbar } from "@hiero-ledger/sdk";
 import { AccountType } from "../../../types/index.js";
 import type { Account } from "../../../types/index.js";
 import type { IHieroContext } from "../../../context/index.js";
-import type { TransactionEvent } from "../../../listeners/index.js";
-import { normalizeError } from "../../../errors/index.js";
+import { TransactionExecutor } from "../../transaction/index.js";
+import type {
+    TransactionOptions,
+    ScheduleOptions,
+    ScheduledResult,
+} from "../../transaction/index.js";
 import { CreateAccountValidator } from "../validation/index.js";
-import type { TransactionOptions } from "../types/index.js";
 
 /**
  * Options for creating a new account on the Hiero network.
@@ -18,6 +17,9 @@ import type { TransactionOptions } from "../types/index.js";
  * The caller is responsible for key generation (e.g. via HSM, KMS, or wallet).
  * Only the public key is provided here — private key material never enters
  * this library.
+ *
+ * Extends `TransactionOptions` for full control over fees, validity window,
+ * additional signers, and scheduling.
  */
 export interface CreateAccountOptions extends TransactionOptions {
     /** The public key for the new account (raw hex or DER-encoded hex). */
@@ -67,168 +69,169 @@ export interface CreateAccountOptions extends TransactionOptions {
     /** Whether to decline staking rewards (default: false). */
     declineStakingReward?: boolean;
 
-    /** Auto-renew period in seconds (default: 7776000 = 90 days). Must be between 30 days and 90 days. */
+    /**
+     * Auto-renew period in seconds (must be between 30 and 90 days).
+     * Controls how long the account survives without being explicitly renewed.
+     */
     autoRenewPeriod?: number;
-
-    /** Whether this account is high-volume (optimized for high transaction throughput). */
-    highVolume?: boolean;
 }
 
 export class CreateAccountOperation {
-    private readonly validator = new CreateAccountValidator();
+    private readonly executor: TransactionExecutor;
+    private readonly validator: CreateAccountValidator;
 
-    constructor(private readonly context: IHieroContext) {}
+    constructor(context: IHieroContext) {
+        this.executor = new TransactionExecutor(context);
+        this.validator = new CreateAccountValidator();
+    }
 
     /** Create account execute handler. */
     async execute(options: CreateAccountOptions): Promise<Account> {
-        const event: TransactionEvent = {
-            type: "AccountCreate",
-            serviceName: "AccountService",
-            methodName: "createAccount",
-            timestamp: new Date(),
-        };
-        await this.context.emitBeforeTransaction(event);
-        const start = Date.now();
+        // Validate options first — before any key parsing or SDK construction
+        this.validator.validate(options);
 
-        try {
-            const keyType = options.keyType ?? AccountType.ED25519;
-            const publicKey =
-                keyType === AccountType.ED25519
-                    ? PublicKey.fromStringED25519(options.publicKey)
-                    : PublicKey.fromStringECDSA(options.publicKey);
+        // Build the transaction with the parsed options
+        const tx = this.build(options);
 
-            const tx = new AccountCreateTransaction();
+        // Execute the transaction and map the receipt to the Account return type
+        return this.executor.run(
+            tx,
+            options,
+            {
+                type: "AccountCreate",
+                serviceName: "AccountService",
+                methodName: "createAccount",
+                timestamp: new Date(),
+            },
+            (receipt) => this.toAccount(receipt, options),
+        );
+    }
 
-            // Key + alias strategy
-            if (options.alias === true) {
-                tx.setECDSAKeyWithAlias(publicKey);
-            } else if (
-                typeof options.alias === "object" &&
-                options.alias?.ecdsaPublicKey
-            ) {
-                // Two-key pattern: account controlled by publicKey, alias derived from a separate ECDSA key
-                const aliasKey = PublicKey.fromStringECDSA(
-                    options.alias.ecdsaPublicKey,
-                );
-                tx.setKeyWithAlias(publicKey, aliasKey);
-            } else {
-                tx.setKeyWithoutAlias(publicKey);
-            }
+    /** Schedule account creation */
+    async schedule(
+        options: CreateAccountOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        this.validator.validate(options);
+        const tx = this.build(options);
+        return this.executor.scheduleRun(
+            tx,
+            options,
+            {
+                type: "AccountCreate",
+                serviceName: "AccountService",
+                methodName: "createAccount",
+                timestamp: new Date(),
+            },
+            scheduleOptions,
+        );
+    }
 
-            // Initial balance
-            const hbarBalance =
-                options.initialBalance instanceof Hbar
-                    ? options.initialBalance
-                    : new Hbar(options.initialBalance ?? 0);
-            tx.setInitialBalance(hbarBalance);
+    /**
+     * Constructs the `AccountCreateTransaction` from the caller-provided
+     * options.
+     */
+    private build(options: CreateAccountOptions): AccountCreateTransaction {
+        const keyType = options.keyType ?? AccountType.ED25519;
+        const publicKey =
+            keyType === AccountType.ED25519
+                ? PublicKey.fromStringED25519(options.publicKey)
+                : PublicKey.fromStringECDSA(options.publicKey);
 
-            // Optional properties
-            if (options.receiverSignatureRequired != null) {
-                tx.setReceiverSignatureRequired(
-                    options.receiverSignatureRequired,
-                );
-            }
+        const tx = new AccountCreateTransaction();
 
-            if (options.memo != null) {
-                tx.setAccountMemo(options.memo);
-            }
-
-            if (options.maxAutomaticTokenAssociations != null) {
-                tx.setMaxAutomaticTokenAssociations(
-                    options.maxAutomaticTokenAssociations,
-                );
-            }
-
-            if (options.stakedAccountId != null) {
-                tx.setStakedAccountId(options.stakedAccountId);
-            }
-
-            if (options.stakedNodeId != null) {
-                tx.setStakedNodeId(options.stakedNodeId);
-            }
-
-            if (options.declineStakingReward != null) {
-                tx.setDeclineStakingReward(options.declineStakingReward);
-            }
-
-            if (options.autoRenewPeriod != null) {
-                tx.setAutoRenewPeriod(options.autoRenewPeriod);
-            }
-
-            if (options.highVolume != null) {
-                tx.setHighVolume(options.highVolume);
-            }
-
-            // Low-level transaction options (from Transaction base class)
-            if (options.maxTransactionFee != null) {
-                tx.setMaxTransactionFee(
-                    options.maxTransactionFee instanceof Hbar
-                        ? options.maxTransactionFee
-                        : new Hbar(options.maxTransactionFee),
-                );
-            }
-
-            if (options.transactionValidDuration != null) {
-                tx.setTransactionValidDuration(
-                    options.transactionValidDuration,
-                );
-            }
-
-            if (options.transactionMemo != null) {
-                tx.setTransactionMemo(options.transactionMemo);
-            }
-
-            if (options.nodeAccountIds != null) {
-                tx.setNodeAccountIds(
-                    options.nodeAccountIds.map((id) =>
-                        AccountId.fromString(id),
-                    ),
-                );
-            }
-
-            if (options.regenerateTransactionId != null) {
-                tx.setRegenerateTransactionId(options.regenerateTransactionId);
-            }
-
-            // Validate the fully-built transaction before submission
-            this.validator.validate(tx, options);
-
-            const response = await tx.execute(this.context.client);
-            const receipt = await response.getReceipt(this.context.client);
-
-            const result: Account = {
-                accountId: receipt.accountId!.toString(),
-                publicKey: publicKey.toString(),
-            };
-
-            // Include EVM address if an alias was set
-            if (options.alias === true) {
-                result.evmAddress = publicKey.toEvmAddress();
-            } else if (
-                typeof options.alias === "object" &&
-                options.alias?.ecdsaPublicKey
-            ) {
-                result.evmAddress = PublicKey.fromStringECDSA(
-                    options.alias.ecdsaPublicKey,
-                ).toEvmAddress();
-            }
-
-            await this.context.emitAfterTransaction({
-                ...event,
-                transactionId: response.transactionId.toString(),
-                status: receipt.status.toString(),
-                durationMs: Date.now() - start,
-            });
-
-            return result;
-        } catch (error) {
-            await this.context.emitAfterTransaction({
-                ...event,
-                error:
-                    error instanceof Error ? error : new Error(String(error)),
-                durationMs: Date.now() - start,
-            });
-            throw normalizeError(error, "AccountService.createAccount");
+        // Key + alias strategy
+        if (options.alias === true) {
+            // CreateAccountValidator ensures keyType === ECDSA when alias is true
+            tx.setECDSAKeyWithAlias(publicKey);
+        } else if (
+            typeof options.alias === "object" &&
+            options.alias?.ecdsaPublicKey
+        ) {
+            // Two-key pattern: account controlled by publicKey, alias derived from a separate ECDSA key
+            const aliasKey = PublicKey.fromStringECDSA(
+                options.alias.ecdsaPublicKey,
+            );
+            tx.setKeyWithAlias(publicKey, aliasKey);
+        } else {
+            tx.setKeyWithoutAlias(publicKey);
         }
+
+        // Initial balance
+        const hbarBalance =
+            options.initialBalance instanceof Hbar
+                ? options.initialBalance
+                : new Hbar(options.initialBalance ?? 0);
+        tx.setInitialBalance(hbarBalance);
+
+        // Optional properties
+        if (options.receiverSignatureRequired != null) {
+            tx.setReceiverSignatureRequired(options.receiverSignatureRequired);
+        }
+
+        if (options.memo != null) {
+            tx.setAccountMemo(options.memo);
+        }
+
+        if (options.maxAutomaticTokenAssociations != null) {
+            tx.setMaxAutomaticTokenAssociations(
+                options.maxAutomaticTokenAssociations,
+            );
+        }
+
+        if (options.stakedAccountId != null) {
+            tx.setStakedAccountId(options.stakedAccountId);
+        }
+
+        if (options.stakedNodeId != null) {
+            tx.setStakedNodeId(options.stakedNodeId);
+        }
+
+        if (options.autoRenewPeriod != null) {
+            tx.setAutoRenewPeriod(options.autoRenewPeriod);
+        }
+
+        if (options.declineStakingReward != null) {
+            tx.setDeclineStakingReward(options.declineStakingReward);
+        }
+
+        return tx;
+    }
+
+    /**
+     * Maps the network receipt to the `Account` return type.
+     * Re-derives the public key from options to attach EVM address when an
+     * alias was requested — avoids passing the parsed key through the executor.
+     */
+    private toAccount(
+        receipt: TransactionReceipt,
+        options: CreateAccountOptions,
+    ): Account {
+        const keyType = options.keyType ?? AccountType.ED25519;
+        const publicKey =
+            keyType === AccountType.ED25519
+                ? PublicKey.fromStringED25519(options.publicKey)
+                : PublicKey.fromStringECDSA(options.publicKey);
+
+        const result: Account = {
+            accountId: receipt.accountId!.toString(),
+            publicKey: publicKey.toString(),
+        };
+
+        // Include EVM address if an alias was set
+        if (options.alias === true) {
+            result.evmAddress = publicKey.toEvmAddress();
+        } else if (
+            typeof options.alias === "object" &&
+            options.alias?.ecdsaPublicKey
+        ) {
+            // Return the EVM address derived from the separate alias
+            // key in the two-key pattern
+            result.evmAddress = PublicKey.fromStringECDSA(
+                options.alias.ecdsaPublicKey,
+            ).toEvmAddress();
+        }
+
+        return result;
     }
 }

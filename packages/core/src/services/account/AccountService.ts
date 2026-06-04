@@ -1,4 +1,4 @@
-import type { PrivateKey, AccountId, Hbar } from "@hiero-ledger/sdk";
+import type { AccountId } from "@hiero-ledger/sdk";
 import type { Account, Balance } from "../../types/index.js";
 import type { IHieroContext } from "../../context/index.js";
 import {
@@ -6,9 +6,19 @@ import {
     AutoCreateEvmAccountOperation,
     DeleteAccountOperation,
 } from "./operations/index.js";
-import type { CreateAccountOptions } from "./operations/index.js";
+import type {
+    CreateAccountOptions,
+    AutoCreateEvmAccountOptions,
+    DeleteAccountOptions,
+    ScheduleDeleteAccountOptions,
+} from "./operations/index.js";
 import { AccountBalanceQuery } from "./queries/index.js";
+import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
 
+/**
+ * Service for managing accounts on the Hiero network.
+ *
+ */
 export class AccountService {
     private readonly createOperation: CreateAccountOperation;
     private readonly autoCreateOperation: AutoCreateEvmAccountOperation;
@@ -46,36 +56,72 @@ export class AccountService {
     }
 
     /**
+     * Schedule account creation instead of executing immediately.
+     * Returns a `scheduleId` — other parties can then sign via `ScheduleSignTransaction`.
+     *
+     * @param options - Same as `createAccount`, plus any base transaction options
+     * @param scheduleOptions - Payer, admin key, and schedule memo
+     * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
+     */
+    scheduleCreateAccount(
+        options: CreateAccountOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return this.createOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
      * Auto-creates a "Hollow Account" by transferring HBAR to an EVM address.
      * Useful for onboarding MetaMask users who don't have a Hedera ID yet.
      *
-     * @param evmAddress - The EVM address (e.g., 0x...)
-     * @param amount - The amount of HBAR to transfer
+     * @param options.evmAddress - The EVM address (e.g., 0x...)
+     * @param options.amount - The amount of HBAR to transfer
      */
-    autoCreateEvmAccount(
-        evmAddress: string,
-        amount: number | Hbar,
-    ): Promise<void> {
-        return this.autoCreateOperation.execute(evmAddress, amount);
+    autoCreateEvmAccount(options: AutoCreateEvmAccountOptions): Promise<void> {
+        return this.autoCreateOperation.execute(options);
+    }
+
+    /**
+     * Schedule the hollow-account HBAR transfer instead of executing immediately.
+     *
+     * @param options - Same as `autoCreateEvmAccount`, plus any base transaction options
+     * @param scheduleOptions - Payer, admin key, and schedule memo
+     * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
+     */
+    scheduleAutoCreateEvmAccount(
+        options: AutoCreateEvmAccountOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return this.autoCreateOperation.schedule(options, scheduleOptions);
     }
 
     /**
      * Delete an account, transferring remaining balance to another account.
      *
-     * @param accountId - Account to delete
-     * @param accountKey - Private key of the account being deleted
-     * @param transferAccountId - Account to receive remaining balance (defaults to operator)
+     * @param options.accountId - Account to delete
+     * @param options.accountKey - Private key of the account being deleted
+     * @param options.transferAccountId - Account to receive remaining balance (defaults to operator)
      */
-    deleteAccount(
-        accountId: string | AccountId,
-        accountKey: PrivateKey,
-        transferAccountId?: string | AccountId,
-    ): Promise<void> {
-        return this.deleteOperation.execute(
-            accountId,
-            accountKey,
-            transferAccountId,
-        );
+    deleteAccount(options: DeleteAccountOptions): Promise<void> {
+        return this.deleteOperation.execute(options);
+    }
+
+    /**
+     * Schedule account deletion instead of executing immediately.
+     *
+     * The account owner's signature is collected later via `ScheduleSignTransaction`
+     * — no `accountKey` is required at scheduling time.
+     *
+     * @param options.accountId - Account to delete
+     * @param options.transferAccountId - Account to receive remaining balance (defaults to operator)
+     * @param scheduleOptions - Payer, admin key, and schedule memo
+     * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
+     */
+    scheduleDeleteAccount(
+        options: ScheduleDeleteAccountOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return this.deleteOperation.schedule(options, scheduleOptions);
     }
 
     /**

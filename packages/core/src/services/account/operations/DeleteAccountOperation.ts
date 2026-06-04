@@ -1,56 +1,110 @@
 import type { PrivateKey, AccountId } from "@hiero-ledger/sdk";
 import { AccountDeleteTransaction } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
-import type { TransactionEvent } from "../../../listeners/index.js";
-import { normalizeError } from "../../../errors/index.js";
+import { TransactionExecutor } from "../../transaction/index.js";
+import type {
+    TransactionOptions,
+    ScheduleOptions,
+    ScheduledResult,
+} from "../../transaction/index.js";
+
+/**
+ * Options for deleting an account and sweeping its remaining balance.
+ *
+ * Extends `TransactionOptions` for full control over fees, validity window,
+ * additional signers, and scheduling.
+ */
+export interface DeleteAccountOptions extends TransactionOptions {
+    /** The account to delete. */
+    accountId: string | AccountId;
+    /**
+     * Private key of the account being deleted — required to authorize deletion.
+     * Automatically added as the first signer before the operator auto-sign.
+     */
+    accountKey: PrivateKey;
+    /**
+     * Account that receives the remaining balance after deletion.
+     * Defaults to the operator account if not provided.
+     */
+    transferAccountId?: string | AccountId;
+}
+
+/**
+ * Options for scheduling an account deletion.
+ * `accountKey` is omitted — the account owner signs later via
+ * `ScheduleSignTransaction` once the schedule is on-chain.
+ */
+export type ScheduleDeleteAccountOptions = Omit<
+    DeleteAccountOptions,
+    "accountKey"
+>;
 
 export class DeleteAccountOperation {
-    constructor(private readonly context: IHieroContext) {}
+    private readonly executor: TransactionExecutor;
+
+    constructor(private readonly context: IHieroContext) {
+        this.executor = new TransactionExecutor(context);
+    }
 
     /** Delete account execute handler. */
-    async execute(
-        accountId: string | AccountId,
-        accountKey: PrivateKey,
-        transferAccountId?: string | AccountId,
-    ): Promise<void> {
-        const event: TransactionEvent = {
-            type: "AccountDelete",
-            serviceName: "AccountService",
-            methodName: "deleteAccount",
-            timestamp: new Date(),
+    async execute(options: DeleteAccountOptions): Promise<void> {
+        // Prepend accountKey so it signs the tx before the operator auto-sign
+        const opts: DeleteAccountOptions = {
+            ...options,
+            additionalSigners: [
+                options.accountKey,
+                ...(options.additionalSigners ?? []),
+            ],
         };
-        await this.context.emitBeforeTransaction(event);
-        const start = Date.now();
+        return this.executor.run(
+            this.build(options),
+            opts,
+            {
+                type: "AccountDelete",
+                serviceName: "AccountService",
+                methodName: "deleteAccount",
+                timestamp: new Date(),
+            },
+            () => undefined,
+        );
+    }
 
-        try {
-            const transferTo =
-                transferAccountId ?? this.context.operatorAccountId.toString();
+    /**
+     * Schedule account deletion instead of executing immediately.
+     *
+     * The account owner's signature is collected later via
+     * `ScheduleSignTransaction` — no `accountKey` is needed at scheduling time.
+     */
+    async schedule(
+        options: ScheduleDeleteAccountOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return this.executor.scheduleRun(
+            this.build(options),
+            options,
+            {
+                type: "AccountDelete",
+                serviceName: "AccountService",
+                methodName: "deleteAccount",
+                timestamp: new Date(),
+            },
+            scheduleOptions,
+        );
+    }
 
-            const tx = new AccountDeleteTransaction()
-                .setAccountId(accountId)
-                .setTransferAccountId(transferTo)
-                .freezeWith(this.context.client);
+    /**
+     * Constructs the `AccountDeleteTransaction` from the provided options.
+     * Pure — no network calls, no side effects.
+     */
+    private build(
+        options: ScheduleDeleteAccountOptions,
+    ): AccountDeleteTransaction {
+        const transferTo =
+            options.transferAccountId ??
+            this.context.operatorAccountId.toString();
 
-            const response = await (
-                await tx.sign(accountKey)
-            ).execute(this.context.client);
-
-            const receipt = await response.getReceipt(this.context.client);
-
-            await this.context.emitAfterTransaction({
-                ...event,
-                transactionId: response.transactionId.toString(),
-                status: receipt.status.toString(),
-                durationMs: Date.now() - start,
-            });
-        } catch (error) {
-            await this.context.emitAfterTransaction({
-                ...event,
-                error:
-                    error instanceof Error ? error : new Error(String(error)),
-                durationMs: Date.now() - start,
-            });
-            throw normalizeError(error, "AccountService.deleteAccount");
-        }
+        return new AccountDeleteTransaction()
+            .setAccountId(options.accountId)
+            .setTransferAccountId(transferTo);
     }
 }

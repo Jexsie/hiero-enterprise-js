@@ -1,4 +1,3 @@
-import type { AccountCreateTransaction } from "@hiero-ledger/sdk";
 import { AccountType } from "../../../types/index.js";
 import { normalizeError } from "../../../errors/index.js";
 import type { CreateAccountOptions } from "../operations/CreateAccountOperation.js";
@@ -11,16 +10,16 @@ import type { CreateAccountOptions } from "../operations/CreateAccountOperation.
  */
 export class CreateAccountValidator {
     /**
-     * Validate the transaction and options prior to network submission.
+     * Validate the caller-provided options prior to building or submitting
+     * the transaction.
      *
-     * @param tx - The built (but not yet executed) `AccountCreateTransaction`
+     * Called before `build()` so invalid option combinations are caught before
+     * any key parsing or SDK construction is attempted.
+     *
      * @param options - The original caller-provided options
      * @throws {HieroError} If validation fails
      */
-    validate(
-        tx: AccountCreateTransaction,
-        options: CreateAccountOptions,
-    ): void {
+    validate(options: CreateAccountOptions): void {
         this.validateAlias(options);
         this.validateInitialBalance(options);
         this.validateStakingOptions(options);

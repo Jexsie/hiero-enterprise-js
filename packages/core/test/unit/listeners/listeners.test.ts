@@ -12,11 +12,24 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     const actual = await importOriginal<Record<string, unknown>>();
 
     const mockTx = {
+        // AccountCreateTransaction setters
         setKeyWithoutAlias: vi.fn().mockReturnThis(),
         setInitialBalance: vi.fn().mockReturnThis(),
         setMaxAutomaticTokenAssociations: vi.fn().mockReturnThis(),
         setAccountMemo: vi.fn().mockReturnThis(),
         setAlias: vi.fn().mockReturnThis(),
+        // Base Transaction methods the executor may call
+        setMaxTransactionFee: vi.fn().mockReturnThis(),
+        setTransactionMemo: vi.fn().mockReturnThis(),
+        setTransactionValidDuration: vi.fn().mockReturnThis(),
+        setRegenerateTransactionId: vi.fn().mockReturnThis(),
+        setHighVolume: vi.fn().mockReturnThis(),
+        setNodeAccountIds: vi.fn().mockReturnThis(),
+        _addSignatureLegacy: vi.fn().mockReturnThis(),
+        freezeWith: vi.fn().mockReturnThis(),
+        sign: vi.fn().mockResolvedValue(undefined),
+        signWith: vi.fn().mockResolvedValue(undefined),
+        schedule: vi.fn(),
         execute: vi.fn().mockResolvedValue({
             transactionId: { toString: () => "0.0.123@1234567890.000000000" },
             getReceipt: vi.fn().mockResolvedValue({
@@ -107,14 +120,25 @@ describe("Transaction Listeners", () => {
     it("handles failing transactions and captures errors", async () => {
         // Override execute to throw
         const { AccountCreateTransaction } = await import("@hiero-ledger/sdk");
-        vi.mocked(AccountCreateTransaction).mockImplementationOnce(
-            () =>
-                ({
-                    setKeyWithoutAlias: vi.fn().mockReturnThis(),
-                    setInitialBalance: vi.fn().mockReturnThis(),
-                    execute: vi.fn().mockRejectedValue(new Error("TX_FAILED")),
-                }) as unknown as InstanceType<typeof AccountCreateTransaction>,
-        );
+        vi.mocked(AccountCreateTransaction).mockImplementationOnce(function () {
+            return {
+                setKeyWithoutAlias: vi.fn().mockReturnThis(),
+                setInitialBalance: vi.fn().mockReturnThis(),
+                setMaxTransactionFee: vi.fn().mockReturnThis(),
+                setTransactionMemo: vi.fn().mockReturnThis(),
+                setTransactionValidDuration: vi.fn().mockReturnThis(),
+                setRegenerateTransactionId: vi.fn().mockReturnThis(),
+                setHighVolume: vi.fn().mockReturnThis(),
+                setNodeAccountIds: vi.fn().mockReturnThis(),
+                _addSignatureLegacy: vi.fn().mockReturnThis(),
+                freezeWith: vi.fn().mockReturnThis(),
+                sign: vi.fn().mockResolvedValue(undefined),
+                signWith: vi.fn().mockResolvedValue(undefined),
+                execute: vi.fn().mockRejectedValue(new Error("TX_FAILED")),
+            };
+        } as unknown as new () => InstanceType<
+            typeof AccountCreateTransaction
+        >);
 
         const listener: TransactionListener = {
             onBeforeTransaction: (event) => beforeEvents.push(event),

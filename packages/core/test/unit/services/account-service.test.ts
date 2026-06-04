@@ -9,57 +9,84 @@ import {
     PrivateKey,
 } from "@hiero-ledger/sdk";
 
-// Mock the SDK
+// ─── Shared mock fixtures ───────────────────────────────────────────────────
+
+const mockReceipt = {
+    status: { toString: () => "SUCCESS" },
+    accountId: { toString: () => "0.0.999" },
+    scheduleId: { toString: () => "0.0.777" },
+};
+
+const mockResponse = {
+    transactionId: { toString: () => "0.0.123@1234567890.000000000" },
+    getReceipt: vi.fn().mockResolvedValue(mockReceipt),
+};
+
+// ScheduleCreateTransaction mock — returned by tx.schedule()
+const mockScheduleTx = {
+    setPayerAccountId: vi.fn().mockReturnThis(),
+    setAdminKey: vi.fn().mockReturnThis(),
+    setScheduleMemo: vi.fn().mockReturnThis(),
+    // Base transaction methods the executor may call
+    setMaxTransactionFee: vi.fn().mockReturnThis(),
+    setTransactionMemo: vi.fn().mockReturnThis(),
+    setTransactionValidDuration: vi.fn().mockReturnThis(),
+    setRegenerateTransactionId: vi.fn().mockReturnThis(),
+    setHighVolume: vi.fn().mockReturnThis(),
+    setNodeAccountIds: vi.fn().mockReturnThis(),
+    _addSignatureLegacy: vi.fn().mockReturnThis(),
+    freezeWith: vi.fn().mockReturnThis(),
+    sign: vi.fn().mockResolvedValue(undefined),
+    signWith: vi.fn().mockResolvedValue(undefined),
+    execute: vi.fn().mockResolvedValue(mockResponse),
+};
+
+// Base transaction mock used by all SDK transaction classes
+const mockTx = {
+    // AccountCreateTransaction setters
+    setKeyWithoutAlias: vi.fn().mockReturnThis(),
+    setECDSAKeyWithAlias: vi.fn().mockReturnThis(),
+    setKeyWithAlias: vi.fn().mockReturnThis(),
+    setInitialBalance: vi.fn().mockReturnThis(),
+    setMaxAutomaticTokenAssociations: vi.fn().mockReturnThis(),
+    setAccountMemo: vi.fn().mockReturnThis(),
+    setReceiverSignatureRequired: vi.fn().mockReturnThis(),
+    setStakedAccountId: vi.fn().mockReturnThis(),
+    setStakedNodeId: vi.fn().mockReturnThis(),
+    setDeclineStakingReward: vi.fn().mockReturnThis(),
+    // AccountDeleteTransaction setters
+    setAccountId: vi.fn().mockReturnThis(),
+    setTransferAccountId: vi.fn().mockReturnThis(),
+    // TransferTransaction setters
+    addHbarTransfer: vi.fn().mockReturnThis(),
+    // Base Transaction methods the executor calls
+    setMaxTransactionFee: vi.fn().mockReturnThis(),
+    setTransactionMemo: vi.fn().mockReturnThis(),
+    setTransactionValidDuration: vi.fn().mockReturnThis(),
+    setRegenerateTransactionId: vi.fn().mockReturnThis(),
+    setHighVolume: vi.fn().mockReturnThis(),
+    setNodeAccountIds: vi.fn().mockReturnThis(),
+    _addSignatureLegacy: vi.fn().mockReturnThis(),
+    freezeWith: vi.fn().mockReturnThis(),
+    sign: vi.fn().mockResolvedValue(undefined),
+    signWith: vi.fn().mockResolvedValue(undefined),
+    // schedule() wraps this tx in a ScheduleCreateTransaction
+    schedule: vi.fn().mockReturnValue(mockScheduleTx),
+    execute: vi.fn().mockResolvedValue(mockResponse),
+};
+
+const mockQuery = {
+    setAccountId: vi.fn().mockReturnThis(),
+    execute: vi.fn().mockResolvedValue({
+        hbars: { toTinybars: () => ({ toString: () => "1000000" }) },
+        tokens: null,
+        tokenDecimals: null,
+    }),
+};
+
+// Mock the entire SDK so no real network calls are made
 vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     const actual = await importOriginal<Record<string, unknown>>();
-
-    const mockTx = {
-        setKeyWithoutAlias: vi.fn().mockReturnThis(),
-        setECDSAKeyWithAlias: vi.fn().mockReturnThis(),
-        setKeyWithAlias: vi.fn().mockReturnThis(),
-        setInitialBalance: vi.fn().mockReturnThis(),
-        setMaxAutomaticTokenAssociations: vi.fn().mockReturnThis(),
-        setAccountMemo: vi.fn().mockReturnThis(),
-        setAccountId: vi.fn().mockReturnThis(),
-        setTransferAccountId: vi.fn().mockReturnThis(),
-        setReceiverSignatureRequired: vi.fn().mockReturnThis(),
-        setStakedAccountId: vi.fn().mockReturnThis(),
-        setStakedNodeId: vi.fn().mockReturnThis(),
-        setDeclineStakingReward: vi.fn().mockReturnThis(),
-        setAlias: vi.fn().mockReturnThis(),
-        addHbarTransfer: vi.fn().mockReturnThis(),
-        freezeWith: vi.fn().mockReturnThis(),
-        sign: vi.fn().mockResolvedValue({
-            execute: vi.fn().mockResolvedValue({
-                transactionId: {
-                    toString: () => "0.0.123@1234567890.000000000",
-                },
-                getReceipt: vi.fn().mockResolvedValue({
-                    status: { toString: () => "SUCCESS" },
-                    accountId: { toString: () => "0.0.999" },
-                }),
-            }),
-        }),
-        execute: vi.fn().mockResolvedValue({
-            transactionId: { toString: () => "0.0.123@1234567890.000000000" },
-            getReceipt: vi.fn().mockResolvedValue({
-                status: { toString: () => "SUCCESS" },
-                accountId: { toString: () => "0.0.999" },
-            }),
-        }),
-    };
-
-    const mockQuery = {
-        setAccountId: vi.fn().mockReturnThis(),
-        execute: vi.fn().mockResolvedValue({
-            hbars: {
-                toTinybars: () => ({ toString: () => "1000000" }),
-            },
-            tokens: null,
-            tokenDecimals: null,
-        }),
-    };
-
     return {
         ...actual,
         AccountCreateTransaction: vi.fn(function () {
@@ -77,47 +104,57 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     };
 });
 
+// ─── Tests ──────────────────────────────────────────────────────────────────
+
 describe("AccountService", () => {
     let context: IHieroContext;
-    let client: AccountService;
+    let service: AccountService;
 
     beforeEach(() => {
         vi.clearAllMocks();
+        // Restore resolved values that clearAllMocks resets
+        mockResponse.getReceipt.mockResolvedValue(mockReceipt);
+        mockTx.execute.mockResolvedValue(mockResponse);
+        mockTx.sign.mockResolvedValue(undefined);
+        mockTx.schedule.mockReturnValue(mockScheduleTx);
+        mockScheduleTx.execute.mockResolvedValue(mockResponse);
+        mockScheduleTx.sign.mockResolvedValue(undefined);
+
         context = createMockContext();
-        client = new AccountService(context);
+        service = new AccountService(context);
     });
 
+    // ── createAccount ────────────────────────────────────────────────────────
+
     describe("createAccount", () => {
-        it("creates an account with an ED25519 public key (default keyType)", async () => {
+        it("creates an account with an ED25519 key (default keyType)", async () => {
             const pubKey = PrivateKey.generateED25519().publicKey.toString();
-            const account = await client.createAccount({ publicKey: pubKey });
+            const account = await service.createAccount({ publicKey: pubKey });
 
             expect(account.accountId).toBe("0.0.999");
             expect(account.publicKey).toBeDefined();
             expect(account.evmAddress).toBeUndefined();
 
-            const mockInstance = vi.mocked(AccountCreateTransaction).mock
-                .results[0].value;
-            expect(mockInstance.setKeyWithoutAlias).toHaveBeenCalled();
-            expect(mockInstance.setInitialBalance).toHaveBeenCalled();
-            expect(mockInstance.execute).toHaveBeenCalledWith(context.client);
+            const tx = vi.mocked(AccountCreateTransaction).mock.results[0]
+                .value;
+            expect(tx.setKeyWithoutAlias).toHaveBeenCalled();
+            expect(tx.setInitialBalance).toHaveBeenCalled();
+            expect(tx.execute).toHaveBeenCalledWith(context.client);
         });
 
         it("creates an ECDSA account with alias derived from the key", async () => {
             const pubKey = PrivateKey.generateECDSA().publicKey.toString();
-            const account = await client.createAccount({
+            await service.createAccount({
                 publicKey: pubKey,
                 keyType: AccountType.ECDSA,
                 alias: true,
                 initialBalance: 5,
             });
 
-            expect(account.accountId).toBe("0.0.999");
-
-            const mockInstance = vi.mocked(AccountCreateTransaction).mock
-                .results[0].value;
-            expect(mockInstance.setECDSAKeyWithAlias).toHaveBeenCalled();
-            expect(mockInstance.setKeyWithoutAlias).not.toHaveBeenCalled();
+            const tx = vi.mocked(AccountCreateTransaction).mock.results[0]
+                .value;
+            expect(tx.setECDSAKeyWithAlias).toHaveBeenCalled();
+            expect(tx.setKeyWithoutAlias).not.toHaveBeenCalled();
         });
 
         it("creates an account with a separate alias key (two-key pattern)", async () => {
@@ -125,24 +162,24 @@ describe("AccountService", () => {
                 PrivateKey.generateED25519().publicKey.toString();
             const aliasKey = PrivateKey.generateECDSA().publicKey.toString();
 
-            await client.createAccount({
+            await service.createAccount({
                 publicKey: primaryKey,
                 keyType: AccountType.ED25519,
                 alias: { ecdsaPublicKey: aliasKey },
             });
 
-            const mockInstance = vi.mocked(AccountCreateTransaction).mock
-                .results[0].value;
-            expect(mockInstance.setKeyWithAlias).toHaveBeenCalled();
-            expect(mockInstance.setKeyWithoutAlias).not.toHaveBeenCalled();
-            expect(mockInstance.setECDSAKeyWithAlias).not.toHaveBeenCalled();
+            const tx = vi.mocked(AccountCreateTransaction).mock.results[0]
+                .value;
+            expect(tx.setKeyWithAlias).toHaveBeenCalled();
+            expect(tx.setKeyWithoutAlias).not.toHaveBeenCalled();
+            expect(tx.setECDSAKeyWithAlias).not.toHaveBeenCalled();
         });
 
         it("throws if alias: true is used with an ED25519 key", async () => {
             const pubKey = PrivateKey.generateED25519().publicKey.toString();
 
             await expect(
-                client.createAccount({
+                service.createAccount({
                     publicKey: pubKey,
                     keyType: AccountType.ED25519,
                     alias: true,
@@ -152,7 +189,7 @@ describe("AccountService", () => {
 
         it("sets all optional properties when provided", async () => {
             const pubKey = PrivateKey.generateED25519().publicKey.toString();
-            await client.createAccount({
+            await service.createAccount({
                 publicKey: pubKey,
                 initialBalance: 10,
                 receiverSignatureRequired: true,
@@ -162,67 +199,168 @@ describe("AccountService", () => {
                 declineStakingReward: true,
             });
 
-            const mockInstance = vi.mocked(AccountCreateTransaction).mock
-                .results[0].value;
-            expect(mockInstance.setInitialBalance).toHaveBeenCalled();
-            expect(
-                mockInstance.setReceiverSignatureRequired,
-            ).toHaveBeenCalledWith(true);
-            expect(mockInstance.setAccountMemo).toHaveBeenCalledWith(
-                "test memo",
-            );
-            expect(
-                mockInstance.setMaxAutomaticTokenAssociations,
-            ).toHaveBeenCalledWith(5);
-            expect(mockInstance.setStakedNodeId).toHaveBeenCalledWith(3);
-            expect(mockInstance.setDeclineStakingReward).toHaveBeenCalledWith(
-                true,
-            );
+            const tx = vi.mocked(AccountCreateTransaction).mock.results[0]
+                .value;
+            expect(tx.setReceiverSignatureRequired).toHaveBeenCalledWith(true);
+            expect(tx.setAccountMemo).toHaveBeenCalledWith("test memo");
+            expect(tx.setMaxAutomaticTokenAssociations).toHaveBeenCalledWith(5);
+            expect(tx.setStakedNodeId).toHaveBeenCalledWith(3);
+            expect(tx.setDeclineStakingReward).toHaveBeenCalledWith(true);
         });
 
         it("sets stakedAccountId when provided", async () => {
             const pubKey = PrivateKey.generateED25519().publicKey.toString();
-            await client.createAccount({
+            await service.createAccount({
                 publicKey: pubKey,
                 stakedAccountId: "0.0.800",
             });
 
-            const mockInstance = vi.mocked(AccountCreateTransaction).mock
-                .results[0].value;
-            expect(mockInstance.setStakedAccountId).toHaveBeenCalledWith(
-                "0.0.800",
-            );
+            const tx = vi.mocked(AccountCreateTransaction).mock.results[0]
+                .value;
+            expect(tx.setStakedAccountId).toHaveBeenCalledWith("0.0.800");
+        });
+
+        it("applies base TransactionOptions to the transaction", async () => {
+            const pubKey = PrivateKey.generateED25519().publicKey.toString();
+            await service.createAccount({
+                publicKey: pubKey,
+                transactionMemo: "base memo",
+                transactionValidDuration: 90,
+                regenerateTransactionId: false,
+            });
+
+            const tx = vi.mocked(AccountCreateTransaction).mock.results[0]
+                .value;
+            expect(tx.setTransactionMemo).toHaveBeenCalledWith("base memo");
+            expect(tx.setTransactionValidDuration).toHaveBeenCalledWith(90);
+            expect(tx.setRegenerateTransactionId).toHaveBeenCalledWith(false);
+        });
+
+        it("freezes and signs with additionalSigners before execute", async () => {
+            const pubKey = PrivateKey.generateED25519().publicKey.toString();
+            const extraKey = PrivateKey.generateED25519();
+
+            await service.createAccount({
+                publicKey: pubKey,
+                additionalSigners: [extraKey],
+            });
+
+            const tx = vi.mocked(AccountCreateTransaction).mock.results[0]
+                .value;
+            expect(tx.freezeWith).toHaveBeenCalledWith(context.client);
+            expect(tx.sign).toHaveBeenCalledWith(extraKey);
         });
     });
+
+    // ── scheduleCreateAccount ────────────────────────────────────────────────
+
+    describe("scheduleCreateAccount", () => {
+        it("wraps the transaction in a ScheduleCreateTransaction", async () => {
+            const pubKey = PrivateKey.generateED25519().publicKey.toString();
+            const result = await service.scheduleCreateAccount(
+                { publicKey: pubKey },
+                { scheduleMemo: "pending approval" },
+            );
+
+            expect(mockTx.schedule).toHaveBeenCalled();
+            expect(mockScheduleTx.setScheduleMemo).toHaveBeenCalledWith(
+                "pending approval",
+            );
+            expect(result.scheduleId).toBe("0.0.777");
+            expect(result.transactionId).toBeDefined();
+        });
+    });
+
+    // ── deleteAccount ────────────────────────────────────────────────────────
 
     describe("deleteAccount", () => {
-        it("deletes an account transferring to operator by default", async () => {
+        it("deletes an account and defaults transfer target to operator", async () => {
             const mockKey = PrivateKey.generateED25519();
-            await client.deleteAccount("0.0.999", mockKey);
+            await service.deleteAccount({
+                accountId: "0.0.999",
+                accountKey: mockKey,
+            });
 
-            const mockInstance = vi.mocked(AccountDeleteTransaction).mock
-                .results[0].value;
-            expect(mockInstance.setAccountId).toHaveBeenCalledWith("0.0.999");
-            expect(mockInstance.setTransferAccountId).toHaveBeenCalledWith(
-                "0.0.2",
-            );
+            const tx = vi.mocked(AccountDeleteTransaction).mock.results[0]
+                .value;
+            expect(tx.setAccountId).toHaveBeenCalledWith("0.0.999");
+            expect(tx.setTransferAccountId).toHaveBeenCalledWith("0.0.2");
         });
 
-        it("deletes an account with custom transfer target", async () => {
+        it("deletes an account with a custom transfer target", async () => {
             const mockKey = PrivateKey.generateED25519();
-            await client.deleteAccount("0.0.999", mockKey, "0.0.555");
+            await service.deleteAccount({
+                accountId: "0.0.999",
+                accountKey: mockKey,
+                transferAccountId: "0.0.555",
+            });
 
-            const mockInstance = vi.mocked(AccountDeleteTransaction).mock
-                .results[0].value;
-            expect(mockInstance.setTransferAccountId).toHaveBeenCalledWith(
-                "0.0.555",
-            );
+            const tx = vi.mocked(AccountDeleteTransaction).mock.results[0]
+                .value;
+            expect(tx.setTransferAccountId).toHaveBeenCalledWith("0.0.555");
+        });
+
+        it("freezes and signs with accountKey before execute", async () => {
+            const mockKey = PrivateKey.generateED25519();
+            await service.deleteAccount({
+                accountId: "0.0.999",
+                accountKey: mockKey,
+            });
+
+            const tx = vi.mocked(AccountDeleteTransaction).mock.results[0]
+                .value;
+            // Executor freezes first when there are additionalSigners
+            expect(tx.freezeWith).toHaveBeenCalledWith(context.client);
+            expect(tx.sign).toHaveBeenCalledWith(mockKey);
         });
     });
+
+    // ── scheduleDeleteAccount ────────────────────────────────────────────────
+
+    describe("scheduleDeleteAccount", () => {
+        it("schedules deletion without requiring accountKey", async () => {
+            const result = await service.scheduleDeleteAccount({
+                accountId: "0.0.999",
+            });
+
+            expect(mockTx.schedule).toHaveBeenCalled();
+            expect(result.scheduleId).toBe("0.0.777");
+        });
+    });
+
+    // ── autoCreateEvmAccount ─────────────────────────────────────────────────
+
+    describe("autoCreateEvmAccount", () => {
+        it("transfers HBAR to seed the EVM address", async () => {
+            await service.autoCreateEvmAccount({
+                evmAddress: "0x" + "a".repeat(40),
+                amount: 5,
+            });
+
+            expect(mockTx.addHbarTransfer).toHaveBeenCalledTimes(2);
+            expect(mockTx.execute).toHaveBeenCalledWith(context.client);
+        });
+    });
+
+    // ── scheduleAutoCreateEvmAccount ─────────────────────────────────────────
+
+    describe("scheduleAutoCreateEvmAccount", () => {
+        it("schedules the hollow-account transfer", async () => {
+            const result = await service.scheduleAutoCreateEvmAccount({
+                evmAddress: "0x" + "a".repeat(40),
+                amount: 5,
+            });
+
+            expect(mockTx.schedule).toHaveBeenCalled();
+            expect(result.scheduleId).toBe("0.0.777");
+        });
+    });
+
+    // ── getAccountBalance ────────────────────────────────────────────────────
 
     describe("getAccountBalance", () => {
         it("fetches the account balance", async () => {
-            const balance = await client.getAccountBalance("0.0.999");
+            const balance = await service.getAccountBalance("0.0.999");
 
             expect(balance.accountId).toBe("0.0.999");
             expect(balance.hbars).toBe("1000000");
@@ -230,9 +368,11 @@ describe("AccountService", () => {
         });
     });
 
+    // ── getOperatorAccountBalance ────────────────────────────────────────────
+
     describe("getOperatorAccountBalance", () => {
         it("fetches the operator balance", async () => {
-            const balance = await client.getOperatorAccountBalance();
+            const balance = await service.getOperatorAccountBalance();
 
             expect(balance.accountId).toBe("0.0.2");
             expect(balance.hbars).toBe("1000000");
