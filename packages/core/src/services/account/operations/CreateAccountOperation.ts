@@ -1,9 +1,16 @@
-import { AccountCreateTransaction, PublicKey, Hbar } from "@hiero-ledger/sdk";
+import {
+    AccountCreateTransaction,
+    AccountId,
+    PublicKey,
+    Hbar,
+} from "@hiero-ledger/sdk";
 import { AccountType } from "../../../types/index.js";
 import type { Account } from "../../../types/index.js";
 import type { IHieroContext } from "../../../context/index.js";
 import type { TransactionEvent } from "../../../listeners/index.js";
 import { normalizeError } from "../../../errors/index.js";
+import { CreateAccountValidator } from "../validation/index.js";
+import type { TransactionOptions } from "../types/index.js";
 
 /**
  * Options for creating a new account on the Hiero network.
@@ -12,7 +19,7 @@ import { normalizeError } from "../../../errors/index.js";
  * Only the public key is provided here — private key material never enters
  * this library.
  */
-export interface CreateAccountOptions {
+export interface CreateAccountOptions extends TransactionOptions {
     /** The public key for the new account (raw hex or DER-encoded hex). */
     publicKey: string;
 
@@ -59,9 +66,17 @@ export interface CreateAccountOptions {
 
     /** Whether to decline staking rewards (default: false). */
     declineStakingReward?: boolean;
+
+    /** Auto-renew period in seconds (default: 7776000 = 90 days). Must be between 30 days and 90 days. */
+    autoRenewPeriod?: number;
+
+    /** Whether this account is high-volume (optimized for high transaction throughput). */
+    highVolume?: boolean;
 }
 
 export class CreateAccountOperation {
+    private readonly validator = new CreateAccountValidator();
+
     constructor(private readonly context: IHieroContext) {}
 
     /** Create account execute handler. */
@@ -86,11 +101,6 @@ export class CreateAccountOperation {
 
             // Key + alias strategy
             if (options.alias === true) {
-                if (keyType !== AccountType.ECDSA) {
-                    throw new Error(
-                        "alias: true requires keyType AccountType.ECDSA — ed25519 keys cannot derive an EVM alias.",
-                    );
-                }
                 tx.setECDSAKeyWithAlias(publicKey);
             } else if (
                 typeof options.alias === "object" &&
@@ -140,6 +150,48 @@ export class CreateAccountOperation {
             if (options.declineStakingReward != null) {
                 tx.setDeclineStakingReward(options.declineStakingReward);
             }
+
+            if (options.autoRenewPeriod != null) {
+                tx.setAutoRenewPeriod(options.autoRenewPeriod);
+            }
+
+            if (options.highVolume != null) {
+                tx.setHighVolume(options.highVolume);
+            }
+
+            // Low-level transaction options (from Transaction base class)
+            if (options.maxTransactionFee != null) {
+                tx.setMaxTransactionFee(
+                    options.maxTransactionFee instanceof Hbar
+                        ? options.maxTransactionFee
+                        : new Hbar(options.maxTransactionFee),
+                );
+            }
+
+            if (options.transactionValidDuration != null) {
+                tx.setTransactionValidDuration(
+                    options.transactionValidDuration,
+                );
+            }
+
+            if (options.transactionMemo != null) {
+                tx.setTransactionMemo(options.transactionMemo);
+            }
+
+            if (options.nodeAccountIds != null) {
+                tx.setNodeAccountIds(
+                    options.nodeAccountIds.map((id) =>
+                        AccountId.fromString(id),
+                    ),
+                );
+            }
+
+            if (options.regenerateTransactionId != null) {
+                tx.setRegenerateTransactionId(options.regenerateTransactionId);
+            }
+
+            // Validate the fully-built transaction before submission
+            this.validator.validate(tx, options);
 
             const response = await tx.execute(this.context.client);
             const receipt = await response.getReceipt(this.context.client);
