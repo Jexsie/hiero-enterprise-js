@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { setupIntegrationTestEnv } from "../utils/env.js";
 import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
-import { AccountService } from "../../src/services/account-service.js";
+import { AccountService } from "../../src/services/index.js";
 import { AccountType } from "../../src/types/index.js";
 import { PrivateKey } from "@hiero-ledger/sdk";
 
@@ -34,7 +34,10 @@ describe("AccountService [Integration]", () => {
         expect(balance.hbars).toBe(String(15 * 100_000_000));
 
         // Delete using the key we generated
-        await client.deleteAccount(account.accountId, newKey);
+        await client.deleteAccount({
+            accountId: account.accountId,
+            accountKey: newKey,
+        });
 
         await waitForMirrorNodeRecord();
 
@@ -66,7 +69,7 @@ describe("AccountService [Integration]", () => {
         const coldAddress = "0x1111111111111111111111111111111111111111";
 
         await expect(
-            client.autoCreateEvmAccount(coldAddress, 5),
+            client.autoCreateEvmAccount({ evmAddress: coldAddress, amount: 5 }),
         ).resolves.not.toThrow();
     }, 20000);
 });

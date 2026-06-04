@@ -26,3 +26,10 @@ export type {
     ScheduleOptions,
     ScheduledResult,
 } from "./transaction/index.js";
+// Schedule management service
+export { ScheduleService } from "./schedule/index.js";
+export type {
+    ScheduleSignOptions,
+    ScheduleCancelOptions,
+    ScheduleInfoResult,
+} from "./schedule/index.js";
