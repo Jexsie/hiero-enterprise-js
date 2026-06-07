@@ -4,6 +4,7 @@ export type {
     AutoCreateEvmAccountOptions,
     DeleteAccountOptions,
     ScheduleDeleteAccountOptions,
+    UpdateAccountOptions,
 } from "./account/index.js";
 export { FileService } from "./file-service.js";
 export { FungibleTokenService } from "./fungible-token-service.js";

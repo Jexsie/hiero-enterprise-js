@@ -5,3 +5,4 @@ export type {
     DeleteAccountOptions,
     ScheduleDeleteAccountOptions,
 } from "./operations/index.js";
+export type { UpdateAccountOptions } from "./operations/index.js";
