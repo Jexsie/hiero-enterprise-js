@@ -1,0 +1,17 @@
+{
+    "name": "@hiero-enterprise/examples",
+    "private": true,
+    "type": "module",
+    "description": "Example scripts demonstrating hiero-enterprise-js service operations",
+    "scripts": {
+        "examples": "tsx run-examples.ts",
+        "examples:account": "tsx run-examples.ts account"
+    },
+    "dependencies": {
+        "@hiero-enterprise/core": "workspace:*",
+        "@hiero-ledger/sdk": "^2.22.0"
+    },
+    "devDependencies": {
+        "tsx": "^4.19.0"
+    }
+}
