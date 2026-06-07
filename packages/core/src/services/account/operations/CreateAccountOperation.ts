@@ -1,4 +1,4 @@
-import type { TransactionReceipt } from "@hiero-ledger/sdk";
+import type { TransactionReceipt, Key } from "@hiero-ledger/sdk";
 import { AccountCreateTransaction, PublicKey, Hbar } from "@hiero-ledger/sdk";
 import { AccountType } from "../../../types/index.js";
 import type { Account } from "../../../types/index.js";
@@ -18,21 +18,42 @@ import { CreateAccountValidator } from "../validation/index.js";
  * Only the public key is provided here — private key material never enters
  * this library.
  *
+ * Provide either `publicKey` (string shorthand for a single key) OR `key`
+ * (SDK Key type for KeyList / threshold keys) — not both.
+ *
  * Extends `TransactionOptions` for full control over fees, validity window,
  * additional signers, and scheduling.
  */
 export interface CreateAccountOptions extends TransactionOptions {
-    /** The public key for the new account (raw hex or DER-encoded hex). */
-    publicKey: string;
+    /**
+     * The public key for the new account (raw hex or DER-encoded hex).
+     *
+     * Use this for the common single-key case. Mutually exclusive with `key`.
+     * When provided, `keyType` specifies how to parse the string.
+     */
+    publicKey?: string;
 
     /**
-     * How to parse the public key. Required for raw hex keys where the
-     * algorithm cannot be inferred. For DER-encoded keys, the specified
-     * type must match the algorithm encoded in the DER prefix.
+     * How to parse the `publicKey` string. Required when `publicKey` is provided
+     * as raw hex where the algorithm cannot be inferred. For DER-encoded keys,
+     * the specified type must match the algorithm encoded in the DER prefix.
      *
-     * Defaults to `AccountType.ED25519`.
+     * Defaults to `AccountType.ED25519`. Ignored when `key` is provided.
      */
     keyType?: AccountType;
+
+    /**
+     * SDK Key instance for the new account.
+     *
+     * Use this for advanced key structures (KeyList, threshold keys) or when
+     * you already have a parsed Key object. Mutually exclusive with `publicKey`.
+     *
+     * Examples:
+     * - `PublicKey.fromStringED25519("302a...")`
+     * - `new KeyList([keyA, keyB, keyC])` — all must sign
+     * - `new KeyList([keyA, keyB, keyC], 2)` — 2-of-3 threshold
+     */
+    key?: Key;
 
     /**
      * Whether to derive an EVM alias for the account.
@@ -132,29 +153,35 @@ export class CreateAccountOperation {
      * options.
      */
     private build(options: CreateAccountOptions): AccountCreateTransaction {
-        const keyType = options.keyType ?? AccountType.ED25519;
-        const publicKey =
-            keyType === AccountType.ED25519
-                ? PublicKey.fromStringED25519(options.publicKey)
-                : PublicKey.fromStringECDSA(options.publicKey);
-
         const tx = new AccountCreateTransaction();
 
-        // Key + alias strategy
-        if (options.alias === true) {
-            // CreateAccountValidator ensures keyType === ECDSA when alias is true
-            tx.setECDSAKeyWithAlias(publicKey);
-        } else if (
-            typeof options.alias === "object" &&
-            options.alias?.ecdsaPublicKey
-        ) {
-            // Two-key pattern: account controlled by publicKey, alias derived from a separate ECDSA key
-            const aliasKey = PublicKey.fromStringECDSA(
-                options.alias.ecdsaPublicKey,
-            );
-            tx.setKeyWithAlias(publicKey, aliasKey);
+        if (options.key != null) {
+            // Advanced path: SDK Key used directly (KeyList, threshold, or pre-parsed PublicKey)
+            tx.setKeyWithoutAlias(options.key);
         } else {
-            tx.setKeyWithoutAlias(publicKey);
+            // Simple path: parse publicKey string with keyType
+            const keyType = options.keyType ?? AccountType.ED25519;
+            const publicKey =
+                keyType === AccountType.ED25519
+                    ? PublicKey.fromStringED25519(options.publicKey!)
+                    : PublicKey.fromStringECDSA(options.publicKey!);
+
+            // Key + alias strategy
+            if (options.alias === true) {
+                // CreateAccountValidator ensures keyType === ECDSA when alias is true
+                tx.setECDSAKeyWithAlias(publicKey);
+            } else if (
+                typeof options.alias === "object" &&
+                options.alias?.ecdsaPublicKey
+            ) {
+                // Two-key pattern: account controlled by publicKey, alias derived from a separate ECDSA key
+                const aliasKey = PublicKey.fromStringECDSA(
+                    options.alias.ecdsaPublicKey,
+                );
+                tx.setKeyWithAlias(publicKey, aliasKey);
+            } else {
+                tx.setKeyWithoutAlias(publicKey);
+            }
         }
 
         // Initial balance
@@ -200,36 +227,38 @@ export class CreateAccountOperation {
 
     /**
      * Maps the network receipt to the `Account` return type.
-     * Re-derives the public key from options to attach EVM address when an
-     * alias was requested — avoids passing the parsed key through the executor.
      */
     private toAccount(
         receipt: TransactionReceipt,
         options: CreateAccountOptions,
     ): Account {
-        const keyType = options.keyType ?? AccountType.ED25519;
-        const publicKey =
-            keyType === AccountType.ED25519
-                ? PublicKey.fromStringED25519(options.publicKey)
-                : PublicKey.fromStringECDSA(options.publicKey);
-
         const result: Account = {
             accountId: receipt.accountId!.toString(),
-            publicKey: publicKey.toString(),
         };
 
-        // Include EVM address if an alias was set
-        if (options.alias === true) {
-            result.evmAddress = publicKey.toEvmAddress();
-        } else if (
-            typeof options.alias === "object" &&
-            options.alias?.ecdsaPublicKey
-        ) {
-            // Return the EVM address derived from the separate alias
-            // key in the two-key pattern
-            result.evmAddress = PublicKey.fromStringECDSA(
-                options.alias.ecdsaPublicKey,
-            ).toEvmAddress();
+        if (options.key != null) {
+            // When using SDK Key directly, stringify it for the response
+            result.publicKey = options.key.toString();
+        } else {
+            const keyType = options.keyType ?? AccountType.ED25519;
+            const publicKey =
+                keyType === AccountType.ED25519
+                    ? PublicKey.fromStringED25519(options.publicKey!)
+                    : PublicKey.fromStringECDSA(options.publicKey!);
+
+            result.publicKey = publicKey.toString();
+
+            // Include EVM address if an alias was set
+            if (options.alias === true) {
+                result.evmAddress = publicKey.toEvmAddress();
+            } else if (
+                typeof options.alias === "object" &&
+                options.alias?.ecdsaPublicKey
+            ) {
+                result.evmAddress = PublicKey.fromStringECDSA(
+                    options.alias.ecdsaPublicKey,
+                ).toEvmAddress();
+            }
         }
 
         return result;

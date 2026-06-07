@@ -5,12 +5,14 @@ import {
     CreateAccountOperation,
     AutoCreateEvmAccountOperation,
     DeleteAccountOperation,
+    UpdateAccountOperation,
 } from "./operations/index.js";
 import type {
     CreateAccountOptions,
     AutoCreateEvmAccountOptions,
     DeleteAccountOptions,
     ScheduleDeleteAccountOptions,
+    UpdateAccountOptions,
 } from "./operations/index.js";
 import { AccountBalanceQuery } from "./queries/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
@@ -23,12 +25,14 @@ export class AccountService {
     private readonly createOperation: CreateAccountOperation;
     private readonly autoCreateOperation: AutoCreateEvmAccountOperation;
     private readonly deleteOperation: DeleteAccountOperation;
+    private readonly updateOperation: UpdateAccountOperation;
     private readonly balanceQuery: AccountBalanceQuery;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new CreateAccountOperation(context);
         this.autoCreateOperation = new AutoCreateEvmAccountOperation(context);
         this.deleteOperation = new DeleteAccountOperation(context);
+        this.updateOperation = new UpdateAccountOperation(context);
         this.balanceQuery = new AccountBalanceQuery(context);
     }
 
@@ -39,8 +43,8 @@ export class AccountService {
      * This method accepts only the public key and submits the
      * `AccountCreateTransaction` to the network.
      *
-     * @param options.publicKey - The public key (raw hex or DER-encoded hex)
-     * @param options.keyType - Key algorithm: `AccountType.ED25519` (default) or `AccountType.ECDSA`
+     * @param options.publicKey - The public key: a hex string (requires `keyType`) or an SDK `Key` instance (KeyList, threshold, etc.)
+     * @param options.keyType - Key algorithm: `AccountType.ED25519` or `AccountType.ECDSA`. Required when `publicKey` is a string
      * @param options.alias - `true` to derive EVM alias from key, or `{ ecdsaPublicKey }` for two-key pattern
      * @param options.initialBalance - Initial HBAR balance (default: 0)
      * @param options.receiverSignatureRequired - Require receiver sig for inbound transfers
@@ -59,7 +63,16 @@ export class AccountService {
      * Schedule account creation instead of executing immediately.
      * Returns a `scheduleId` — other parties can then sign via `ScheduleSignTransaction`.
      *
-     * @param options - Same as `createAccount`, plus any base transaction options
+     * @param options.publicKey - The public key: a hex string (requires `keyType`) or an SDK `Key` instance (KeyList, threshold, etc.)
+     * @param options.keyType - Key algorithm: `AccountType.ED25519` or `AccountType.ECDSA`. Required when `publicKey` is a string
+     * @param options.alias - `true` to derive EVM alias from key, or `{ ecdsaPublicKey }` for two-key pattern
+     * @param options.initialBalance - Initial HBAR balance (default: 0)
+     * @param options.receiverSignatureRequired - Require receiver sig for inbound transfers
+     * @param options.memo - Account memo (max 100 bytes)
+     * @param options.maxAutomaticTokenAssociations - Max auto token associations (0 = none, -1 = unlimited)
+     * @param options.stakedAccountId - Account ID to stake to (mutually exclusive with stakedNodeId)
+     * @param options.stakedNodeId - Node ID to stake to (mutually exclusive with stakedAccountId)
+     * @param options.declineStakingReward - Whether to decline staking rewards
      * @param scheduleOptions - Payer, admin key, and schedule memo
      * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
      */
@@ -84,7 +97,8 @@ export class AccountService {
     /**
      * Schedule the hollow-account HBAR transfer instead of executing immediately.
      *
-     * @param options - Same as `autoCreateEvmAccount`, plus any base transaction options
+     * @param options.evmAddress - The EVM address (e.g., 0x...)
+     * @param options.amount - The amount of HBAR to transfer
      * @param scheduleOptions - Payer, admin key, and schedule memo
      * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
      */
@@ -122,6 +136,48 @@ export class AccountService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return this.deleteOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Update an existing account's properties.
+     *
+     * Requires the account's key to sign — pass it via `additionalSigners`
+     * in the options (or use `externalSigners` for HSM/KMS keys).
+     *
+     * @param options.accountId - The account to update
+     * @param options.key - New key for the account (key rotation). Both old and new key must sign
+     * @param options.receiverSignatureRequired - Require receiver sig for inbound transfers
+     * @param options.memo - Account memo (max 100 bytes)
+     * @param options.maxAutomaticTokenAssociations - Max auto token associations
+     * @param options.stakedAccountId - Account ID to stake to (mutually exclusive with stakedNodeId)
+     * @param options.stakedNodeId - Node ID to stake to (mutually exclusive with stakedAccountId)
+     * @param options.declineStakingReward - Whether to decline staking rewards
+     * @param options.autoRenewPeriod - Auto-renew period in seconds (30–90 days)
+     */
+    updateAccount(options: UpdateAccountOptions) {
+        return this.updateOperation.execute(options);
+    }
+
+    /**
+     * Schedule account update instead of executing immediately.
+     *
+     * @param options.accountId - The account to update
+     * @param options.key - New key for the account (key rotation). Both old and new key must sign
+     * @param options.receiverSignatureRequired - Require receiver sig for inbound transfers
+     * @param options.memo - Account memo (max 100 bytes)
+     * @param options.maxAutomaticTokenAssociations - Max auto token associations
+     * @param options.stakedAccountId - Account ID to stake to (mutually exclusive with stakedNodeId)
+     * @param options.stakedNodeId - Node ID to stake to (mutually exclusive with stakedAccountId)
+     * @param options.declineStakingReward - Whether to decline staking rewards
+     * @param options.autoRenewPeriod - Auto-renew period in seconds (30–90 days)
+     * @param scheduleOptions - Payer, admin key, and schedule memo
+     * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
+     */
+    scheduleUpdateAccount(
+        options: UpdateAccountOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return this.updateOperation.schedule(options, scheduleOptions);
     }
 
     /**

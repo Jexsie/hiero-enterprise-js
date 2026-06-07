@@ -23,7 +23,7 @@ export interface Account {
     /** The account ID (e.g., "0.0.12345") */
     accountId: string;
     /** The public key associated with the account */
-    publicKey: string;
+    publicKey?: string;
     /** The EVM address derived from the public key */
     evmAddress?: string;
 }

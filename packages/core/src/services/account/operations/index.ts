@@ -7,3 +7,5 @@ export type {
     DeleteAccountOptions,
     ScheduleDeleteAccountOptions,
 } from "./DeleteAccountOperation.js";
+export { UpdateAccountOperation } from "./UpdateAccountOperation.js";
+export type { UpdateAccountOptions } from "./UpdateAccountOperation.js";

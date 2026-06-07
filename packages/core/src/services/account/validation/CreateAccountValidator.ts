@@ -1,6 +1,6 @@
 import { AccountType } from "../../../types/index.js";
 import { normalizeError } from "../../../errors/index.js";
-import type { CreateAccountOptions } from "../operations/CreateAccountOperation.js";
+import type { CreateAccountOptions } from "../operations/index.js";
 
 /**
  * Validates a built `AccountCreateTransaction` and its options before execution.
@@ -20,12 +20,49 @@ export class CreateAccountValidator {
      * @throws {HieroError} If validation fails
      */
     validate(options: CreateAccountOptions): void {
+        this.validateKeyOptions(options);
         this.validateAlias(options);
         this.validateInitialBalance(options);
         this.validateStakingOptions(options);
         this.validateMemo(options);
         this.validateAutoRenewPeriod(options);
         this.validateHighVolume(options);
+    }
+
+    private validateKeyOptions(options: CreateAccountOptions): void {
+        if (options.key != null && options.publicKey != null) {
+            throw normalizeError(
+                new Error(
+                    "Provide either 'key' (Key) or 'publicKey' (string) — not both.",
+                ),
+                "CreateAccountValidator",
+            );
+        }
+
+        if (options.key == null && options.publicKey == null) {
+            throw normalizeError(
+                new Error(
+                    "Either 'key' (SDK Key) or 'publicKey' (string) must be provided.",
+                ),
+                "CreateAccountValidator",
+            );
+        }
+
+        if (options.publicKey != null && options.keyType == null) {
+            console.warn(
+                "[CreateAccountValidator] publicKey provided without keyType — defaulting to ED25519. " +
+                    "Specify keyType explicitly to avoid ambiguity.",
+            );
+        }
+
+        if (options.key != null && options.alias != null) {
+            throw normalizeError(
+                new Error(
+                    "alias is not supported when using 'key' directly — alias derivation requires a single ECDSA public key string.",
+                ),
+                "CreateAccountValidator",
+            );
+        }
     }
 
     private validateAlias(options: CreateAccountOptions): void {
