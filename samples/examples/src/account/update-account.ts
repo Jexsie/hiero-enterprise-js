@@ -17,28 +17,38 @@ import {
 } from "@hiero-enterprise/core";
 import { KeyList } from "@hiero-ledger/sdk";
 
-const context = await HieroContext.build({
-    network:
-        (process.env["HIERO_NETWORK"] as "testnet" | "mainnet") ?? "testnet",
-    operatorId: process.env["HIERO_OPERATOR_ID"]!,
-    operatorKey: process.env["HIERO_OPERATOR_KEY"]!,
-});
+async function main() {
+    if (
+        process.env["HIERO_OPERATOR_ID"] == null ||
+        process.env["HIERO_OPERATOR_KEY"] == null
+    ) {
+        throw new Error(
+            "Environment variables HIERO_OPERATOR_ID and HIERO_OPERATOR_KEY are required.",
+        );
+    }
 
-const accountService = new AccountService(context);
+    const context = await HieroContext.build({
+        network:
+            (process.env["HIERO_NETWORK"] as "testnet" | "mainnet") ??
+            "testnet",
+        operatorId: process.env["HIERO_OPERATOR_ID"],
+        operatorKey: process.env["HIERO_OPERATOR_KEY"],
+    });
 
-// First, create an account to update
-const originalKey = PrivateKey.generateED25519();
-const account = await accountService.createAccount({
-    publicKey: originalKey.publicKey.toStringRaw(),
-    initialBalance: new Hbar(2),
-    memo: "original memo",
-});
+    const accountService = new AccountService(context);
 
-console.log("Created account:", account.accountId);
+    // First, create an account to update
+    const originalKey = PrivateKey.generateED25519();
+    const account = await accountService.createAccount({
+        publicKey: originalKey.publicKey.toStringRaw(),
+        initialBalance: new Hbar(2),
+        memo: "original memo",
+    });
 
-// ─── 1. Simple property update ───────────────────────────────────────────────
-// Update memo and staking — the account's own key must sign.
-{
+    console.log("Created account:", account.accountId);
+
+    // 1. Simple property update
+    // Update memo and staking — the account's own key must sign.
     await accountService.updateAccount({
         accountId: account.accountId,
         memo: "updated memo",
@@ -47,12 +57,10 @@ console.log("Created account:", account.accountId);
     });
 
     console.log("\n1. Updated memo and token associations");
-}
 
-// ─── 2. Key rotation — single key to single key ─────────────────────────────
-// Replace the account's ED25519 key with a new one.
-// Both the OLD key and the NEW key must sign.
-{
+    // 2. Key rotation — single key to single key
+    // Replace the account's ED25519 key with a new one.
+    // Both the OLD key and the NEW key must sign.
     const newKey = PrivateKey.generateED25519();
 
     await accountService.updateAccount({
@@ -66,7 +74,7 @@ console.log("Created account:", account.accountId);
     // From this point, `newKey` controls the account — `originalKey` is no longer valid.
     // All subsequent operations must use `newKey`.
 
-    // ─── 3. Upgrade to threshold key ────────────────────────────────────────
+    // 3. Upgrade to threshold key
     // Replace single key with a 2-of-3 threshold key.
     const key2 = PrivateKey.generateED25519();
     const key3 = PrivateKey.generateED25519();
@@ -83,6 +91,8 @@ console.log("Created account:", account.accountId);
     });
 
     console.log("3. Upgraded to 2-of-3 threshold key");
+
+    context.client.close();
 }
 
-context.client.close();
+void main();

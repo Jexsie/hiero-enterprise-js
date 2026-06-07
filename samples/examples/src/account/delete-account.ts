@@ -15,19 +15,29 @@ import {
     Hbar,
 } from "@hiero-enterprise/core";
 
-const context = await HieroContext.build({
-    network:
-        (process.env["HIERO_NETWORK"] as "testnet" | "mainnet") ?? "testnet",
-    operatorId: process.env["HIERO_OPERATOR_ID"]!,
-    operatorKey: process.env["HIERO_OPERATOR_KEY"]!,
-});
+async function main() {
+    if (
+        process.env["HIERO_OPERATOR_ID"] == null ||
+        process.env["HIERO_OPERATOR_KEY"] == null
+    ) {
+        throw new Error(
+            "Environment variables HIERO_OPERATOR_ID and HIERO_OPERATOR_KEY are required.",
+        );
+    }
 
-const accountService = new AccountService(context);
+    const context = await HieroContext.build({
+        network:
+            (process.env["HIERO_NETWORK"] as "testnet" | "mainnet") ??
+            "testnet",
+        operatorId: process.env["HIERO_OPERATOR_ID"],
+        operatorKey: process.env["HIERO_OPERATOR_KEY"],
+    });
 
-// ─── 1. Immediate deletion ───────────────────────────────────────────────────
-// The account's private key must be provided to authorize deletion.
-// Remaining balance is swept to `transferAccountId` (defaults to operator).
-{
+    const accountService = new AccountService(context);
+
+    // 1. Immediate deletion
+    // The account's private key must be provided to authorize deletion.
+    // Remaining balance is swept to `transferAccountId` (defaults to operator).
     const key = PrivateKey.generateED25519();
     const account = await accountService.createAccount({
         publicKey: key.publicKey.toStringRaw(),
@@ -43,21 +53,19 @@ const accountService = new AccountService(context);
     });
 
     console.log("1. Deleted:", account.accountId);
-}
 
-// ─── 2. Scheduled deletion ───────────────────────────────────────────────────
-// Use when the account owner's signature will be collected later.
-// No accountKey needed at scheduling time — the schedule stores the intent,
-// and the owner signs via ScheduleSignTransaction.
-{
-    const key = PrivateKey.generateED25519();
-    const account = await accountService.createAccount({
-        publicKey: key.publicKey.toStringRaw(),
+    // 2. Scheduled deletion
+    // Use when the account owner's signature will be collected later.
+    // No accountKey needed at scheduling time — the schedule stores the intent,
+    // and the owner signs via ScheduleSignTransaction.
+    const scheduleKey = PrivateKey.generateED25519();
+    const scheduleAccount = await accountService.createAccount({
+        publicKey: scheduleKey.publicKey.toStringRaw(),
         initialBalance: new Hbar(1),
     });
 
     const scheduled = await accountService.scheduleDeleteAccount(
-        { accountId: account.accountId },
+        { accountId: scheduleAccount.accountId },
         { scheduleMemo: "awaiting owner approval" },
     );
 
@@ -67,6 +75,10 @@ const accountService = new AccountService(context);
     console.log(
         "   → Owner signs via ScheduleSignTransaction to trigger execution",
     );
+
+    context.client.close();
 }
+
+void main();
 
 context.client.close();

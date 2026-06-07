@@ -18,39 +18,53 @@ import {
 } from "@hiero-enterprise/core";
 import { KeyList } from "@hiero-ledger/sdk";
 
-const context = await HieroContext.build({
-    network:
-        (process.env["HIERO_NETWORK"] as "testnet" | "mainnet") ?? "testnet",
-    operatorId: process.env["HIERO_OPERATOR_ID"]!,
-    operatorKey: process.env["HIERO_OPERATOR_KEY"]!,
-});
+async function main() {
+    if (
+        process.env["HIERO_OPERATOR_ID"] == null ||
+        process.env["HIERO_OPERATOR_KEY"] == null
+    ) {
+        throw new Error(
+            "Environment variables HIERO_OPERATOR_ID and HIERO_OPERATOR_KEY are required.",
+        );
+    }
 
-const accountService = new AccountService(context);
+    const context = await HieroContext.build({
+        network:
+            (process.env["HIERO_NETWORK"] as "testnet" | "mainnet") ??
+            "testnet",
+        operatorId: process.env["HIERO_OPERATOR_ID"],
+        operatorKey: process.env["HIERO_OPERATOR_KEY"],
+    });
 
-// Generate 3 keys — in production these come from different parties/HSMs
-const key1 = PrivateKey.generateED25519();
-const key2 = PrivateKey.generateED25519();
-const key3 = PrivateKey.generateED25519();
+    const accountService = new AccountService(context);
 
-// Create a 2-of-3 threshold key
-const thresholdKey = new KeyList(
-    [key1.publicKey, key2.publicKey, key3.publicKey],
-    2, // threshold — any 2 of 3 must sign
-);
+    // Generate 3 keys — in production these come from different parties/HSMs
+    const key1 = PrivateKey.generateED25519();
+    const key2 = PrivateKey.generateED25519();
+    const key3 = PrivateKey.generateED25519();
 
-const account = await accountService.createAccount({
-    key: thresholdKey,
-    initialBalance: new Hbar(5),
-    memo: "2-of-3 threshold account",
-});
+    // Create a 2-of-3 threshold key
+    const thresholdKey = new KeyList(
+        [key1.publicKey, key2.publicKey, key3.publicKey],
+        2, // threshold — any 2 of 3 must sign
+    );
 
-console.log("Created threshold account:", account.accountId);
-console.log("Key structure:", account.publicKey);
+    const account = await accountService.createAccount({
+        key: thresholdKey,
+        initialBalance: new Hbar(5),
+        memo: "2-of-3 threshold account",
+    });
 
-// To send a transaction FROM this account later, provide 2 of the 3 keys:
-// await someService.someOperation({
-//     ...options,
-//     additionalSigners: [key1, key2],  // any 2 of 3
-// });
+    console.log("Created threshold account:", account.accountId);
+    console.log("Key structure:", account.publicKey);
 
-context.client.close();
+    // To send a transaction FROM this account later, provide 2 of the 3 keys:
+    // await someService.someOperation({
+    //     ...options,
+    //     additionalSigners: [key1, key2],  // any 2 of 3
+    // });
+
+    context.client.close();
+}
+
+void main();

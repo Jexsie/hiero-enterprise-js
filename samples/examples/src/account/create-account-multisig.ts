@@ -1,20 +1,19 @@
 /**
- * Create Account — standard single-key pattern.
+ * Create Account — multi-sig with additional private key co-signers.
  *
- * Demonstrates the simplest account creation flow:
- * - Generate a key pair externally
- * - Pass the public key string to the service
- * - The operator auto-signs (no extra signers needed)
+ * Use when the AccountCreateTransaction must be co-signed by keys you hold
+ * locally (e.g., a treasury key, compliance key, or threshold key member).
  *
- * Run: pnpm tsx src/account/create-account.ts
+ * The executor freezes the transaction, signs with each key in order,
+ * then the operator auto-signs during execute().
+ *
+ * Run: pnpm tsx src/account/create-account-multisig.ts
  */
 
 import {
     AccountService,
-    AccountType,
     HieroContext,
     PrivateKey,
-    Hbar,
 } from "@hiero-enterprise/core";
 
 async function main() {
@@ -37,18 +36,16 @@ async function main() {
 
     const accountService = new AccountService(context);
 
-    // Generate key pair — in production this would come from HSM/KMS/wallet
     const newKey = PrivateKey.generateED25519();
+    const cosignerKey = PrivateKey.generateED25519(); // a key you hold locally
 
     const account = await accountService.createAccount({
         publicKey: newKey.publicKey.toStringRaw(),
-        keyType: AccountType.ED25519,
-        initialBalance: new Hbar(1),
-        memo: "standard account",
+        memo: "multi-sig account",
+        additionalSigners: [cosignerKey], // applied after operator auto-sign
     });
 
-    console.log("Created account:", account.accountId);
-    console.log("Public key:", account.publicKey);
+    console.log("Multi-sig account created:", account.accountId);
 
     context.client.close();
 }
