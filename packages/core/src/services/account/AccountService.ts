@@ -43,7 +43,8 @@ export class AccountService {
      * This method accepts only the public key and submits the
      * `AccountCreateTransaction` to the network.
      *
-     * @param options.publicKey - The public key: a hex string (requires `keyType`) or an SDK `Key` instance (KeyList, threshold, etc.)
+     * @param options.publicKey - The public key hex string for the new account (mutually exclusive with `options.key`)
+     * @param options.key - SDK `Key` instance (KeyList, threshold, etc.). Mutually exclusive with `options.publicKey`
      * @param options.keyType - Key algorithm: `AccountType.ED25519` or `AccountType.ECDSA`. Required when `publicKey` is a string
      * @param options.alias - `true` to derive EVM alias from key, or `{ ecdsaPublicKey }` for two-key pattern
      * @param options.initialBalance - Initial HBAR balance (default: 0)
@@ -63,7 +64,8 @@ export class AccountService {
      * Schedule account creation instead of executing immediately.
      * Returns a `scheduleId` — other parties can then sign via `ScheduleSignTransaction`.
      *
-     * @param options.publicKey - The public key: a hex string (requires `keyType`) or an SDK `Key` instance (KeyList, threshold, etc.)
+     * @param options.publicKey - The public key hex string for the new account (mutually exclusive with `options.key`)
+     * @param options.key - SDK `Key` instance (KeyList, threshold, etc.). Mutually exclusive with `options.publicKey`
      * @param options.keyType - Key algorithm: `AccountType.ED25519` or `AccountType.ECDSA`. Required when `publicKey` is a string
      * @param options.alias - `true` to derive EVM alias from key, or `{ ecdsaPublicKey }` for two-key pattern
      * @param options.initialBalance - Initial HBAR balance (default: 0)

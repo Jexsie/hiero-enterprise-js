@@ -20,6 +20,7 @@ export class CreateAccountValidator {
      * @throws {HieroError} If validation fails
      */
     validate(options: CreateAccountOptions): void {
+        this.validateKeyType(options);
         this.validateKeyOptions(options);
         this.validateAlias(options);
         this.validateInitialBalance(options);
@@ -155,6 +156,21 @@ export class CreateAccountValidator {
                 "[CreateAccountValidator] highVolume is enabled (HIP-1313) without maxTransactionFee. " +
                     "This routes through dedicated high-volume throttle capacity with variable-rate pricing. " +
                     "Set maxTransactionFee to cap your costs.",
+            );
+        }
+    }
+
+    private validateKeyType(options: CreateAccountOptions): void {
+        if (
+            options.keyType != null &&
+            options.keyType !== AccountType.ED25519 &&
+            options.keyType !== AccountType.ECDSA
+        ) {
+            throw normalizeError(
+                new Error(
+                    `Invalid keyType "${String(options.keyType)}". Expected AccountType.ED25519 or AccountType.ECDSA.`,
+                ),
+                "CreateAccountValidator",
             );
         }
     }

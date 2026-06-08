@@ -85,7 +85,8 @@ export interface TransactionOptions {
      * Additional private keys that must co-sign this transaction (e.g., a
      * multi-sig account's threshold keys).
      *
-     * These are applied after the operator auto-sign during `execute()`.
+     * Applied before execution — the transaction is frozen, these keys sign,
+     * then the operator auto-signs during execution.
      * Causes an implicit `freezeWith(client)` before signing.
      */
     additionalSigners?: PrivateKey[];

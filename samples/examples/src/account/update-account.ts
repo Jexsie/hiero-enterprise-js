@@ -14,8 +14,8 @@ import {
     HieroContext,
     PrivateKey,
     Hbar,
+    KeyList,
 } from "@hiero-enterprise/core";
-import { KeyList } from "@hiero-ledger/sdk";
 
 async function main() {
     if (

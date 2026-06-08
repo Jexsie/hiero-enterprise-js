@@ -8,8 +8,7 @@
         "examples:account": "tsx run-examples.ts account"
     },
     "dependencies": {
-        "@hiero-enterprise/core": "workspace:*",
-        "@hiero-ledger/sdk": "^2.22.0"
+        "@hiero-enterprise/core": "workspace:*"
     },
     "devDependencies": {
         "tsx": "^4.19.0"

@@ -12,7 +12,6 @@
  *   4. Attach signature bytes here via legacySignatures
  *   5. Submit
  *
- * Run: pnpm tsx src/account/create-account-offline-signature.ts
  */
 
 import {
@@ -64,5 +63,3 @@ async function main() {
 }
 
 void main();
-
-context.client.close();

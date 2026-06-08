@@ -71,7 +71,10 @@ export class TransactionExecutor {
                     error instanceof Error ? error : new Error(String(error)),
                 durationMs: Date.now() - start,
             });
-            throw normalizeError(error, event.methodName);
+            throw normalizeError(
+                error,
+                `${event.serviceName}.${event.methodName}`,
+            );
         }
     }
 
@@ -103,9 +106,11 @@ export class TransactionExecutor {
                     : scheduleOptions.payerAccountId;
             scheduleTx.setPayerAccountId(payerId);
         }
+
         if (scheduleOptions.adminKey != null) {
             scheduleTx.setAdminKey(scheduleOptions.adminKey);
         }
+
         if (scheduleOptions.scheduleMemo != null) {
             scheduleTx.setScheduleMemo(scheduleOptions.scheduleMemo);
         }
@@ -185,6 +190,7 @@ export class TransactionExecutor {
         for (const key of options.additionalSigners ?? []) {
             await tx.sign(key);
         }
+
         for (const { publicKey, sign } of options.externalSigners ?? []) {
             await tx.signWith(publicKey, sign);
         }

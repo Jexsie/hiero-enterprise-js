@@ -21,6 +21,11 @@ function parsePrivateKey(key: string, keyType: OperatorKeyType): PrivateKey {
             return PrivateKey.fromStringDer(key);
         case OperatorKeyType.ECDSA:
             return PrivateKey.fromStringECDSA(key);
+        default:
+            throw new HieroError(
+                `Invalid operatorKeyType: "${keyType as string}". Must be one of: "ed25519", "ecdsa", "der".`,
+                { code: HieroErrorCodes.ConfigInvalid },
+            );
     }
 }
 

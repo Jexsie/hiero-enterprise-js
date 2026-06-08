@@ -82,9 +82,14 @@ export function resolveConfigFromEnv(): HieroConfig | null {
     const network = process.env["HIERO_NETWORK"];
     const operatorId = process.env["HIERO_OPERATOR_ID"];
     const operatorKey = process.env["HIERO_OPERATOR_KEY"];
-    const operatorKeyType = process.env[
-        "HIERO_OPERATOR_KEY_TYPE"
-    ]?.toLowerCase() as OperatorKeyType | undefined;
+    const operatorKeyTypeRaw =
+        process.env["HIERO_OPERATOR_KEY_TYPE"]?.toLowerCase();
+    const operatorKeyType =
+        operatorKeyTypeRaw === "ed25519" ||
+        operatorKeyTypeRaw === "ecdsa" ||
+        operatorKeyTypeRaw === "der"
+            ? (operatorKeyTypeRaw as OperatorKeyType)
+            : undefined;
     const mirrorNodeUrl = process.env["HIERO_MIRROR_NODE_URL"];
 
     if (!network || !operatorId || !operatorKey || !operatorKeyType) {

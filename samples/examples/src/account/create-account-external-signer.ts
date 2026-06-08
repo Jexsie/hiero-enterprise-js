@@ -63,5 +63,3 @@ async function main() {
 }
 
 void main();
-
-context.client.close();
