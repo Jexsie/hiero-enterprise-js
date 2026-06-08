@@ -30,7 +30,7 @@
         "fastify-plugin": "^5.1.0"
     },
     "peerDependencies": {
-        "@hiero-ledger/sdk": "^2.84.0",
+        "@hiero-enterprise/core": "workspace:*",
         "fastify": ">=5"
     },
     "devDependencies": {

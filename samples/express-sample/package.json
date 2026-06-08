@@ -10,6 +10,7 @@
         "start": "node dist/app.js"
     },
     "dependencies": {
+        "@hiero-enterprise/core": "workspace:*",
         "@hiero-enterprise/express": "workspace:*",
         "express": "^5.1.0"
     },
