@@ -1,9 +1,9 @@
 import { Module, Controller, Get, Post, Param, Body } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import { type AccountType } from "@hiero-enterprise/core";
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import {
     AccountService,
-    AccountType,
     TopicService,
     AccountRepository,
     NftRepository,

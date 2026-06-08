@@ -115,7 +115,7 @@ async function runSequential(examples: string[]): Promise<void> {
     }
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// Main execution
 
 const examples = findExamples(srcDir);
 

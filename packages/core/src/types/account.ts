@@ -8,7 +8,7 @@ export enum AccountType {
 
 /**
  * The encoding/algorithm type for the operator private key.
- * Used when parsing the operator key material from configuration.
+ * Consumers pass plain strings like `"ed25519"` in config.
  */
 export enum OperatorKeyType {
     ED25519 = "ed25519",

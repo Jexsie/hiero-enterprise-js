@@ -6,7 +6,6 @@
  */
 
 import type { HieroConfig } from "../config/index.js";
-import { OperatorKeyType } from "../types/index.js";
 import type { MirrorNodeClient } from "../mirror/index.js";
 import type {
     MirrorAccountInfo,
@@ -29,7 +28,7 @@ export const testConfig: HieroConfig = {
     operatorId: "0.0.1001",
     operatorKey:
         "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
-    operatorKeyType: OperatorKeyType.DER,
+    operatorKeyType: "der",
     mirrorNodeUrl: "http://localhost:5551",
 };
 

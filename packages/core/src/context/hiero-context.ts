@@ -13,7 +13,7 @@ import type { IHieroContext } from "./hiero-context.interface.js";
 /**
  * Parse a private key string based on the specified key type.
  */
-function parsePrivateKey(key: string, keyType: OperatorKeyType): PrivateKey {
+function parsePrivateKey(key: string, keyType: string): PrivateKey {
     switch (keyType) {
         case OperatorKeyType.ED25519:
             return PrivateKey.fromStringED25519(key);
@@ -23,7 +23,7 @@ function parsePrivateKey(key: string, keyType: OperatorKeyType): PrivateKey {
             return PrivateKey.fromStringECDSA(key);
         default:
             throw new HieroError(
-                `Invalid operatorKeyType: "${keyType as string}". Must be one of: "ed25519", "ecdsa", "der".`,
+                `Invalid operatorKeyType: "${keyType}". Must be one of: "ed25519", "ecdsa", "der".`,
                 { code: HieroErrorCodes.ConfigInvalid },
             );
     }
@@ -145,7 +145,9 @@ export class HieroContext implements IHieroContext {
         this.client.close();
     }
 
-    // ─── Transaction Listener Management ─────────────────────────
+    // Transaction Listener Management
+    // Allows services to emit transaction lifecycle events to registered listeners
+    // (e.g., for logging, metrics, etc.)
 
     /**
      * Register a transaction listener.

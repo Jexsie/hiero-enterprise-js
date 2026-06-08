@@ -30,12 +30,13 @@ async function main() {
         );
     }
 
-    const context = await HieroContext.build({
+    const context = new HieroContext({
         network:
             (process.env["HIERO_NETWORK"] as "testnet" | "mainnet") ??
             "testnet",
         operatorId: process.env["HIERO_OPERATOR_ID"],
         operatorKey: process.env["HIERO_OPERATOR_KEY"],
+        operatorKeyType: process.env["HIERO_OPERATOR_KEY_TYPE"] ?? "ed25519",
     });
 
     const accountService = new AccountService(context);

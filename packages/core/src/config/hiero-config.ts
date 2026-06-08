@@ -1,5 +1,4 @@
 import { HieroError, HieroErrorCodes } from "../errors/index.js";
-import type { OperatorKeyType } from "../types/index.js";
 
 /**
  * Configuration for connecting to a Hiero network.
@@ -12,7 +11,7 @@ export interface HieroConfig {
     /** Operator private key */
     readonly operatorKey: string;
     /** Type of the operator private key — required to correctly parse the key material */
-    readonly operatorKeyType: OperatorKeyType;
+    readonly operatorKeyType: string;
     /** Mirror node base URL (auto-resolved if not provided) */
     readonly mirrorNodeUrl?: string;
     /** Request timeout in milliseconds (default: 120000) */
@@ -88,7 +87,7 @@ export function resolveConfigFromEnv(): HieroConfig | null {
         operatorKeyTypeRaw === "ed25519" ||
         operatorKeyTypeRaw === "ecdsa" ||
         operatorKeyTypeRaw === "der"
-            ? (operatorKeyTypeRaw as OperatorKeyType)
+            ? operatorKeyTypeRaw
             : undefined;
     const mirrorNodeUrl = process.env["HIERO_MIRROR_NODE_URL"];
 

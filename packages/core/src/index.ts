@@ -8,6 +8,7 @@ export * from "./types/index.js";
 export {
     PrivateKey,
     PublicKey,
+    KeyList,
     AccountId,
     TokenId,
     TopicId,

@@ -54,9 +54,6 @@ importers:
 
   packages/express:
     dependencies:
-      '@hiero-ledger/sdk':
-        specifier: ^2.84.0
-        version: 2.84.0(bn.js@5.2.3)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.6))
       express:
         specifier: '>=4'
         version: 5.2.1
@@ -76,9 +73,6 @@ importers:
 
   packages/fastify:
     dependencies:
-      '@hiero-ledger/sdk':
-        specifier: ^2.84.0
-        version: 2.84.0(bn.js@5.2.3)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.6))
       fastify-plugin:
         specifier: ^5.1.0
         version: 5.1.0
@@ -97,10 +91,6 @@ importers:
         version: 4.1.7(@types/node@25.9.1)(vite@8.0.14(@types/node@25.9.1)(esbuild@0.28.0)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))
 
   packages/nest:
-    dependencies:
-      '@hiero-ledger/sdk':
-        specifier: ^2.84.0
-        version: 2.84.0(bn.js@5.2.3)(react-native@0.85.3(@babel/core@7.29.7)(react@19.2.6))
     devDependencies:
       '@hiero-enterprise/core':
         specifier: workspace:*
@@ -123,6 +113,16 @@ importers:
       vitest:
         specifier: ^4.1.7
         version: 4.1.7(@types/node@25.9.1)(vite@8.0.14(@types/node@25.9.1)(esbuild@0.28.0)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))
+
+  samples/examples:
+    dependencies:
+      '@hiero-enterprise/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.22.3
 
   samples/express-sample:
     dependencies:
