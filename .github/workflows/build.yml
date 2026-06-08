@@ -81,6 +81,7 @@ jobs:
                   HIERO_NETWORK: hiero-solo-action
                   HIERO_OPERATOR_ID: ${{ steps.solo.outputs.accountId }}
                   HIERO_OPERATOR_KEY: ${{ steps.solo.outputs.privateKey }}
+                  HIERO_OPERATOR_KEY_TYPE: der
                   HIERO_MIRROR_NODE_URL: http://localhost:5551
               run: pnpm run test:integration
 
@@ -89,5 +90,15 @@ jobs:
                   HIERO_NETWORK: hiero-solo-action
                   HIERO_OPERATOR_ID: ${{ steps.solo.outputs.accountId }}
                   HIERO_OPERATOR_KEY: ${{ steps.solo.outputs.privateKey }}
+                  HIERO_OPERATOR_KEY_TYPE: der
                   HIERO_MIRROR_NODE_URL: http://localhost:5551
               run: pnpm run test:unit
+
+            - name: Run examples
+              env:
+                  HIERO_NETWORK: hiero-solo-action
+                  HIERO_OPERATOR_ID: ${{ steps.solo.outputs.accountId }}
+                  HIERO_OPERATOR_KEY: ${{ steps.solo.outputs.privateKey }}
+                  HIERO_OPERATOR_KEY_TYPE: der
+                  HIERO_MIRROR_NODE_URL: http://localhost:5551
+              run: pnpm --filter @hiero-enterprise/examples examples

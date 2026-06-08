@@ -29,12 +29,11 @@ async function main() {
     }
 
     const context = new HieroContext({
-        network:
-            (process.env["HIERO_NETWORK"] as "testnet" | "mainnet") ??
-            "testnet",
+        network: process.env["HIERO_NETWORK"] ?? "testnet",
         operatorId: process.env["HIERO_OPERATOR_ID"],
         operatorKey: process.env["HIERO_OPERATOR_KEY"],
         operatorKeyType: process.env["HIERO_OPERATOR_KEY_TYPE"] ?? "ed25519",
+        mirrorNodeUrl: process.env["HIERO_MIRROR_NODE_URL"],
     });
 
     const accountService = new AccountService(context);

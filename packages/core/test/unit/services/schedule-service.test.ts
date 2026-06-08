@@ -64,9 +64,15 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     const actual = await importOriginal<Record<string, unknown>>();
     return {
         ...actual,
-        ScheduleSignTransaction: vi.fn(function () { return mockTx; }),
-        ScheduleDeleteTransaction: vi.fn(function () { return mockTx; }),
-        ScheduleInfoQuery: vi.fn(function () { return mockInfoQuery; }),
+        ScheduleSignTransaction: vi.fn(function () {
+            return mockTx;
+        }),
+        ScheduleDeleteTransaction: vi.fn(function () {
+            return mockTx;
+        }),
+        ScheduleInfoQuery: vi.fn(function () {
+            return mockInfoQuery;
+        }),
     };
 });
 
@@ -144,7 +150,9 @@ describe("ScheduleService", () => {
             });
 
             const tx = vi.mocked(ScheduleSignTransaction).mock.results[0].value;
-            expect(tx.setTransactionMemo).toHaveBeenCalledWith("multisig round 2");
+            expect(tx.setTransactionMemo).toHaveBeenCalledWith(
+                "multisig round 2",
+            );
             expect(tx.setMaxTransactionFee).toHaveBeenCalledWith(2);
         });
 
@@ -169,7 +177,8 @@ describe("ScheduleService", () => {
 
             await scheduleService.cancel({ scheduleId: SCHEDULE_ID, adminKey });
 
-            const tx = vi.mocked(ScheduleDeleteTransaction).mock.results[0].value;
+            const tx = vi.mocked(ScheduleDeleteTransaction).mock.results[0]
+                .value;
             expect(tx.setScheduleId).toHaveBeenCalledWith(SCHEDULE_ID);
             expect(tx.execute).toHaveBeenCalledWith(context.client);
         });
@@ -179,7 +188,8 @@ describe("ScheduleService", () => {
 
             await scheduleService.cancel({ scheduleId: SCHEDULE_ID, adminKey });
 
-            const tx = vi.mocked(ScheduleDeleteTransaction).mock.results[0].value;
+            const tx = vi.mocked(ScheduleDeleteTransaction).mock.results[0]
+                .value;
             expect(tx.freezeWith).toHaveBeenCalledWith(context.client);
             // adminKey should be the first (and only) signer
             expect(tx.sign).toHaveBeenCalledWith(adminKey);
@@ -195,7 +205,8 @@ describe("ScheduleService", () => {
                 additionalSigners: [extraKey],
             });
 
-            const tx = vi.mocked(ScheduleDeleteTransaction).mock.results[0].value;
+            const tx = vi.mocked(ScheduleDeleteTransaction).mock.results[0]
+                .value;
             const calls = vi.mocked(tx.sign).mock.calls;
             // adminKey signs first, extraKey signs second
             expect(calls[0][0]).toBe(adminKey);
