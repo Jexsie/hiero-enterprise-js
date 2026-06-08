@@ -78,8 +78,9 @@ export class HieroContext implements IHieroContext {
         ) {
             this.client = Client.forPreviewnet();
         } else if (resolved.mirrorNodeUrl) {
-            // Custom network — requires explicit mirror node URL
-            this.client = Client.forNetwork({});
+            // Custom network — requires explicit mirror node URL and consensus nodes
+            const nodes = resolved.networkNodes ?? {};
+            this.client = Client.forNetwork(nodes);
             this.client.setMirrorNetwork([resolved.mirrorNodeUrl]);
         } else {
             throw new HieroError(

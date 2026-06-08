@@ -14,6 +14,12 @@ export interface HieroConfig {
     readonly operatorKeyType: string;
     /** Mirror node base URL (auto-resolved if not provided) */
     readonly mirrorNodeUrl?: string;
+    /**
+     * Consensus node addresses for custom networks.
+     * Map of "host:port" → "accountId" (e.g., { "127.0.0.1:50211": "0.0.3" }).
+     * Required for custom/local networks where node discovery is unavailable.
+     */
+    readonly networkNodes?: Record<string, string>;
     /** Request timeout in milliseconds (default: 120000) */
     readonly requestTimeoutMs?: number;
     /** gRPC deadline in milliseconds (default: 10000) */
@@ -90,9 +96,22 @@ export function resolveConfigFromEnv(): HieroConfig | null {
             ? operatorKeyTypeRaw
             : undefined;
     const mirrorNodeUrl = process.env["HIERO_MIRROR_NODE_URL"];
+    const networkNodesRaw = process.env["HIERO_NETWORK_NODES"];
 
     if (!network || !operatorId || !operatorKey || !operatorKeyType) {
         return null;
+    }
+
+    // Parse HIERO_NETWORK_NODES: "host:port=accountId,host:port=accountId"
+    let networkNodes: Record<string, string> | undefined;
+    if (networkNodesRaw) {
+        networkNodes = {};
+        for (const entry of networkNodesRaw.split(",")) {
+            const [address, accountId] = entry.trim().split("=");
+            if (address && accountId) {
+                networkNodes[address] = accountId;
+            }
+        }
     }
 
     return {
@@ -101,6 +120,7 @@ export function resolveConfigFromEnv(): HieroConfig | null {
         operatorKey,
         operatorKeyType,
         mirrorNodeUrl,
+        networkNodes,
     };
 }
 

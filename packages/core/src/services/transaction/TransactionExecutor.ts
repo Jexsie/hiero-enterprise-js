@@ -42,11 +42,13 @@ export class TransactionExecutor {
         const start = Date.now();
 
         try {
-            // Freeze before manual signers if any are present — required by the SDK
-            // before calling sign() or signWith() directly
-            if (this.requiresManualFreeze(options)) {
-                tx.freezeWith(this.context.client);
-            }
+            // Always freeze before signing or execution — the SDK requires
+            // a frozen transaction for sign/signWith/_addSignatureLegacy and
+            // custom networks may not auto-freeze correctly in execute().
+            tx.freezeWith(this.context.client);
+
+            // Apply offline signatures after freeze (requires stable tx hash)
+            this.applyLegacySignatures(tx, options);
 
             await this.applySigners(tx, options);
 
@@ -160,23 +162,20 @@ export class TransactionExecutor {
                 options.nodeAccountIds.map((id) => AccountId.fromString(id)),
             );
         }
+    }
 
-        // Attach any pre-computed offline signatures before execution
+    /**
+     * Apply pre-computed offline signatures. Must be called after freeze.
+     */
+    private applyLegacySignatures(
+        tx: Transaction,
+        options: TransactionOptions,
+    ): void {
         if (options.legacySignatures) {
             for (const { publicKey, signature } of options.legacySignatures) {
                 tx._addSignatureLegacy(publicKey, signature);
             }
         }
-    }
-
-    /**
-     * Returns true if the transaction must be explicitly frozen before signing.
-     * Freezing is required whenever we need to call sign() or signWith() manually.
-     */
-    private requiresManualFreeze(options: TransactionOptions): boolean {
-        return !!(
-            options.additionalSigners?.length || options.externalSigners?.length
-        );
     }
 
     /**

@@ -14,24 +14,11 @@ import {
     HieroContext,
     PrivateKey,
 } from "@hiero-enterprise/core";
+import { getExampleConfig } from "../env.js";
 
 async function main() {
-    if (
-        process.env["HIERO_OPERATOR_ID"] == null ||
-        process.env["HIERO_OPERATOR_KEY"] == null
-    ) {
-        throw new Error(
-            "Environment variables HIERO_OPERATOR_ID and HIERO_OPERATOR_KEY are required.",
-        );
-    }
 
-    const context = new HieroContext({
-        network: process.env["HIERO_NETWORK"] ?? "testnet",
-        operatorId: process.env["HIERO_OPERATOR_ID"],
-        operatorKey: process.env["HIERO_OPERATOR_KEY"],
-        operatorKeyType: process.env["HIERO_OPERATOR_KEY_TYPE"] ?? "ed25519",
-        mirrorNodeUrl: process.env["HIERO_MIRROR_NODE_URL"],
-    });
+    const context = new HieroContext(getExampleConfig());
 
     const accountService = new AccountService(context);
     const scheduleService = new ScheduleService(context);
