@@ -6,6 +6,7 @@ import {
     AutoCreateEvmAccountOperation,
     DeleteAccountOperation,
     UpdateAccountOperation,
+    ApproveAllowanceOperation,
 } from "./operations/index.js";
 import type {
     CreateAccountOptions,
@@ -13,6 +14,7 @@ import type {
     DeleteAccountOptions,
     ScheduleDeleteAccountOptions,
     UpdateAccountOptions,
+    ApproveAllowanceOptions,
 } from "./operations/index.js";
 import { AccountBalanceQuery } from "./queries/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
@@ -26,6 +28,7 @@ export class AccountService {
     private readonly autoCreateOperation: AutoCreateEvmAccountOperation;
     private readonly deleteOperation: DeleteAccountOperation;
     private readonly updateOperation: UpdateAccountOperation;
+    private readonly approveAllowanceOperation: ApproveAllowanceOperation;
     private readonly balanceQuery: AccountBalanceQuery;
 
     constructor(private readonly context: IHieroContext) {
@@ -33,6 +36,7 @@ export class AccountService {
         this.autoCreateOperation = new AutoCreateEvmAccountOperation(context);
         this.deleteOperation = new DeleteAccountOperation(context);
         this.updateOperation = new UpdateAccountOperation(context);
+        this.approveAllowanceOperation = new ApproveAllowanceOperation(context);
         this.balanceQuery = new AccountBalanceQuery(context);
     }
 
@@ -199,5 +203,20 @@ export class AccountService {
      */
     getOperatorAccountBalance(): Promise<Balance> {
         return this.balanceQuery.execute(this.context.operatorAccountId);
+    }
+
+    /**
+     * Approve allowances for an account — grant a spender permission to spend
+     * HBAR, fungible tokens, or NFTs on the owner's behalf.
+     *
+     * The owner's key must sign the transaction. If the operator is not the owner,
+     * pass the owner's key via `additionalSigners`.
+     *
+     * @param options.hbarAllowances - HBAR spending allowances to approve
+     * @param options.tokenAllowances - Fungible token allowances to approve
+     * @param options.nftAllowances - NFT transfer allowances to approve
+     */
+    approveAllowance(options: ApproveAllowanceOptions): Promise<void> {
+        return this.approveAllowanceOperation.execute(options);
     }
 }
