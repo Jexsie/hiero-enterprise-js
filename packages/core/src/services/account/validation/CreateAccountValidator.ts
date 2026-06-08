@@ -50,10 +50,7 @@ export class CreateAccountValidator {
         }
 
         if (options.publicKey != null && options.keyType == null) {
-            console.warn(
-                "[CreateAccountValidator] publicKey provided without keyType — defaulting to ED25519. " +
-                    "Specify keyType explicitly to avoid ambiguity.",
-            );
+            // keyType defaults to ED25519 when not specified
         }
 
         if (options.key != null && options.alias != null) {
@@ -107,9 +104,7 @@ export class CreateAccountValidator {
             options.stakedAccountId == null &&
             options.stakedNodeId == null
         ) {
-            console.warn(
-                "[CreateAccountValidator] declineStakingReward is true but no staking target is set — this has no effect.",
-            );
+            // declineStakingReward without a staking target has no effect
         }
     }
 
@@ -152,11 +147,7 @@ export class CreateAccountValidator {
      */
     private validateHighVolume(options: CreateAccountOptions): void {
         if (options.highVolume === true && options.maxTransactionFee == null) {
-            console.warn(
-                "[CreateAccountValidator] highVolume is enabled (HIP-1313) without maxTransactionFee. " +
-                    "This routes through dedicated high-volume throttle capacity with variable-rate pricing. " +
-                    "Set maxTransactionFee to cap your costs.",
-            );
+            // highVolume without maxTransactionFee uses variable-rate pricing uncapped
         }
     }
 

@@ -70,9 +70,7 @@ export class UpdateAccountValidator {
             options.stakedAccountId == null &&
             options.stakedNodeId == null
         ) {
-            console.warn(
-                "[UpdateAccountValidator] declineStakingReward is true but no staking target is set — this has no effect.",
-            );
+            // declineStakingReward without a staking target has no effect
         }
     }
 
@@ -115,11 +113,7 @@ export class UpdateAccountValidator {
      */
     private validateHighVolume(options: UpdateAccountOptions): void {
         if (options.highVolume === true && options.maxTransactionFee == null) {
-            console.warn(
-                "[UpdateAccountValidator] highVolume is enabled (HIP-1313) without maxTransactionFee. " +
-                    "This routes through dedicated high-volume throttle capacity with variable-rate pricing. " +
-                    "Set maxTransactionFee to cap your costs.",
-            );
+            // highVolume without maxTransactionFee uses variable-rate pricing uncapped
         }
     }
 }
