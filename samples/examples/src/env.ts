@@ -21,13 +21,30 @@ function parseNetworkNodes(raw?: string): Record<string, string> | undefined {
 /**
  * Build a HieroConfig from environment variables with sensible defaults
  * for local development. Used by all example scripts.
+ *
+ * Uses the ED25519 operator.
  */
-export function getExampleConfig(): HieroConfig {
+export function getED25519Config(): HieroConfig {
     return {
         network: process.env["HIERO_NETWORK"] ?? "testnet",
-        operatorId: process.env["HIERO_OPERATOR_ID"]!,
-        operatorKey: process.env["HIERO_OPERATOR_KEY"]!,
-        operatorKeyType: process.env["HIERO_OPERATOR_KEY_TYPE"] ?? "ed25519",
+        operatorId: process.env["HIERO_ED25519_OPERATOR_ID"]!,
+        operatorKey: process.env["HIERO_ED25519_OPERATOR_KEY"]!,
+        operatorKeyType: "ed25519",
+        mirrorNodeUrl: process.env["HIERO_MIRROR_NODE_URL"],
+        networkNodes: parseNetworkNodes(process.env["HIERO_NETWORK_NODES"]),
+    };
+}
+
+/**
+ * Build a HieroConfig using the ECDSA operator account.
+ * Use this for examples that specifically demo ECDSA operations.
+ */
+export function getEcdsaExampleConfig(): HieroConfig {
+    return {
+        network: process.env["HIERO_NETWORK"] ?? "testnet",
+        operatorId: process.env["HIERO_ECDSA_OPERATOR_ID"]!,
+        operatorKey: process.env["HIERO_ECDSA_OPERATOR_KEY"]!,
+        operatorKeyType: "ecdsa",
         mirrorNodeUrl: process.env["HIERO_MIRROR_NODE_URL"],
         networkNodes: parseNetworkNodes(process.env["HIERO_NETWORK_NODES"]),
     };

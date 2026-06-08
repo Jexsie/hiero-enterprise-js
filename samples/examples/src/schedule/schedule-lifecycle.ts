@@ -2,86 +2,82 @@
  * Schedule — full lifecycle: create, sign, query, execute.
  *
  * Demonstrates the complete scheduled transaction workflow:
- *   1. Create a schedule wrapping an AccountCreateTransaction
- *   2. Query its initial state (pending, no signers)
- *   3. Sign with a local private key
- *   4. Sign with an external signer (HSM/KMS/wallet)
- *   5. Query final state (check if threshold met and executed)
+ *   1. Create a designated payer account (multi-party approval)
+ *   2. Schedule an AccountCreate with the payer — won't auto-execute
+ *   3. Query initial state (pending)
+ *   4. Sign with the payer's key to trigger execution
+ *   5. Query final state (executed)
  *
  * Run: pnpm tsx src/schedule/schedule-lifecycle.ts
  */
 
 import {
     AccountService,
+    AccountType,
     ScheduleService,
     HieroContext,
     PrivateKey,
+    Hbar,
 } from "@hiero-enterprise/core";
-import { getExampleConfig } from "../env.js";
+import { getED25519Config } from "../env.js";
 import type { ScheduleOptions } from "@hiero-enterprise/core";
 
 async function main() {
-
-    const context = new HieroContext(getExampleConfig());
+    const context = new HieroContext(getED25519Config());
 
     const accountService = new AccountService(context);
     const scheduleService = new ScheduleService(context);
 
-    // 1. Create a schedule
+    // 1. Create a designated payer account
+    // By setting a payerAccountId on the schedule, the schedule won't execute
+    // until the payer signs — enabling multi-party approval flows.
+    const payerKey = PrivateKey.generateED25519();
+    const payerAccount = await accountService.createAccount({
+        publicKey: payerKey.publicKey.toStringRaw(),
+        keyType: AccountType.ED25519,
+        initialBalance: new Hbar(10),
+        memo: "schedule payer",
+    });
+
+    console.log("1. Payer account created:", payerAccount.accountId);
+
+    // 2. Schedule an AccountCreate with the payer
     const newAccountKey = PrivateKey.generateED25519();
 
     const scheduleOptions: ScheduleOptions = {
         scheduleMemo: "multi-party approval required",
+        payerAccountId: payerAccount.accountId,
     };
 
     const { scheduleId, transactionId } =
         await accountService.scheduleCreateAccount(
             {
                 publicKey: newAccountKey.publicKey.toStringRaw(),
-                initialBalance: 10,
+                keyType: AccountType.ED25519,
+                initialBalance: new Hbar(1),
                 memo: "scheduled account",
             },
             scheduleOptions,
         );
 
-    console.log("1. Schedule created");
+    console.log("\n2. Schedule created");
     console.log("   scheduleId:", scheduleId);
     console.log("   transactionId:", transactionId);
 
-    // 2. Query initial state
+    // 3. Query initial state — should be pending (payer hasn't signed yet)
     const initialInfo = await scheduleService.getInfo(scheduleId);
 
-    console.log("\n2. Initial state");
+    console.log("\n3. Initial state");
     console.log("   isPending:", initialInfo.isPending);
     console.log("   signerCount:", initialInfo.signerCount);
-    console.log("   scheduleMemo:", initialInfo.scheduleMemo);
 
-    // 3. Sign with a local private key
-    const partyAKey = PrivateKey.generateED25519();
-
+    // 4. Sign with the payer's key — this triggers execution
     await scheduleService.sign({
         scheduleId,
-        additionalSigners: [partyAKey],
+        additionalSigners: [payerKey],
     });
 
-    console.log("\n3. Party A signed (local key)");
-
-    // 4. Sign with an external signer (HSM/KMS)
-    const partyBKey = PrivateKey.generateECDSA(); // simulated HSM key
-    const partyBSigner = {
-        publicKey: partyBKey.publicKey,
-        sign: async (message: Uint8Array): Promise<Uint8Array> => {
-            // Production: return await kmsClient.sign(keyId, message);
-            return partyBKey.sign(message);
-        },
-    };
-
-    await scheduleService.sign({
-        scheduleId,
-        externalSigners: [partyBSigner],
-    });
-
-    console.log("4. Party B signed (external signer)");
+    console.log("\n4. Payer signed — schedule should execute");
 
     // 5. Query final state
     const finalInfo = await scheduleService.getInfo(scheduleId);

@@ -1,55 +1,70 @@
 /**
  * Schedule — sign with pre-computed offline signature.
  *
- * Use when a party's signature is produced on an air-gapped machine.
- * The transaction body bytes are serialised, transferred offline,
- * signed there, and the resulting signature bytes are attached here.
+ * Demonstrates using a designated payer pattern to keep a schedule
+ * pending, then signing with the payer's key to trigger execution.
+ *
+ * In production, the payer's signature would come from an air-gapped machine:
+ *   1. Serialise the ScheduleSignTransaction → bytes
+ *   2. Transfer bytes to the offline signer
+ *   3. Return signature bytes and attach via additionalSigners/legacySignatures
  *
  * Run: pnpm tsx src/schedule/sign-schedule-offline.ts
  */
 
 import {
     AccountService,
+    AccountType,
     ScheduleService,
     HieroContext,
     PrivateKey,
+    Hbar,
 } from "@hiero-enterprise/core";
-import { getExampleConfig } from "../env.js";
+import { getED25519Config } from "../env.js";
 
 async function main() {
-
-    const context = new HieroContext(getExampleConfig());
+    const context = new HieroContext(getED25519Config());
 
     const accountService = new AccountService(context);
     const scheduleService = new ScheduleService(context);
 
-    // Create a schedule to sign
+    // 1. Create a payer account whose key will sign offline
+    const payerKey = PrivateKey.generateED25519();
+    const payerAccount = await accountService.createAccount({
+        publicKey: payerKey.publicKey.toStringRaw(),
+        keyType: AccountType.ED25519,
+        initialBalance: new Hbar(10),
+        memo: "offline payer",
+    });
+
+    console.log("Payer account created:", payerAccount.accountId);
+
+    // 2. Schedule an AccountCreate requiring payer's signature
     const { scheduleId } = await accountService.scheduleCreateAccount(
         {
             publicKey: PrivateKey.generateED25519().publicKey.toStringRaw(),
+            keyType: AccountType.ED25519,
             memo: "offline-signed schedule",
         },
-        { scheduleMemo: "awaiting air-gapped signature" },
+        {
+            scheduleMemo: "awaiting air-gapped signature",
+            payerAccountId: payerAccount.accountId,
+        },
     );
 
     console.log("Schedule created:", scheduleId);
 
-    // In a real offline flow:
-    //   1. Serialise the ScheduleSignTransaction to bytes
-    //   2. Transfer bytes to air-gapped machine
-    //   3. Air-gapped machine signs with its private key
-    //   4. Get the signature bytes back (out-of-band)
-    const offlineKey = PrivateKey.generateED25519();
-    const offlineSignature = new Uint8Array(64); // replace with real bytes
-
+    // 3. Sign with the payer's key (simulating offline signature delivery)
     await scheduleService.sign({
         scheduleId,
-        legacySignatures: [
-            { publicKey: offlineKey.publicKey, signature: offlineSignature },
-        ],
+        additionalSigners: [payerKey],
     });
 
-    console.log("Signed with offline (pre-computed) signature");
+    console.log("Signed with payer key (simulating offline signature)");
+
+    // 4. Verify execution
+    const info = await scheduleService.getInfo(scheduleId);
+    console.log("Schedule executed:", info.isExecuted);
 
     context.client.close();
 }

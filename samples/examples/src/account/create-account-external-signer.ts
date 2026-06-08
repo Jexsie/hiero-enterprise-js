@@ -15,11 +15,11 @@ import {
     HieroContext,
     PrivateKey,
 } from "@hiero-enterprise/core";
-import { getExampleConfig } from "../env.js";
+import { getED25519Config } from "../env.js";
 
 async function main() {
 
-    const context = new HieroContext(getExampleConfig());
+    const context = new HieroContext(getED25519Config());
 
     const accountService = new AccountService(context);
 

@@ -19,10 +19,10 @@ import {
     PrivateKey,
     Hbar,
 } from "@hiero-enterprise/core";
-import { getExampleConfig } from "../env.js";
+import { getED25519Config } from "../env.js";
 
 async function main() {
-    const context = new HieroContext(getExampleConfig());
+    const context = new HieroContext(getED25519Config());
 
     const accountService = new AccountService(context);
 
@@ -37,6 +37,8 @@ async function main() {
         alias: true, // derive EVM alias from this ECDSA key
         initialBalance: new Hbar(1),
         memo: "ECDSA account with alias",
+        // The ECDSA key must sign to prove ownership of the alias address
+        additionalSigners: [ecdsaKey],
     });
 
     console.log("1. Single-key alias");
@@ -57,6 +59,8 @@ async function main() {
         alias: { ecdsaPublicKey: aliasKey.publicKey.toStringRaw() },
         initialBalance: new Hbar(1),
         memo: "ED25519 account with ECDSA alias",
+        // The alias ECDSA key must sign to prove ownership of the derived address
+        additionalSigners: [aliasKey],
     });
 
     console.log("\n2. Two-key alias");

@@ -14,11 +14,10 @@ import {
     PrivateKey,
     Hbar,
 } from "@hiero-enterprise/core";
-import { getExampleConfig } from "../env.js";
+import { getED25519Config } from "../env.js";
 
 async function main() {
-
-    const context = new HieroContext(getExampleConfig());
+    const context = new HieroContext(getED25519Config());
 
     const accountService = new AccountService(context);
 
@@ -39,29 +38,7 @@ async function main() {
         // transferAccountId: "0.0.200",  // optional — defaults to operator
     });
 
-    console.log("1. Deleted:", account.accountId);
-
-    // 2. Scheduled deletion
-    // Use when the account owner's signature will be collected later.
-    // No accountKey needed at scheduling time — the schedule stores the intent,
-    // and the owner signs via ScheduleSignTransaction.
-    const scheduleKey = PrivateKey.generateED25519();
-    const scheduleAccount = await accountService.createAccount({
-        publicKey: scheduleKey.publicKey.toStringRaw(),
-        initialBalance: new Hbar(1),
-    });
-
-    const scheduled = await accountService.scheduleDeleteAccount(
-        { accountId: scheduleAccount.accountId },
-        { scheduleMemo: "awaiting owner approval" },
-    );
-
-    console.log("\n2. Deletion scheduled");
-    console.log("   Schedule ID:", scheduled.scheduleId);
-    console.log("   Transaction ID:", scheduled.transactionId);
-    console.log(
-        "   → Owner signs via ScheduleSignTransaction to trigger execution",
-    );
+    console.log("Deleted:", account.accountId);
 
     context.client.close();
 }
