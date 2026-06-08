@@ -3,6 +3,7 @@ import type { Transaction } from "@hiero-ledger/sdk";
 import { Client, AccountId, PrivateKey } from "@hiero-ledger/sdk";
 import type { HieroConfig } from "../config/index.js";
 import { resolveConfigFromEnv, assertEnvConfigValid } from "../config/index.js";
+import { OperatorKeyType } from "../types/index.js";
 import type {
     TransactionListener,
     TransactionEvent,
@@ -12,17 +13,19 @@ import type { IHieroContext } from "./hiero-context.interface.js";
 /**
  * Parse a private key string based on the specified key type.
  */
-function parsePrivateKey(
-    key: string,
-    keyType: "ED25519" | "ECDSA" | "DER",
-): PrivateKey {
+function parsePrivateKey(key: string, keyType: string): PrivateKey {
     switch (keyType) {
-        case "ED25519":
+        case OperatorKeyType.ED25519:
             return PrivateKey.fromStringED25519(key);
-        case "DER":
+        case OperatorKeyType.DER:
             return PrivateKey.fromStringDer(key);
-        case "ECDSA":
+        case OperatorKeyType.ECDSA:
             return PrivateKey.fromStringECDSA(key);
+        default:
+            throw new HieroError(
+                `Invalid operatorKeyType: "${keyType}". Must be one of: "ed25519", "ecdsa", "der".`,
+                { code: HieroErrorCodes.ConfigInvalid },
+            );
     }
 }
 
@@ -75,8 +78,18 @@ export class HieroContext implements IHieroContext {
         ) {
             this.client = Client.forPreviewnet();
         } else if (resolved.mirrorNodeUrl) {
-            // Custom network — requires explicit mirror node URL
-            this.client = Client.forNetwork({});
+            // Custom network — requires explicit mirror node URL and consensus nodes
+            if (
+                !resolved.networkNodes ||
+                Object.keys(resolved.networkNodes).length === 0
+            ) {
+                throw new HieroError(
+                    `Custom network "${resolved.network}" requires networkNodes (consensus node addresses). ` +
+                        `Provide networkNodes in the config or set HIERO_NETWORK_NODES (e.g. "127.0.0.1:50211=0.0.3").`,
+                    { code: HieroErrorCodes.ConfigInvalid },
+                );
+            }
+            this.client = Client.forNetwork(resolved.networkNodes);
             this.client.setMirrorNetwork([resolved.mirrorNodeUrl]);
         } else {
             throw new HieroError(
@@ -142,7 +155,9 @@ export class HieroContext implements IHieroContext {
         this.client.close();
     }
 
-    // ─── Transaction Listener Management ─────────────────────────
+    // Transaction Listener Management
+    // Allows services to emit transaction lifecycle events to registered listeners
+    // (e.g., for logging, metrics, etc.)
 
     /**
      * Register a transaction listener.

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { PrivateKey } from "@hiero-ledger/sdk";
 import { HieroContext } from "../../src/context/hiero-context.js";
+import { OperatorKeyType } from "../../src/types/index.js";
 
 /**
  * Integration tests verifying that each key type is loaded correctly
@@ -19,7 +20,7 @@ describe("Key Type Parsing [Integration]", () => {
                 network: "testnet",
                 operatorId: "0.0.1000",
                 operatorKey: ed25519Key.toStringRaw(),
-                operatorKeyType: "ED25519",
+                operatorKeyType: OperatorKeyType.ED25519,
             });
 
             expect(ctx.operatorPublicKey.toString()).toBe(
@@ -32,7 +33,7 @@ describe("Key Type Parsing [Integration]", () => {
                 network: "testnet",
                 operatorId: "0.0.1000",
                 operatorKey: ed25519Key.toStringRaw(),
-                operatorKeyType: "ED25519",
+                operatorKeyType: OperatorKeyType.ED25519,
             });
 
             const signature = ed25519Key.sign(message);
@@ -45,7 +46,7 @@ describe("Key Type Parsing [Integration]", () => {
                 network: "testnet",
                 operatorId: "0.0.1000",
                 operatorKey: ed25519Key.toStringDer(),
-                operatorKeyType: "DER",
+                operatorKeyType: OperatorKeyType.DER,
             });
 
             expect(ctx.operatorPublicKey.toString()).toBe(
@@ -62,7 +63,7 @@ describe("Key Type Parsing [Integration]", () => {
                 network: "testnet",
                 operatorId: "0.0.1000",
                 operatorKey: ecdsaKey.toStringRaw(),
-                operatorKeyType: "ECDSA",
+                operatorKeyType: OperatorKeyType.ECDSA,
             });
 
             expect(ctx.operatorPublicKey.toString()).toBe(
@@ -75,7 +76,7 @@ describe("Key Type Parsing [Integration]", () => {
                 network: "testnet",
                 operatorId: "0.0.1000",
                 operatorKey: ecdsaKey.toStringRaw(),
-                operatorKeyType: "ECDSA",
+                operatorKeyType: OperatorKeyType.ECDSA,
             });
 
             const signature = ecdsaKey.sign(message);
@@ -88,7 +89,7 @@ describe("Key Type Parsing [Integration]", () => {
                 network: "testnet",
                 operatorId: "0.0.1000",
                 operatorKey: ecdsaKey.toStringDer(),
-                operatorKeyType: "DER",
+                operatorKeyType: OperatorKeyType.DER,
             });
 
             expect(ctx.operatorPublicKey.toString()).toBe(
@@ -104,7 +105,7 @@ describe("Key Type Parsing [Integration]", () => {
                 network: "testnet",
                 operatorId: "0.0.1000",
                 operatorKey: ecdsaKey.toStringRaw(),
-                operatorKeyType: "ED25519",
+                operatorKeyType: OperatorKeyType.ED25519,
             });
 
             // The derived public key will NOT match the original ECDSA public key
@@ -124,7 +125,7 @@ describe("Key Type Parsing [Integration]", () => {
                 network: "testnet",
                 operatorId: "0.0.1000",
                 operatorKey: ed25519Key.toStringRaw(),
-                operatorKeyType: "ECDSA",
+                operatorKeyType: OperatorKeyType.ECDSA,
             });
 
             // The derived public key will NOT match the original ED25519 public key
@@ -145,7 +146,7 @@ describe("Key Type Parsing [Integration]", () => {
                         network: "testnet",
                         operatorId: "0.0.1000",
                         operatorKey: "definitely-not-a-valid-key",
-                        operatorKeyType: "ECDSA",
+                        operatorKeyType: OperatorKeyType.ECDSA,
                     }),
             ).toThrow(/Invalid operator key/);
         });

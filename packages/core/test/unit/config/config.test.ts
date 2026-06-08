@@ -3,6 +3,7 @@ import {
     resolveConfigFromEnv,
     resolveMirrorNodeUrl,
 } from "../../../src/config/hiero-config.js";
+import { OperatorKeyType } from "../../../src/types/index.js";
 
 describe("resolveMirrorNodeUrl", () => {
     it("resolves known networks", () => {
@@ -61,7 +62,7 @@ describe("resolveConfigFromEnv", () => {
             network: "testnet",
             operatorId: "0.0.1",
             operatorKey: "key123",
-            operatorKeyType: "ECDSA",
+            operatorKeyType: OperatorKeyType.ECDSA,
             mirrorNodeUrl: undefined,
         });
         process.env = env;

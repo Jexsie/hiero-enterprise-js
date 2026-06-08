@@ -11,9 +11,15 @@ export interface HieroConfig {
     /** Operator private key */
     readonly operatorKey: string;
     /** Type of the operator private key — required to correctly parse the key material */
-    readonly operatorKeyType: "ED25519" | "ECDSA" | "DER";
+    readonly operatorKeyType: string;
     /** Mirror node base URL (auto-resolved if not provided) */
     readonly mirrorNodeUrl?: string;
+    /**
+     * Consensus node addresses for custom networks.
+     * Map of "host:port" → "accountId" (e.g., { "127.0.0.1:50211": "0.0.3" }).
+     * Required for custom/local networks where node discovery is unavailable.
+     */
+    readonly networkNodes?: Record<string, string>;
     /** Request timeout in milliseconds (default: 120000) */
     readonly requestTimeoutMs?: number;
     /** gRPC deadline in milliseconds (default: 10000) */
@@ -81,15 +87,31 @@ export function resolveConfigFromEnv(): HieroConfig | null {
     const network = process.env["HIERO_NETWORK"];
     const operatorId = process.env["HIERO_OPERATOR_ID"];
     const operatorKey = process.env["HIERO_OPERATOR_KEY"];
-    const operatorKeyType = process.env["HIERO_OPERATOR_KEY_TYPE"] as
-        | "ED25519"
-        | "ECDSA"
-        | "DER"
-        | undefined;
+    const operatorKeyTypeRaw =
+        process.env["HIERO_OPERATOR_KEY_TYPE"]?.toLowerCase();
+    const operatorKeyType =
+        operatorKeyTypeRaw === "ed25519" ||
+        operatorKeyTypeRaw === "ecdsa" ||
+        operatorKeyTypeRaw === "der"
+            ? operatorKeyTypeRaw
+            : undefined;
     const mirrorNodeUrl = process.env["HIERO_MIRROR_NODE_URL"];
+    const networkNodesRaw = process.env["HIERO_NETWORK_NODES"];
 
     if (!network || !operatorId || !operatorKey || !operatorKeyType) {
         return null;
+    }
+
+    // Parse HIERO_NETWORK_NODES: "host:port=accountId,host:port=accountId"
+    let networkNodes: Record<string, string> | undefined;
+    if (networkNodesRaw) {
+        networkNodes = {};
+        for (const entry of networkNodesRaw.split(",")) {
+            const [address, accountId] = entry.trim().split("=");
+            if (address && accountId) {
+                networkNodes[address] = accountId;
+            }
+        }
     }
 
     return {
@@ -98,6 +120,7 @@ export function resolveConfigFromEnv(): HieroConfig | null {
         operatorKey,
         operatorKeyType,
         mirrorNodeUrl,
+        networkNodes,
     };
 }
 
@@ -119,7 +142,7 @@ export function assertEnvConfigValid(): void {
     if (!operatorKey) missing.push("HIERO_OPERATOR_KEY (your private key)");
     if (!operatorKeyType)
         missing.push(
-            "HIERO_OPERATOR_KEY_TYPE (one of: 'ED25519', 'ECDSA', 'DER')",
+            "HIERO_OPERATOR_KEY_TYPE (one of: 'ed25519', 'ecdsa', 'der')",
         );
 
     if (missing.length > 0) {

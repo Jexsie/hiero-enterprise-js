@@ -1,0 +1,18 @@
+{
+    "name": "@hiero-enterprise/examples",
+    "private": true,
+    "type": "module",
+    "description": "Example scripts demonstrating hiero-enterprise-js service operations",
+    "scripts": {
+        "build": "tsc",
+        "examples": "tsx -r dotenv/config run-examples.ts",
+        "examples:account": "tsx -r dotenv/config run-examples.ts account"
+    },
+    "dependencies": {
+        "@hiero-enterprise/core": "workspace:*"
+    },
+    "devDependencies": {
+        "dotenv": "^16.4.0",
+        "tsx": "^4.19.0"
+    }
+}

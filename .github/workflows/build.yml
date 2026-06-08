@@ -91,3 +91,14 @@ jobs:
                   HIERO_OPERATOR_KEY: ${{ steps.solo.outputs.privateKey }}
                   HIERO_MIRROR_NODE_URL: http://localhost:5551
               run: pnpm run test:unit
+
+            - name: Run examples
+              env:
+                  HIERO_NETWORK: hiero-solo-action
+                  HIERO_ED25519_OPERATOR_ID: ${{ steps.solo.outputs.ed25519AccountId }}
+                  HIERO_ED25519_OPERATOR_KEY: ${{ steps.solo.outputs.ed25519PrivateKey }}
+                  HIERO_ECDSA_OPERATOR_ID: ${{ steps.solo.outputs.ecdsaAccountId }}
+                  HIERO_ECDSA_OPERATOR_KEY: ${{ steps.solo.outputs.ecdsaPrivateKey }}
+                  HIERO_MIRROR_NODE_URL: http://localhost:5551
+                  HIERO_NETWORK_NODES: "127.0.0.1:50211=0.0.3"
+              run: pnpm --filter @hiero-enterprise/examples examples

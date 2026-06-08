@@ -1,5 +1,6 @@
 import { Module, Controller, Get, Post, Param, Body } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import { type AccountType } from "@hiero-enterprise/core";
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import {
     AccountService,
@@ -69,9 +70,19 @@ class AccountController {
 
     @Post("accounts")
     async createAccount(
-        @Body() body: { initialBalance?: number; memo?: string },
+        @Body()
+        body: {
+            publicKey: string;
+            keyType?: AccountType;
+            alias?: boolean | { ecdsaPublicKey: string };
+            initialBalance?: number;
+            memo?: string;
+        },
     ) {
         const account = await this.accountService.createAccount({
+            publicKey: body.publicKey,
+            keyType: body.keyType,
+            alias: body.alias,
             initialBalance: body.initialBalance,
             memo: body.memo,
         });
@@ -79,7 +90,6 @@ class AccountController {
             message: "Account created successfully",
             accountId: account.accountId,
             publicKey: account.publicKey,
-            privateKey: account.privateKey,
             evmAddress: account.evmAddress,
         };
     }

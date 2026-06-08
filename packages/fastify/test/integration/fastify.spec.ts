@@ -5,7 +5,7 @@ import { hieroPlugin } from "../../src/index.js";
 const config = {
     network: "testnet",
     operatorId: "0.0.1001",
-    operatorKeyType: "DER" as const,
+    operatorKeyType: "der" as const,
     operatorKey:
         "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
 };

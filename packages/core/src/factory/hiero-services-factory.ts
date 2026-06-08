@@ -17,6 +17,7 @@ import {
     NftService,
     SmartContractService,
     TopicService,
+    ScheduleService,
 } from "../services/index.js";
 import type { HieroServices } from "../types/index.js";
 
@@ -43,6 +44,7 @@ export function createHieroRuntime(config?: HieroConfig): HieroRuntime {
         context,
         mirrorNodeClient,
         accountService: new AccountService(context),
+        scheduleService: new ScheduleService(context),
         fileService: new FileService(context),
         fungibleTokenService: new FungibleTokenService(context),
         nftService: new NftService(context),

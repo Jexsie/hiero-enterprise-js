@@ -38,6 +38,20 @@ app.get("/", (_req, res) => {
 
 // ─── Account Routes ───────────────────────────────────────────
 
+app.post("/api/accounts/create", async (req, res) => {
+    try {
+        const { publicKey, keyType, alias } = req.body;
+        const account = await req.hiero.accountService.createAccount({
+            publicKey,
+            keyType,
+            alias,
+        });
+        res.status(201).json(account);
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
+});
+
 /** Get the operator account balance */
 app.get("/api/balance", async (req, res) => {
     try {

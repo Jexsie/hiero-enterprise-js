@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { HieroContext } from "../../../src/context/hiero-context.js";
+import { OperatorKeyType } from "../../../src/types/index.js";
 import type { Transaction } from "@hiero-ledger/sdk";
 import { Client, PrivateKey } from "@hiero-ledger/sdk";
 import * as configModule from "../../../src/config/index.js";
@@ -54,7 +55,7 @@ describe("HieroContext", () => {
         operatorId: "0.0.2",
         operatorKey:
             "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
-        operatorKeyType: "DER" as const,
+        operatorKeyType: OperatorKeyType.DER,
     };
 
     beforeEach(() => {
@@ -124,6 +125,7 @@ describe("HieroContext", () => {
                 ...validConfig,
                 network: "local",
                 mirrorNodeUrl: "http://localhost:5551",
+                networkNodes: { "127.0.0.1:50211": "0.0.3" },
             });
             expect(Client.forNetwork).toHaveBeenCalled();
             expect(ctx).toBeDefined();
@@ -164,7 +166,7 @@ describe("HieroContext", () => {
         it("parses DER key via PrivateKey.fromStringDer", () => {
             const ctx = new HieroContext({
                 ...validConfig,
-                operatorKeyType: "DER",
+                operatorKeyType: OperatorKeyType.DER,
             });
             expect(PrivateKey.fromStringDer).toHaveBeenCalledWith(
                 validConfig.operatorKey,
@@ -177,7 +179,7 @@ describe("HieroContext", () => {
         it("parses ED25519 key via PrivateKey.fromStringED25519", () => {
             const ctx = new HieroContext({
                 ...validConfig,
-                operatorKeyType: "ED25519",
+                operatorKeyType: OperatorKeyType.ED25519,
             });
             expect(PrivateKey.fromStringED25519).toHaveBeenCalledWith(
                 validConfig.operatorKey,
@@ -190,7 +192,7 @@ describe("HieroContext", () => {
         it("parses ECDSA key via PrivateKey.fromStringECDSA", () => {
             const ctx = new HieroContext({
                 ...validConfig,
-                operatorKeyType: "ECDSA",
+                operatorKeyType: OperatorKeyType.ECDSA,
             });
             expect(PrivateKey.fromStringECDSA).toHaveBeenCalledWith(
                 validConfig.operatorKey,
@@ -208,7 +210,7 @@ describe("HieroContext", () => {
                 () =>
                     new HieroContext({
                         ...validConfig,
-                        operatorKeyType: "DER",
+                        operatorKeyType: OperatorKeyType.DER,
                         operatorKey: "not-a-valid-key",
                     }),
             ).toThrow(/Invalid operator key/);
