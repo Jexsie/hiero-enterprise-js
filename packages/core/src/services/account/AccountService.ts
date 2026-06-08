@@ -223,10 +223,13 @@ export class AccountService {
                 new Error(
                     "hbarAllowances must be provided with at least one entry.",
                 ),
-                "AccountService",
+                "AccountService.approveHbarAllowance",
             );
         }
-        return this.approveAllowanceOperation.execute(options);
+        return this.approveAllowanceOperation.execute(
+            options,
+            "approveHbarAllowance",
+        );
     }
 
     /**
@@ -246,10 +249,13 @@ export class AccountService {
                 new Error(
                     "tokenAllowances must be provided with at least one entry.",
                 ),
-                "AccountService",
+                "AccountService.approveTokenAllowance",
             );
         }
-        return this.approveAllowanceOperation.execute(options);
+        return this.approveAllowanceOperation.execute(
+            options,
+            "approveTokenAllowance",
+        );
     }
 
     /**
@@ -267,9 +273,12 @@ export class AccountService {
                 new Error(
                     "nftAllowances must be provided with at least one entry.",
                 ),
-                "AccountService",
+                "AccountService.approveNftAllowance",
             );
         }
-        return this.approveAllowanceOperation.execute(options);
+        return this.approveAllowanceOperation.execute(
+            options,
+            "approveNftAllowance",
+        );
     }
 }

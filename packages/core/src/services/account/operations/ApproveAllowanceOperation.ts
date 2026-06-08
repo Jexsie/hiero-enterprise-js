@@ -114,7 +114,10 @@ export class ApproveAllowanceOperation {
     }
 
     /** Approve allowances. */
-    async execute(options: ApproveAllowanceOptions): Promise<void> {
+    async execute(
+        options: ApproveAllowanceOptions,
+        methodName = "approveAllowance",
+    ): Promise<void> {
         this.validator.validate(options);
         const tx = this.build(options);
 
@@ -124,7 +127,7 @@ export class ApproveAllowanceOperation {
             {
                 type: "AccountAllowanceApprove",
                 serviceName: "AccountService",
-                methodName: "approveAllowance",
+                methodName,
                 timestamp: new Date(),
             },
 
