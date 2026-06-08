@@ -5,13 +5,14 @@
     "description": "Example scripts demonstrating hiero-enterprise-js service operations",
     "scripts": {
         "build": "tsc",
-        "examples": "node --env-file=.env --import tsx run-examples.ts",
-        "examples:account": "node --env-file=.env --import tsx run-examples.ts account"
+        "examples": "tsx -r dotenv/config run-examples.ts",
+        "examples:account": "tsx -r dotenv/config run-examples.ts account"
     },
     "dependencies": {
         "@hiero-enterprise/core": "workspace:*"
     },
     "devDependencies": {
+        "dotenv": "^16.4.0",
         "tsx": "^4.19.0"
     }
 }
