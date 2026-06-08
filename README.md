@@ -14,6 +14,7 @@ It gives each major Node.js framework a native integration that matches how deve
 
 | Package | Description |
 |---------|-------------|
+| `@hiero-enterprise/core` | Standalone services, repositories, and types — use directly or with any framework |
 | `@hiero-enterprise/express` | Express middleware — `req.hiero.*` |
 | `@hiero-enterprise/fastify` | Fastify plugin — `fastify.hiero.*` |
 | `@hiero-enterprise/nest` | NestJS module — `HieroModule.forRoot()` with full DI |
@@ -22,11 +23,36 @@ It gives each major Node.js framework a native integration that matches how deve
 
 > **Note:** These packages are not yet published to npm. The guide below shows how installation will work once they are. To run the project locally for development, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+### Standalone (no framework)
+
 ```bash
-# pick the package for your framework
-npm install @hiero-enterprise/express
-npm install @hiero-enterprise/fastify
-npm install @hiero-enterprise/nest
+npm install @hiero-enterprise/core
+```
+
+```ts
+import { HieroContext, AccountService } from '@hiero-enterprise/core';
+
+const context = new HieroContext({
+  network: 'testnet',
+  operatorId: '0.0.12345',
+  operatorKey: 'your_private_key_here',
+  operatorKeyType: 'ed25519',
+});
+
+const accounts = new AccountService(context);
+const account = await accounts.createAccount({ publicKey: '...', initialBalance: 10 });
+console.log(account.accountId);
+
+context.close();
+```
+
+### With a framework
+
+```bash
+# Install core + your framework adapter
+npm install @hiero-enterprise/core @hiero-enterprise/express
+npm install @hiero-enterprise/core @hiero-enterprise/fastify
+npm install @hiero-enterprise/core @hiero-enterprise/nest
 ```
 
 Set your operator credentials as environment variables:
@@ -100,32 +126,34 @@ export class BalanceController {
 ## Architecture
 
 ```
-  Express / Fastify / NestJS
-  req.hiero.*  |  fastify.hiero.*  |  @Inject()
-          │                    │
-          ▼                    ▼
-  ┌──────────────┐    ┌─────────────────┐
-  │   Clients    │    │  Repositories   │
-  │              │    │                 │
-  │  Account     │    │  Account        │
-  │  File        │    │  NFT            │
-  │  Token       │    │  Token          │
-  │  NFT         │    │  Topic          │
-  │  Contract    │    │  Transaction    │
-  │  Topic       │    │  Network        │
-  └──────┬───────┘    └────────┬────────┘
-         │                     │
-         ▼                     ▼
-  ┌──────────────┐    ┌─────────────────┐
-  │ HieroContext │    │ MirrorNodeClient│
-  │   Hiero SDK  │    │   REST / HTTP   │
-  └──────┬───────┘    └────────┬────────┘
-         │                     │
-         └──────────┬──────────┘
-                    ▼
-           Hiero Network
-        (testnet / mainnet)
+  Standalone             Framework adapters
+  ───────────    ────────────────────────────────────
+  import from    Express / Fastify / NestJS
+  core directly  req.hiero.* | fastify.hiero.* | @Inject()
+       │                │                │
+       │                ▼                ▼
+       │         ┌────────────────────────────┐
+       └───────► │   @hiero-enterprise/core   │
+                 ├────────────┬───────────────┤
+                 │  Services  │ Repositories  │
+                 │  Account   │ Account       │
+                 │  File      │ NFT           │
+                 │  Token     │ Token         │
+                 │  NFT       │ Topic         │
+                 │  Contract  │ Transaction   │
+                 │  Topic     │ Network       │
+                 ├────────────┴───────────────┤
+                 │  HieroContext │ MirrorNode  │
+                 │  (Hiero SDK)  │ (REST/HTTP) │
+                 └───────┬───────┴──────┬─────┘
+                         │              │
+                         └──────┬───────┘
+                                ▼
+                       Hiero Network
+                    (testnet / mainnet)
 ```
+
+`@hiero-enterprise/core` is the standalone package that owns all services, repositories, and types. Framework adapters (`express`, `fastify`, `nest`) are thin integration layers that wire core into their respective DI/middleware patterns. You can use core directly without any framework.
 
 Clients handle write operations through the Hiero SDK — transactions that go on-chain. Repositories handle reads through the mirror node, which doesn't cost fees and returns historical or indexed data. `HieroContext` owns the SDK client and operator credentials; both sides share it so there's one config source.
 
@@ -154,8 +182,7 @@ Clients handle write operations through the Hiero SDK — transactions that go o
 ## Testing
 
 ```ts
-import { testConfig, createMockMirrorNodeClient } from '@hiero-enterprise/express';
-// or from '@hiero-enterprise/fastify' / '@hiero-enterprise/nest'
+import { testConfig, createMockMirrorNodeClient } from '@hiero-enterprise/core/testing';
 ```
 
 `testConfig` gives you safe dummy credentials that pass validation without hitting the network. `createMockMirrorNodeClient()` returns a fully typed mock with sensible defaults, so you can test your service layer without spinning up a node.
@@ -166,6 +193,7 @@ Working examples are in [`samples/`](./samples). Each one is a minimal but real 
 
 | Sample | Framework |
 |--------|-----------|
+| [examples](./samples/examples) | Standalone `@hiero-enterprise/core` scripts |
 | [express-sample](./samples/express-sample) | Express |
 | [fastify-sample](./samples/fastify-sample) | Fastify |
 | [nest-sample](./samples/nest-sample) | NestJS |

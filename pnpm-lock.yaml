@@ -126,6 +126,9 @@ importers:
 
   samples/express-sample:
     dependencies:
+      '@hiero-enterprise/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@hiero-enterprise/express':
         specifier: workspace:*
         version: link:../../packages/express
@@ -148,6 +151,9 @@ importers:
 
   samples/fastify-sample:
     dependencies:
+      '@hiero-enterprise/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@hiero-enterprise/fastify':
         specifier: workspace:*
         version: link:../../packages/fastify
@@ -167,6 +173,9 @@ importers:
 
   samples/nest-sample:
     dependencies:
+      '@hiero-enterprise/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@hiero-enterprise/nest':
         specifier: workspace:*
         version: link:../../packages/nest

@@ -27,7 +27,7 @@
         "test:watch": "vitest test/integration"
     },
     "peerDependencies": {
-        "@hiero-ledger/sdk": "^2.84.0",
+        "@hiero-enterprise/core": "workspace:*",
         "express": ">=4"
     },
     "devDependencies": {

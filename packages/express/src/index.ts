@@ -47,8 +47,5 @@ export function hieroMiddleware(config?: HieroConfig) {
     };
 }
 
-// Re-export the full public surface of @hiero-enterprise/core.
-// Core is bundled into this adapter at publish time (tsup `noExternal`),
-// so consumers get a single self-contained package and never need to
-// depend on @hiero-enterprise/core directly.
-export * from "@hiero-enterprise/core";
+// Consumers import types and services directly from @hiero-enterprise/core.
+// This adapter only provides the Express middleware integration.

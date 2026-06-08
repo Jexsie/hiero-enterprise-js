@@ -4,7 +4,6 @@
     "description": "Core services, repositories, and data models for the Hiero network",
     "license": "Apache-2.0",
     "type": "module",
-    "private": true,
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
@@ -34,6 +33,10 @@
     "devDependencies": {
         "vitest": "^4.1.7",
         "@types/node": "^25.9.1"
+    },
+    "publishConfig": {
+        "access": "public",
+        "provenance": true
     },
     "engines": {
         "node": ">=20.12.0"

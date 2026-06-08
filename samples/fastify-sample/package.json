@@ -10,6 +10,7 @@
         "start": "node dist/app.js"
     },
     "dependencies": {
+        "@hiero-enterprise/core": "workspace:*",
         "@hiero-enterprise/fastify": "workspace:*",
         "fastify": "^5.8.5"
     },
