@@ -66,7 +66,7 @@ export interface NftAllowanceApproval {
  * Options for approving account allowances on the Hiero network.
  *
  * Allows an owner to grant a spender permission to spend HBAR, fungible tokens,
- * or NFTs on their behalf. At least one allowance must be provided.
+ * or NFTs on their behalf. Exactly one allowance type must be provided per call.
  *
  * The owner's key must sign the transaction — pass it via `additionalSigners`
  * unless the operator IS the owner.
@@ -78,6 +78,30 @@ export interface ApproveAllowanceOptions extends TransactionOptions {
     tokenAllowances?: TokenAllowanceApproval[];
     /** NFT allowances to approve. */
     nftAllowances?: NftAllowanceApproval[];
+}
+
+/**
+ * Options for the `approveHbarAllowance` convenience method.
+ */
+export interface ApproveHbarAllowanceOptions extends TransactionOptions {
+    /** HBAR allowances to approve. At least one required. */
+    hbarAllowances: HbarAllowanceApproval[];
+}
+
+/**
+ * Options for the `approveTokenAllowance` convenience method.
+ */
+export interface ApproveTokenAllowanceOptions extends TransactionOptions {
+    /** Fungible token allowances to approve. At least one required. */
+    tokenAllowances: TokenAllowanceApproval[];
+}
+
+/**
+ * Options for the `approveNftAllowance` convenience method.
+ */
+export interface ApproveNftAllowanceOptions extends TransactionOptions {
+    /** NFT allowances to approve. At least one required. */
+    nftAllowances: NftAllowanceApproval[];
 }
 
 export class ApproveAllowanceOperation {
@@ -103,6 +127,10 @@ export class ApproveAllowanceOperation {
                 methodName: "approveAllowance",
                 timestamp: new Date(),
             },
+
+            // TODO: Return something meaningful here
+            // can return a full receipt like
+            // (receipt) => (receipt)
             () => undefined,
         );
     }

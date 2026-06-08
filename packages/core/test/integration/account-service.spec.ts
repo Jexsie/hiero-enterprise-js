@@ -72,4 +72,33 @@ describe("AccountService [Integration]", () => {
             client.autoCreateEvmAccount({ evmAddress: coldAddress, amount: 5 }),
         ).resolves.not.toThrow();
     }, 20000);
+
+    it("approves an HBAR allowance for a spender account", async () => {
+        const ownerKey = PrivateKey.generateED25519();
+        const owner = await client.createAccount({
+            publicKey: ownerKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 10,
+        });
+
+        const spenderKey = PrivateKey.generateED25519();
+        const spender = await client.createAccount({
+            publicKey: spenderKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 1,
+        });
+
+        await client.approveHbarAllowance({
+            hbarAllowances: [
+                {
+                    ownerAccountId: owner.accountId,
+                    spenderAccountId: spender.accountId,
+                    amount: 5,
+                },
+            ],
+            additionalSigners: [ownerKey],
+        });
+
+        await waitForMirrorNodeRecord();
+    }, 30000);
 });

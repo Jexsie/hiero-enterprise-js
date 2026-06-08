@@ -5,6 +5,13 @@ export type {
     DeleteAccountOptions,
     ScheduleDeleteAccountOptions,
     UpdateAccountOptions,
+    ApproveAllowanceOptions,
+    ApproveHbarAllowanceOptions,
+    ApproveTokenAllowanceOptions,
+    ApproveNftAllowanceOptions,
+    HbarAllowanceApproval,
+    TokenAllowanceApproval,
+    NftAllowanceApproval,
 } from "./account/index.js";
 export { FileService } from "./file-service.js";
 export { FungibleTokenService } from "./fungible-token-service.js";

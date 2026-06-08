@@ -12,6 +12,9 @@ export type { UpdateAccountOptions } from "./UpdateAccountOperation.js";
 export { ApproveAllowanceOperation } from "./ApproveAllowanceOperation.js";
 export type {
     ApproveAllowanceOptions,
+    ApproveHbarAllowanceOptions,
+    ApproveTokenAllowanceOptions,
+    ApproveNftAllowanceOptions,
     HbarAllowanceApproval,
     TokenAllowanceApproval,
     NftAllowanceApproval,

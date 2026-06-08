@@ -1,6 +1,7 @@
 import type { AccountId } from "@hiero-ledger/sdk";
 import type { Account, Balance } from "../../types/index.js";
 import type { IHieroContext } from "../../context/index.js";
+import { normalizeError } from "../../errors/index.js";
 import {
     CreateAccountOperation,
     AutoCreateEvmAccountOperation,
@@ -14,7 +15,9 @@ import type {
     DeleteAccountOptions,
     ScheduleDeleteAccountOptions,
     UpdateAccountOptions,
-    ApproveAllowanceOptions,
+    ApproveHbarAllowanceOptions,
+    ApproveTokenAllowanceOptions,
+    ApproveNftAllowanceOptions,
 } from "./operations/index.js";
 import { AccountBalanceQuery } from "./queries/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
@@ -206,17 +209,67 @@ export class AccountService {
     }
 
     /**
-     * Approve allowances for an account — grant a spender permission to spend
-     * HBAR, fungible tokens, or NFTs on the owner's behalf.
+     * Approve HBAR allowances — grant a spender permission to spend
+     * HBAR on the owner's behalf.
      *
      * The owner's key must sign the transaction. If the operator is not the owner,
      * pass the owner's key via `additionalSigners`.
      *
-     * @param options.hbarAllowances - HBAR spending allowances to approve
-     * @param options.tokenAllowances - Fungible token allowances to approve
-     * @param options.nftAllowances - NFT transfer allowances to approve
+     * @param options.hbarAllowances - HBAR spending allowances to approve (at least one)
      */
-    approveAllowance(options: ApproveAllowanceOptions): Promise<void> {
+    approveHbarAllowance(options: ApproveHbarAllowanceOptions): Promise<void> {
+        if (!options.hbarAllowances?.length) {
+            throw normalizeError(
+                new Error(
+                    "hbarAllowances must be provided with at least one entry.",
+                ),
+                "AccountService",
+            );
+        }
+        return this.approveAllowanceOperation.execute(options);
+    }
+
+    /**
+     * Approve fungible token allowances — grant a spender permission to transfer
+     * tokens on the owner's behalf.
+     *
+     * The owner's key must sign the transaction. If the operator is not the owner,
+     * pass the owner's key via `additionalSigners`.
+     *
+     * @param options.tokenAllowances - Fungible token allowances to approve (at least one)
+     */
+    approveTokenAllowance(
+        options: ApproveTokenAllowanceOptions,
+    ): Promise<void> {
+        if (!options.tokenAllowances?.length) {
+            throw normalizeError(
+                new Error(
+                    "tokenAllowances must be provided with at least one entry.",
+                ),
+                "AccountService",
+            );
+        }
+        return this.approveAllowanceOperation.execute(options);
+    }
+
+    /**
+     * Approve NFT allowances — grant a spender permission to transfer
+     * NFTs on the owner's behalf. Supports specific serials or all serials.
+     *
+     * The owner's key must sign the transaction. If the operator is not the owner,
+     * pass the owner's key via `additionalSigners`.
+     *
+     * @param options.nftAllowances - NFT allowances to approve (at least one)
+     */
+    approveNftAllowance(options: ApproveNftAllowanceOptions): Promise<void> {
+        if (!options.nftAllowances?.length) {
+            throw normalizeError(
+                new Error(
+                    "nftAllowances must be provided with at least one entry.",
+                ),
+                "AccountService",
+            );
+        }
         return this.approveAllowanceOperation.execute(options);
     }
 }

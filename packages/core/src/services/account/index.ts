@@ -8,6 +8,9 @@ export type {
 export type { UpdateAccountOptions } from "./operations/index.js";
 export type {
     ApproveAllowanceOptions,
+    ApproveHbarAllowanceOptions,
+    ApproveTokenAllowanceOptions,
+    ApproveNftAllowanceOptions,
     HbarAllowanceApproval,
     TokenAllowanceApproval,
     NftAllowanceApproval,
