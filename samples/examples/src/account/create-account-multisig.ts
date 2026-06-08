@@ -42,7 +42,7 @@ async function main() {
     const account = await accountService.createAccount({
         publicKey: newKey.publicKey.toStringRaw(),
         memo: "multi-sig account",
-        additionalSigners: [cosignerKey], // applied after operator auto-sign
+        additionalSigners: [cosignerKey], // co-signer key as a signer
     });
 
     console.log("Multi-sig account created:", account.accountId);

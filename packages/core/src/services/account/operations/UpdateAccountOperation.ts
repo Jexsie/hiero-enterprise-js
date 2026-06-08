@@ -75,7 +75,7 @@ export class UpdateAccountOperation {
     }
 
     /** Update account execute handler. */
-    async execute(options: UpdateAccountOptions) {
+    async execute(options: UpdateAccountOptions): Promise<void> {
         this.validator.validate(options);
         const tx = this.build(options);
 
@@ -88,7 +88,11 @@ export class UpdateAccountOperation {
                 methodName: "updateAccount",
                 timestamp: new Date(),
             },
-            (receipt) => ({ accountId: receipt.accountId!.toString() }),
+
+            // TODO: Return something meaningful here
+            // can return a full receipt like
+            // (receipt) => (receipt)
+            () => undefined,
         );
     }
 
