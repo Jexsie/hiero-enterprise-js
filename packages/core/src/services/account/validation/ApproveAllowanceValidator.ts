@@ -51,6 +51,13 @@ export class ApproveAllowanceValidator {
                     "ApproveAllowanceValidator",
                 );
             }
+
+            if (typeof allowance.amount === "number" && allowance.amount < 0) {
+                throw normalizeError(
+                    new Error("hbarAllowances[].amount cannot be negative."),
+                    "ApproveAllowanceValidator",
+                );
+            }
         }
     }
 
@@ -89,6 +96,19 @@ export class ApproveAllowanceValidator {
             if (Number(allowance.amount) < 0) {
                 throw normalizeError(
                     new Error("tokenAllowances[].amount cannot be negative."),
+                    "ApproveAllowanceValidator",
+                );
+            }
+
+            if (
+                typeof allowance.amount === "number" &&
+                (!Number.isFinite(allowance.amount) ||
+                    !Number.isInteger(allowance.amount))
+            ) {
+                throw normalizeError(
+                    new Error(
+                        "tokenAllowances[].amount must be a finite integer.",
+                    ),
                     "ApproveAllowanceValidator",
                 );
             }

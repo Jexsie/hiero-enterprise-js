@@ -487,33 +487,75 @@ describe("AccountService", () => {
                 .results[0].value;
             expect(tx.approveTokenNftAllowanceAllSerials).toHaveBeenCalled();
         });
+
+        it("approves NFT allowance with delegatingSpender", async () => {
+            await service.approveNftAllowance({
+                nftAllowances: [
+                    {
+                        tokenId: "0.0.600",
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                        serialNumbers: [1, 2],
+                        delegatingSpender: "0.0.300",
+                    },
+                ],
+            });
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(
+                tx.approveTokenNftAllowanceWithDelegatingSpender,
+            ).toHaveBeenCalledTimes(2);
+            expect(tx.approveTokenNftAllowance).not.toHaveBeenCalled();
+        });
+
+        it("ignores delegatingSpender when allSerials is true", async () => {
+            await service.approveNftAllowance({
+                nftAllowances: [
+                    {
+                        tokenId: "0.0.600",
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                        allSerials: true,
+                        delegatingSpender: "0.0.300",
+                    },
+                ],
+            });
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.approveTokenNftAllowanceAllSerials).toHaveBeenCalled();
+            expect(
+                tx.approveTokenNftAllowanceWithDelegatingSpender,
+            ).not.toHaveBeenCalled();
+        });
     });
 
     // allowance validation
 
     describe("allowance validation", () => {
-        it("rejects approveHbarAllowance when hbarAllowances is empty", () => {
-            expect(() =>
+        it("rejects approveHbarAllowance when hbarAllowances is empty", async () => {
+            await expect(
                 service.approveHbarAllowance({
                     hbarAllowances: [],
                 }),
-            ).toThrow(/hbarAllowances must be provided/);
+            ).rejects.toThrow(/hbarAllowances must be provided/);
         });
 
-        it("rejects approveTokenAllowance when tokenAllowances is empty", () => {
-            expect(() =>
+        it("rejects approveTokenAllowance when tokenAllowances is empty", async () => {
+            await expect(
                 service.approveTokenAllowance({
                     tokenAllowances: [],
                 }),
-            ).toThrow(/tokenAllowances must be provided/);
+            ).rejects.toThrow(/tokenAllowances must be provided/);
         });
 
-        it("rejects approveNftAllowance when nftAllowances is empty", () => {
-            expect(() =>
+        it("rejects approveNftAllowance when nftAllowances is empty", async () => {
+            await expect(
                 service.approveNftAllowance({
                     nftAllowances: [],
                 }),
-            ).toThrow(/nftAllowances must be provided/);
+            ).rejects.toThrow(/nftAllowances must be provided/);
         });
     });
 });

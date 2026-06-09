@@ -43,6 +43,9 @@ export default defineConfig(
         rules: {
             // Warn if deprecated functions are used
             "@typescript-eslint/no-deprecated": "error",
+            // Require await in async functions
+            "require-await": "off",
+            "@typescript-eslint/require-await": "error",
         },
     },
     {

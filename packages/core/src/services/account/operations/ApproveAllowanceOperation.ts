@@ -58,6 +58,7 @@ export interface NftAllowanceApproval {
     /**
      * Optional delegating spender — the account that delegated its
      * approved-for-all permission to this spender for specific serials.
+     * Only applies when `serialNumbers` is used; ignored with `allSerials`.
      */
     delegatingSpender?: string;
 }

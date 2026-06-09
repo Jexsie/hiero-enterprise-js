@@ -81,6 +81,34 @@ describe("ApproveAllowanceValidator", () => {
                 }),
             ).toThrow(/amount is required/);
         });
+
+        it("throws when amount is negative", () => {
+            expect(() =>
+                validator.validate({
+                    hbarAllowances: [
+                        {
+                            ownerAccountId: "0.0.100",
+                            spenderAccountId: "0.0.200",
+                            amount: -1,
+                        },
+                    ],
+                }),
+            ).toThrow(/amount cannot be negative/);
+        });
+
+        it("allows zero amount (revoke pattern)", () => {
+            expect(() =>
+                validator.validate({
+                    hbarAllowances: [
+                        {
+                            ownerAccountId: "0.0.100",
+                            spenderAccountId: "0.0.200",
+                            amount: 0,
+                        },
+                    ],
+                }),
+            ).not.toThrow();
+        });
     });
 
     // ─── Token allowances ───────────────────────────────────────────────────
@@ -185,6 +213,51 @@ describe("ApproveAllowanceValidator", () => {
                             ownerAccountId: "0.0.100",
                             spenderAccountId: "0.0.200",
                             amount: 0,
+                        },
+                    ],
+                }),
+            ).not.toThrow();
+        });
+
+        it("throws when amount is not an integer", () => {
+            expect(() =>
+                validator.validate({
+                    tokenAllowances: [
+                        {
+                            tokenId: "0.0.500",
+                            ownerAccountId: "0.0.100",
+                            spenderAccountId: "0.0.200",
+                            amount: 1.5,
+                        },
+                    ],
+                }),
+            ).toThrow(/must be a finite integer/);
+        });
+
+        it("throws when amount is Infinity", () => {
+            expect(() =>
+                validator.validate({
+                    tokenAllowances: [
+                        {
+                            tokenId: "0.0.500",
+                            ownerAccountId: "0.0.100",
+                            spenderAccountId: "0.0.200",
+                            amount: Infinity,
+                        },
+                    ],
+                }),
+            ).toThrow(/must be a finite integer/);
+        });
+
+        it("allows bigint amount", () => {
+            expect(() =>
+                validator.validate({
+                    tokenAllowances: [
+                        {
+                            tokenId: "0.0.500",
+                            ownerAccountId: "0.0.100",
+                            spenderAccountId: "0.0.200",
+                            amount: BigInt(1000),
                         },
                     ],
                 }),

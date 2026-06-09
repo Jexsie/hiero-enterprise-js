@@ -20,7 +20,6 @@ import {
 import { getED25519Config } from "../env.js";
 
 async function main() {
-
     const context = new HieroContext(getED25519Config());
 
     const accountService = new AccountService(context);

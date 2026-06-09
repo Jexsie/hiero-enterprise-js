@@ -217,7 +217,9 @@ export class AccountService {
      *
      * @param options.hbarAllowances - HBAR spending allowances to approve (at least one)
      */
-    approveHbarAllowance(options: ApproveHbarAllowanceOptions): Promise<void> {
+    async approveHbarAllowance(
+        options: ApproveHbarAllowanceOptions,
+    ): Promise<void> {
         if (!options.hbarAllowances?.length) {
             throw normalizeError(
                 new Error(
@@ -226,7 +228,7 @@ export class AccountService {
                 "AccountService.approveHbarAllowance",
             );
         }
-        return this.approveAllowanceOperation.execute(
+        return await this.approveAllowanceOperation.execute(
             options,
             "approveHbarAllowance",
         );
@@ -241,7 +243,7 @@ export class AccountService {
      *
      * @param options.tokenAllowances - Fungible token allowances to approve (at least one)
      */
-    approveTokenAllowance(
+    async approveTokenAllowance(
         options: ApproveTokenAllowanceOptions,
     ): Promise<void> {
         if (!options.tokenAllowances?.length) {
@@ -252,7 +254,7 @@ export class AccountService {
                 "AccountService.approveTokenAllowance",
             );
         }
-        return this.approveAllowanceOperation.execute(
+        return await this.approveAllowanceOperation.execute(
             options,
             "approveTokenAllowance",
         );
@@ -267,7 +269,9 @@ export class AccountService {
      *
      * @param options.nftAllowances - NFT allowances to approve (at least one)
      */
-    approveNftAllowance(options: ApproveNftAllowanceOptions): Promise<void> {
+    async approveNftAllowance(
+        options: ApproveNftAllowanceOptions,
+    ): Promise<void> {
         if (!options.nftAllowances?.length) {
             throw normalizeError(
                 new Error(
@@ -276,7 +280,7 @@ export class AccountService {
                 "AccountService.approveNftAllowance",
             );
         }
-        return this.approveAllowanceOperation.execute(
+        return await this.approveAllowanceOperation.execute(
             options,
             "approveNftAllowance",
         );
