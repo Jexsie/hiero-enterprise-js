@@ -113,11 +113,13 @@ async function approveNftAllowanceBySerials(
     console.log("Spender account:", spender.accountId);
 
     // Create an NFT collection and mint 3 serials.
-    // The ownerKey is used as the supply key so it can mint.
+    // The owner is the treasury so minted NFTs go directly to the owner account.
 
     const tokenId = await nftService.createNftType({
         name: "Serial Allowance NFT",
         symbol: "SANFT",
+        treasuryAccountId: owner.accountId,
+        treasuryKey: ownerKey,
         supplyKey: ownerKey,
     });
     console.log("Created NFT collection:", tokenId);
@@ -214,10 +216,13 @@ async function approveNftWithDelegatingSpender(
     console.log("Delegated spender:", delegatedSpender.accountId);
 
     // Create an NFT collection and mint serials for the demo.
+    // The owner is the treasury so minted NFTs go directly to the owner account.
 
     const tokenId = await nftService.createNftType({
         name: "Delegation Demo NFT",
         symbol: "DDNFT",
+        treasuryAccountId: owner.accountId,
+        treasuryKey: ownerKey,
         supplyKey: ownerKey,
     });
     console.log("Created NFT collection:", tokenId);
