@@ -4,6 +4,7 @@ import {
     TokenId,
     NftId,
     AccountId,
+    type TransactionReceipt,
 } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
 import { TransactionExecutor } from "../../transaction/index.js";
@@ -118,7 +119,7 @@ export class ApproveAllowanceOperation {
     async execute(
         options: ApproveAllowanceOptions,
         methodName = "approveAllowance",
-    ): Promise<void> {
+    ): Promise<TransactionReceipt> {
         this.validator.validate(options);
         const tx = this.build(options);
 
@@ -133,9 +134,11 @@ export class ApproveAllowanceOperation {
             },
 
             // TODO: Return something meaningful here
-            // can return a full receipt like
-            // (receipt) => (receipt)
-            () => undefined,
+            // I agree the receipt contains useful information
+            // but it would be nice to return something more specific
+            // to allowance approval, e.g. the list of approved
+            // allowances with their status.
+            (receipt) => receipt,
         );
     }
 
