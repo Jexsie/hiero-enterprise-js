@@ -1,17 +1,25 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { setupIntegrationTestEnv } from "../utils/env.js";
 import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
-import { AccountService } from "../../src/services/index.js";
+import {
+    AccountService,
+    FungibleTokenService,
+    NftService,
+} from "../../src/services/index.js";
 import { AccountType } from "../../src/types/index.js";
 import { PrivateKey } from "@hiero-ledger/sdk";
 
 describe("AccountService [Integration]", () => {
     let client: AccountService;
+    let tokenService: FungibleTokenService;
+    let nftService: NftService;
 
     beforeAll(() => {
         // Setup internal context to point directly at localhost nodes
         const ctx = setupIntegrationTestEnv();
         client = new AccountService(ctx);
+        tokenService = new FungibleTokenService(ctx);
+        nftService = new NftService(ctx);
     });
 
     it("creates an ED25519 account with a user-provided public key", async () => {
@@ -94,6 +102,90 @@ describe("AccountService [Integration]", () => {
                     ownerAccountId: owner.accountId,
                     spenderAccountId: spender.accountId,
                     amount: 5,
+                },
+            ],
+            additionalSigners: [ownerKey],
+        });
+
+        await waitForMirrorNodeRecord();
+    }, 30000);
+
+    it("approves a fungible token allowance for a spender account", async () => {
+        const ownerKey = PrivateKey.generateED25519();
+        const owner = await client.createAccount({
+            publicKey: ownerKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 10,
+        });
+
+        const spenderKey = PrivateKey.generateED25519();
+        const spender = await client.createAccount({
+            publicKey: spenderKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 1,
+        });
+
+        const tokenId = await tokenService.createToken({
+            name: "Allowance Test Token",
+            symbol: "ATT",
+            decimals: 2,
+            initialSupply: 10000,
+            treasuryAccountId: owner.accountId,
+            treasuryKey: ownerKey,
+            supplyKey: ownerKey,
+        });
+
+        await client.approveTokenAllowance({
+            tokenAllowances: [
+                {
+                    tokenId,
+                    ownerAccountId: owner.accountId,
+                    spenderAccountId: spender.accountId,
+                    amount: 500,
+                },
+            ],
+            additionalSigners: [ownerKey],
+        });
+
+        await waitForMirrorNodeRecord();
+    }, 30000);
+
+    it("approves an NFT allowance for specific serials", async () => {
+        const ownerKey = PrivateKey.generateED25519();
+        const owner = await client.createAccount({
+            publicKey: ownerKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 10,
+        });
+
+        const spenderKey = PrivateKey.generateED25519();
+        const spender = await client.createAccount({
+            publicKey: spenderKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 1,
+        });
+
+        const tokenId = await nftService.createNftType({
+            name: "Allowance NFT",
+            symbol: "ANFT",
+            treasuryAccountId: owner.accountId,
+            treasuryKey: ownerKey,
+            supplyKey: ownerKey,
+        });
+
+        await nftService.mintNfts(
+            tokenId,
+            [Buffer.from("meta-1"), Buffer.from("meta-2")],
+            ownerKey,
+        );
+
+        await client.approveNftAllowance({
+            nftAllowances: [
+                {
+                    tokenId,
+                    ownerAccountId: owner.accountId,
+                    spenderAccountId: spender.accountId,
+                    serialNumbers: [1, 2],
                 },
             ],
             additionalSigners: [ownerKey],
