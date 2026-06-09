@@ -69,28 +69,30 @@ describe("Transaction Listeners", () => {
             const idx = listeners.indexOf(l);
             if (idx !== -1) listeners.splice(idx, 1);
         });
-        vi.mocked(context.emitBeforeTransaction).mockImplementation(
-            async (event) => {
-                for (const l of listeners) {
-                    l.onBeforeTransaction?.(event);
-                }
-            },
-        );
-        vi.mocked(context.emitAfterTransaction).mockImplementation(
-            async (event) => {
-                for (const l of listeners) {
-                    l.onAfterTransaction?.(event);
-                }
-            },
-        );
+        vi.mocked(context.emitBeforeTransaction).mockImplementation((event) => {
+            for (const l of listeners) {
+                l.onBeforeTransaction?.(event);
+            }
+            return Promise.resolve();
+        });
+        vi.mocked(context.emitAfterTransaction).mockImplementation((event) => {
+            for (const l of listeners) {
+                l.onAfterTransaction?.(event);
+            }
+            return Promise.resolve();
+        });
 
         client = new AccountService(context);
     });
 
     it("registers and calls listener on successful transaction", async () => {
         const listener: TransactionListener = {
-            onBeforeTransaction: (event) => beforeEvents.push(event),
-            onAfterTransaction: (event) => afterEvents.push(event),
+            onBeforeTransaction: (event) => {
+                beforeEvents.push(event);
+            },
+            onAfterTransaction: (event) => {
+                afterEvents.push(event);
+            },
         };
 
         context.addTransactionListener(listener);
@@ -104,8 +106,12 @@ describe("Transaction Listeners", () => {
 
     it("allows removing listeners", async () => {
         const listener: TransactionListener = {
-            onBeforeTransaction: (event) => beforeEvents.push(event),
-            onAfterTransaction: (event) => afterEvents.push(event),
+            onBeforeTransaction: (event) => {
+                beforeEvents.push(event);
+            },
+            onAfterTransaction: (event) => {
+                afterEvents.push(event);
+            },
         };
 
         context.addTransactionListener(listener);
@@ -141,8 +147,12 @@ describe("Transaction Listeners", () => {
         >);
 
         const listener: TransactionListener = {
-            onBeforeTransaction: (event) => beforeEvents.push(event),
-            onAfterTransaction: (event) => afterEvents.push(event),
+            onBeforeTransaction: (event) => {
+                beforeEvents.push(event);
+            },
+            onAfterTransaction: (event) => {
+                afterEvents.push(event);
+            },
         };
         context.addTransactionListener(listener);
 

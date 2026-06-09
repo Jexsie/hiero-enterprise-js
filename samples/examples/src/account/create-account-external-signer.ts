@@ -28,12 +28,12 @@ async function main() {
     const walletKey = PrivateKey.generateECDSA();
     const walletSigner = {
         publicKey: walletKey.publicKey,
-        sign: async (message: Uint8Array): Promise<Uint8Array> => {
+        sign: (message: Uint8Array): Promise<Uint8Array> => {
             // Production examples:
             //   return await kmsClient.sign(keyId, message);
             //   return await ledger.sign(derivationPath, message);
             //   return await hashConnect.sign(accountId, message);
-            return walletKey.sign(message);
+            return Promise.resolve(walletKey.sign(message));
         },
     };
 

@@ -30,7 +30,7 @@ export class AutoCreateEvmAccountOperation {
 
     /** Auto-create EVM account execute handler. */
     async execute(options: AutoCreateEvmAccountOptions): Promise<void> {
-        return this.executor.run(
+        return await this.executor.run(
             this.build(options),
             options,
             {
@@ -48,7 +48,7 @@ export class AutoCreateEvmAccountOperation {
         options: AutoCreateEvmAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
-        return this.executor.scheduleRun(
+        return await this.executor.scheduleRun(
             this.build(options),
             options,
             {

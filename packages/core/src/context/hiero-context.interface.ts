@@ -4,7 +4,10 @@ import type {
     PublicKey,
     Transaction,
 } from "@hiero-ledger/sdk";
-import type { TransactionEvent } from "../listeners/index.js";
+import type {
+    TransactionEvent,
+    TransactionListener,
+} from "../listeners/index.js";
 
 /**
  * Public contract for the Hiero context that service clients depend on.
@@ -29,4 +32,10 @@ export interface IHieroContext {
 
     /** Emit an after-transaction event to all registered listeners */
     emitAfterTransaction(event: TransactionEvent): Promise<void>;
+
+    /** Register a transaction listener */
+    addTransactionListener(listener: TransactionListener): void;
+
+    /** Remove a previously registered transaction listener */
+    removeTransactionListener(listener: TransactionListener): void;
 }

@@ -38,23 +38,25 @@ export const testConfig: HieroConfig = {
  */
 export function createMockMirrorNodeClient(): MockMirrorNodeClient {
     return {
-        queryAccount: async () => createMockAccountInfo(),
-        queryAccountBalance: async () => createMockBalance(),
-        queryNftsByAccount: async () => emptyPage(),
-        queryNftsByTokenId: async () => emptyPage(),
-        queryNftsByTokenIdAndSerial: async () => createMockNft(),
-        queryNftsByAccountAndTokenId: async () => emptyPage(),
-        queryTokenById: async () => createMockTokenInfo(),
-        queryTokensByAccountId: async () => emptyPage(),
-        queryTopicMessages: async () => emptyPage(),
-        queryTopicMessageBySequence: async () => createMockTopicMessage(),
-        queryTransactionsByAccount: async () => emptyPage(),
-        queryTransactionsByAccountAndType: async () => emptyPage(),
-        queryTransaction: async () => createMockTransactionInfo(),
-        queryExchangeRates: async () => createMockExchangeRates(),
-        queryNetworkSupplies: async () => createMockNetworkSupplies(),
-        queryNetworkStake: async () => createMockNetworkStake(),
-        fetchNextPage: async () => emptyPage(),
+        queryAccount: () => Promise.resolve(createMockAccountInfo()),
+        queryAccountBalance: () => Promise.resolve(createMockBalance()),
+        queryNftsByAccount: () => Promise.resolve(emptyPage()),
+        queryNftsByTokenId: () => Promise.resolve(emptyPage()),
+        queryNftsByTokenIdAndSerial: () => Promise.resolve(createMockNft()),
+        queryNftsByAccountAndTokenId: () => Promise.resolve(emptyPage()),
+        queryTokenById: () => Promise.resolve(createMockTokenInfo()),
+        queryTokensByAccountId: () => Promise.resolve(emptyPage()),
+        queryTopicMessages: () => Promise.resolve(emptyPage()),
+        queryTopicMessageBySequence: () =>
+            Promise.resolve(createMockTopicMessage()),
+        queryTransactionsByAccount: () => Promise.resolve(emptyPage()),
+        queryTransactionsByAccountAndType: () => Promise.resolve(emptyPage()),
+        queryTransaction: () => Promise.resolve(createMockTransactionInfo()),
+        queryExchangeRates: () => Promise.resolve(createMockExchangeRates()),
+        queryNetworkSupplies: () =>
+            Promise.resolve(createMockNetworkSupplies()),
+        queryNetworkStake: () => Promise.resolve(createMockNetworkStake()),
+        fetchNextPage: () => Promise.resolve(emptyPage()),
     };
 }
 

@@ -92,7 +92,7 @@ export class TransactionExecutor {
      * @param event - Event metadata emitted before and after execution.
      * @param scheduleOptions - Schedule-specific options (payer, admin key, memo).
      */
-    scheduleRun(
+    async scheduleRun(
         tx: Transaction,
         options: TransactionOptions,
         event: TransactionEvent,
@@ -117,7 +117,7 @@ export class TransactionExecutor {
             scheduleTx.setScheduleMemo(scheduleOptions.scheduleMemo);
         }
 
-        return this.run(
+        return await this.run(
             scheduleTx,
             options,
             event,

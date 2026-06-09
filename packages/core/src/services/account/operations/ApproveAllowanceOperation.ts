@@ -122,7 +122,7 @@ export class ApproveAllowanceOperation {
         this.validator.validate(options);
         const tx = this.build(options);
 
-        return this.executor.run(
+        return await this.executor.run(
             tx,
             options,
             {

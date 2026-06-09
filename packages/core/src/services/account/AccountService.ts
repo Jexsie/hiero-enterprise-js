@@ -63,8 +63,8 @@ export class AccountService {
      * @param options.declineStakingReward - Whether to decline staking rewards
      * @returns The created account (ID, public key, and optional EVM address)
      */
-    createAccount(options: CreateAccountOptions): Promise<Account> {
-        return this.createOperation.execute(options);
+    async createAccount(options: CreateAccountOptions): Promise<Account> {
+        return await this.createOperation.execute(options);
     }
 
     /**
@@ -85,11 +85,11 @@ export class AccountService {
      * @param scheduleOptions - Payer, admin key, and schedule memo
      * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
      */
-    scheduleCreateAccount(
+    async scheduleCreateAccount(
         options: CreateAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
-        return this.createOperation.schedule(options, scheduleOptions);
+        return await this.createOperation.schedule(options, scheduleOptions);
     }
 
     /**
@@ -99,8 +99,10 @@ export class AccountService {
      * @param options.evmAddress - The EVM address (e.g., 0x...)
      * @param options.amount - The amount of HBAR to transfer
      */
-    autoCreateEvmAccount(options: AutoCreateEvmAccountOptions): Promise<void> {
-        return this.autoCreateOperation.execute(options);
+    async autoCreateEvmAccount(
+        options: AutoCreateEvmAccountOptions,
+    ): Promise<void> {
+        return await this.autoCreateOperation.execute(options);
     }
 
     /**
@@ -111,11 +113,14 @@ export class AccountService {
      * @param scheduleOptions - Payer, admin key, and schedule memo
      * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
      */
-    scheduleAutoCreateEvmAccount(
+    async scheduleAutoCreateEvmAccount(
         options: AutoCreateEvmAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
-        return this.autoCreateOperation.schedule(options, scheduleOptions);
+        return await this.autoCreateOperation.schedule(
+            options,
+            scheduleOptions,
+        );
     }
 
     /**
@@ -125,8 +130,8 @@ export class AccountService {
      * @param options.accountKey - Private key of the account being deleted
      * @param options.transferAccountId - Account to receive remaining balance (defaults to operator)
      */
-    deleteAccount(options: DeleteAccountOptions): Promise<void> {
-        return this.deleteOperation.execute(options);
+    async deleteAccount(options: DeleteAccountOptions): Promise<void> {
+        return await this.deleteOperation.execute(options);
     }
 
     /**
@@ -140,11 +145,11 @@ export class AccountService {
      * @param scheduleOptions - Payer, admin key, and schedule memo
      * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
      */
-    scheduleDeleteAccount(
+    async scheduleDeleteAccount(
         options: ScheduleDeleteAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
-        return this.deleteOperation.schedule(options, scheduleOptions);
+        return await this.deleteOperation.schedule(options, scheduleOptions);
     }
 
     /**
@@ -163,8 +168,8 @@ export class AccountService {
      * @param options.declineStakingReward - Whether to decline staking rewards
      * @param options.autoRenewPeriod - Auto-renew period in seconds (30–90 days)
      */
-    updateAccount(options: UpdateAccountOptions) {
-        return this.updateOperation.execute(options);
+    async updateAccount(options: UpdateAccountOptions): Promise<void> {
+        return await this.updateOperation.execute(options);
     }
 
     /**
@@ -182,11 +187,11 @@ export class AccountService {
      * @param scheduleOptions - Payer, admin key, and schedule memo
      * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
      */
-    scheduleUpdateAccount(
+    async scheduleUpdateAccount(
         options: UpdateAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
-        return this.updateOperation.schedule(options, scheduleOptions);
+        return await this.updateOperation.schedule(options, scheduleOptions);
     }
 
     /**
@@ -195,8 +200,8 @@ export class AccountService {
      * @param accountId - Account to query
      * @returns The account balance
      */
-    getAccountBalance(accountId: string | AccountId): Promise<Balance> {
-        return this.balanceQuery.execute(accountId);
+    async getAccountBalance(accountId: string | AccountId): Promise<Balance> {
+        return await this.balanceQuery.execute(accountId);
     }
 
     /**
@@ -204,8 +209,8 @@ export class AccountService {
      *
      * @returns The operator account balance
      */
-    getOperatorAccountBalance(): Promise<Balance> {
-        return this.balanceQuery.execute(this.context.operatorAccountId);
+    async getOperatorAccountBalance(): Promise<Balance> {
+        return await this.balanceQuery.execute(this.context.operatorAccountId);
     }
 
     /**
