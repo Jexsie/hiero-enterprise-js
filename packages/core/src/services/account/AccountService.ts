@@ -1,4 +1,4 @@
-import type { AccountId } from "@hiero-ledger/sdk";
+import type { AccountId, TransactionReceipt } from "@hiero-ledger/sdk";
 import type { Account, Balance } from "../../types/index.js";
 import type { IHieroContext } from "../../context/index.js";
 import { normalizeError } from "../../errors/index.js";
@@ -224,7 +224,7 @@ export class AccountService {
      */
     async approveHbarAllowance(
         options: ApproveHbarAllowanceOptions,
-    ): Promise<void> {
+    ): Promise<TransactionReceipt> {
         if (!options.hbarAllowances?.length) {
             throw normalizeError(
                 new Error(
@@ -250,7 +250,7 @@ export class AccountService {
      */
     async approveTokenAllowance(
         options: ApproveTokenAllowanceOptions,
-    ): Promise<void> {
+    ): Promise<TransactionReceipt> {
         if (!options.tokenAllowances?.length) {
             throw normalizeError(
                 new Error(
@@ -276,7 +276,7 @@ export class AccountService {
      */
     async approveNftAllowance(
         options: ApproveNftAllowanceOptions,
-    ): Promise<void> {
+    ): Promise<TransactionReceipt> {
         if (!options.nftAllowances?.length) {
             throw normalizeError(
                 new Error(

@@ -10,7 +10,7 @@ await app.register(hieroPlugin);
 
 // ─── Root Route ───────────────────────────────────────────────
 
-app.get("/", async () => {
+app.get("/", () => {
     return {
         service: "Hiero Fastify Sample",
         message:
@@ -39,19 +39,19 @@ app.get("/", async () => {
 
 /** Get the operator account balance */
 app.get("/api/balance", async () => {
-    return app.hiero.accountService.getOperatorAccountBalance();
+    return await app.hiero.accountService.getOperatorAccountBalance();
 });
 
 /** Query an account from the mirror node */
 app.get<{ Params: { id: string } }>("/api/accounts/:id", async (request) => {
-    return app.hiero.accountRepository.findByAccountId(request.params.id);
+    return await app.hiero.accountRepository.findByAccountId(request.params.id);
 });
 
 /** Query NFTs owned by an account */
 app.get<{ Params: { id: string } }>(
     "/api/accounts/:id/nfts",
     async (request) => {
-        return app.hiero.nftRepository.findByOwner(request.params.id);
+        return await app.hiero.nftRepository.findByOwner(request.params.id);
     },
 );
 
@@ -59,7 +59,7 @@ app.get<{ Params: { id: string } }>(
 
 /** Query a token by ID */
 app.get<{ Params: { id: string } }>("/api/tokens/:id", async (request) => {
-    return app.hiero.tokenRepository.findById(request.params.id);
+    return await app.hiero.tokenRepository.findById(request.params.id);
 });
 
 // ─── Topic Routes ─────────────────────────────────────────────
@@ -68,7 +68,7 @@ app.get<{ Params: { id: string } }>("/api/tokens/:id", async (request) => {
 app.get<{ Params: { id: string } }>(
     "/api/topics/:id/messages",
     async (request) => {
-        return app.hiero.topicRepository.findByTopicId(request.params.id);
+        return await app.hiero.topicRepository.findByTopicId(request.params.id);
     },
 );
 
@@ -98,12 +98,12 @@ app.post<{ Params: { id: string }; Body: { message: string } }>(
 
 /** Query exchange rates */
 app.get("/api/network/exchange-rates", async () => {
-    return app.hiero.networkRepository.findExchangeRates();
+    return await app.hiero.networkRepository.findExchangeRates();
 });
 
 /** Query network supply */
 app.get("/api/network/supply", async () => {
-    return app.hiero.networkRepository.findNetworkSupplies();
+    return await app.hiero.networkRepository.findNetworkSupplies();
 });
 
 // ─── Start ────────────────────────────────────────────────────
