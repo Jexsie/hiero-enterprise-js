@@ -125,8 +125,8 @@ describe("ScheduleService", () => {
             const walletKey = PrivateKey.generateECDSA();
             const externalSigner = {
                 publicKey: walletKey.publicKey,
-                sign: async (msg: Uint8Array): Promise<Uint8Array> =>
-                    walletKey.sign(msg),
+                sign: (msg: Uint8Array): Promise<Uint8Array> =>
+                    Promise.resolve(walletKey.sign(msg)),
             };
 
             await scheduleService.sign({

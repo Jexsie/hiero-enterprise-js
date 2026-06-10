@@ -56,7 +56,7 @@ export class DeleteAccountOperation {
                 ...(options.additionalSigners ?? []),
             ],
         };
-        return this.executor.run(
+        return await this.executor.run(
             this.build(options),
             opts,
             {
@@ -79,7 +79,7 @@ export class DeleteAccountOperation {
         options: ScheduleDeleteAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
-        return this.executor.scheduleRun(
+        return await this.executor.scheduleRun(
             this.build(options),
             options,
             {

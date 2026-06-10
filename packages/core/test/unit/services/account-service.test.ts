@@ -6,6 +6,7 @@ import type { IHieroContext } from "../../../src/context/index.js";
 import {
     AccountCreateTransaction,
     AccountDeleteTransaction,
+    AccountAllowanceApproveTransaction,
     PrivateKey,
 } from "@hiero-ledger/sdk";
 
@@ -59,6 +60,12 @@ const mockTx = {
     setTransferAccountId: vi.fn().mockReturnThis(),
     // TransferTransaction setters
     addHbarTransfer: vi.fn().mockReturnThis(),
+    // AccountAllowanceApproveTransaction setters
+    approveHbarAllowance: vi.fn().mockReturnThis(),
+    approveTokenAllowance: vi.fn().mockReturnThis(),
+    approveTokenNftAllowance: vi.fn().mockReturnThis(),
+    approveTokenNftAllowanceAllSerials: vi.fn().mockReturnThis(),
+    approveTokenNftAllowanceWithDelegatingSpender: vi.fn().mockReturnThis(),
     // Base Transaction methods the executor calls
     setMaxTransactionFee: vi.fn().mockReturnThis(),
     setTransactionMemo: vi.fn().mockReturnThis(),
@@ -99,6 +106,9 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
             return mockQuery;
         }),
         TransferTransaction: vi.fn(function () {
+            return mockTx;
+        }),
+        AccountAllowanceApproveTransaction: vi.fn(function () {
             return mockTx;
         }),
     };
@@ -376,6 +386,176 @@ describe("AccountService", () => {
 
             expect(balance.accountId).toBe("0.0.2");
             expect(balance.hbars).toBe("1000000");
+        });
+    });
+
+    // approveHbarAllowance
+
+    describe("approveHbarAllowance", () => {
+        it("approves an HBAR allowance", async () => {
+            await service.approveHbarAllowance({
+                hbarAllowances: [
+                    {
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                        amount: 10,
+                    },
+                ],
+            });
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.approveHbarAllowance).toHaveBeenCalled();
+            expect(tx.execute).toHaveBeenCalledWith(context.client);
+        });
+
+        it("freezes and signs with additionalSigners", async () => {
+            const ownerKey = PrivateKey.generateED25519();
+
+            await service.approveHbarAllowance({
+                hbarAllowances: [
+                    {
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                        amount: 5,
+                    },
+                ],
+                additionalSigners: [ownerKey],
+            });
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.freezeWith).toHaveBeenCalledWith(context.client);
+            expect(tx.sign).toHaveBeenCalledWith(ownerKey);
+        });
+    });
+
+    // approveTokenAllowance
+
+    describe("approveTokenAllowance", () => {
+        it("approves a fungible token allowance", async () => {
+            await service.approveTokenAllowance({
+                tokenAllowances: [
+                    {
+                        tokenId: "0.0.500",
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                        amount: 5000,
+                    },
+                ],
+            });
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.approveTokenAllowance).toHaveBeenCalled();
+        });
+    });
+
+    // approveNftAllowance
+
+    describe("approveNftAllowance", () => {
+        it("approves NFT allowance with specific serials", async () => {
+            await service.approveNftAllowance({
+                nftAllowances: [
+                    {
+                        tokenId: "0.0.600",
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                        serialNumbers: [1, 2, 3],
+                    },
+                ],
+            });
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.approveTokenNftAllowance).toHaveBeenCalledTimes(3);
+        });
+
+        it("approves NFT allowance for all serials", async () => {
+            await service.approveNftAllowance({
+                nftAllowances: [
+                    {
+                        tokenId: "0.0.600",
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                        allSerials: true,
+                    },
+                ],
+            });
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.approveTokenNftAllowanceAllSerials).toHaveBeenCalled();
+        });
+
+        it("approves NFT allowance with delegatingSpender", async () => {
+            await service.approveNftAllowance({
+                nftAllowances: [
+                    {
+                        tokenId: "0.0.600",
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                        serialNumbers: [1, 2],
+                        delegatingSpender: "0.0.300",
+                    },
+                ],
+            });
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(
+                tx.approveTokenNftAllowanceWithDelegatingSpender,
+            ).toHaveBeenCalledTimes(2);
+            expect(tx.approveTokenNftAllowance).not.toHaveBeenCalled();
+        });
+
+        it("ignores delegatingSpender when allSerials is true", async () => {
+            await service.approveNftAllowance({
+                nftAllowances: [
+                    {
+                        tokenId: "0.0.600",
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                        allSerials: true,
+                        delegatingSpender: "0.0.300",
+                    },
+                ],
+            });
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.approveTokenNftAllowanceAllSerials).toHaveBeenCalled();
+            expect(
+                tx.approveTokenNftAllowanceWithDelegatingSpender,
+            ).not.toHaveBeenCalled();
+        });
+    });
+
+    // allowance validation
+
+    describe("allowance validation", () => {
+        it("rejects approveHbarAllowance when hbarAllowances is empty", async () => {
+            await expect(
+                service.approveHbarAllowance({
+                    hbarAllowances: [],
+                }),
+            ).rejects.toThrow(/hbarAllowances must be provided/);
+        });
+
+        it("rejects approveTokenAllowance when tokenAllowances is empty", async () => {
+            await expect(
+                service.approveTokenAllowance({
+                    tokenAllowances: [],
+                }),
+            ).rejects.toThrow(/tokenAllowances must be provided/);
+        });
+
+        it("rejects approveNftAllowance when nftAllowances is empty", async () => {
+            await expect(
+                service.approveNftAllowance({
+                    nftAllowances: [],
+                }),
+            ).rejects.toThrow(/nftAllowances must be provided/);
         });
     });
 });

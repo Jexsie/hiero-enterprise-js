@@ -40,10 +40,7 @@ export interface HieroPluginOptions extends FastifyPluginOptions {
  * });
  * ```
  */
-const plugin = async function (
-    fastify: FastifyInstance,
-    opts: HieroPluginOptions,
-): Promise<void> {
+const plugin = function (fastify: FastifyInstance, opts: HieroPluginOptions) {
     if (!opts.config) {
         assertEnvConfigValid();
     }

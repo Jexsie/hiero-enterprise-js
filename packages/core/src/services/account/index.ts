@@ -6,3 +6,12 @@ export type {
     ScheduleDeleteAccountOptions,
 } from "./operations/index.js";
 export type { UpdateAccountOptions } from "./operations/index.js";
+export type {
+    ApproveAllowanceOptions,
+    ApproveHbarAllowanceOptions,
+    ApproveTokenAllowanceOptions,
+    ApproveNftAllowanceOptions,
+    HbarAllowanceApproval,
+    TokenAllowanceApproval,
+    NftAllowanceApproval,
+} from "./operations/index.js";

@@ -1,11 +1,13 @@
-import type { AccountId } from "@hiero-ledger/sdk";
+import type { AccountId, TransactionReceipt } from "@hiero-ledger/sdk";
 import type { Account, Balance } from "../../types/index.js";
 import type { IHieroContext } from "../../context/index.js";
+import { normalizeError } from "../../errors/index.js";
 import {
     CreateAccountOperation,
     AutoCreateEvmAccountOperation,
     DeleteAccountOperation,
     UpdateAccountOperation,
+    ApproveAllowanceOperation,
 } from "./operations/index.js";
 import type {
     CreateAccountOptions,
@@ -13,6 +15,9 @@ import type {
     DeleteAccountOptions,
     ScheduleDeleteAccountOptions,
     UpdateAccountOptions,
+    ApproveHbarAllowanceOptions,
+    ApproveTokenAllowanceOptions,
+    ApproveNftAllowanceOptions,
 } from "./operations/index.js";
 import { AccountBalanceQuery } from "./queries/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
@@ -26,6 +31,7 @@ export class AccountService {
     private readonly autoCreateOperation: AutoCreateEvmAccountOperation;
     private readonly deleteOperation: DeleteAccountOperation;
     private readonly updateOperation: UpdateAccountOperation;
+    private readonly approveAllowanceOperation: ApproveAllowanceOperation;
     private readonly balanceQuery: AccountBalanceQuery;
 
     constructor(private readonly context: IHieroContext) {
@@ -33,6 +39,7 @@ export class AccountService {
         this.autoCreateOperation = new AutoCreateEvmAccountOperation(context);
         this.deleteOperation = new DeleteAccountOperation(context);
         this.updateOperation = new UpdateAccountOperation(context);
+        this.approveAllowanceOperation = new ApproveAllowanceOperation(context);
         this.balanceQuery = new AccountBalanceQuery(context);
     }
 
@@ -56,8 +63,8 @@ export class AccountService {
      * @param options.declineStakingReward - Whether to decline staking rewards
      * @returns The created account (ID, public key, and optional EVM address)
      */
-    createAccount(options: CreateAccountOptions): Promise<Account> {
-        return this.createOperation.execute(options);
+    async createAccount(options: CreateAccountOptions): Promise<Account> {
+        return await this.createOperation.execute(options);
     }
 
     /**
@@ -78,11 +85,11 @@ export class AccountService {
      * @param scheduleOptions - Payer, admin key, and schedule memo
      * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
      */
-    scheduleCreateAccount(
+    async scheduleCreateAccount(
         options: CreateAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
-        return this.createOperation.schedule(options, scheduleOptions);
+        return await this.createOperation.schedule(options, scheduleOptions);
     }
 
     /**
@@ -92,8 +99,10 @@ export class AccountService {
      * @param options.evmAddress - The EVM address (e.g., 0x...)
      * @param options.amount - The amount of HBAR to transfer
      */
-    autoCreateEvmAccount(options: AutoCreateEvmAccountOptions): Promise<void> {
-        return this.autoCreateOperation.execute(options);
+    async autoCreateEvmAccount(
+        options: AutoCreateEvmAccountOptions,
+    ): Promise<void> {
+        return await this.autoCreateOperation.execute(options);
     }
 
     /**
@@ -104,11 +113,14 @@ export class AccountService {
      * @param scheduleOptions - Payer, admin key, and schedule memo
      * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
      */
-    scheduleAutoCreateEvmAccount(
+    async scheduleAutoCreateEvmAccount(
         options: AutoCreateEvmAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
-        return this.autoCreateOperation.schedule(options, scheduleOptions);
+        return await this.autoCreateOperation.schedule(
+            options,
+            scheduleOptions,
+        );
     }
 
     /**
@@ -118,8 +130,8 @@ export class AccountService {
      * @param options.accountKey - Private key of the account being deleted
      * @param options.transferAccountId - Account to receive remaining balance (defaults to operator)
      */
-    deleteAccount(options: DeleteAccountOptions): Promise<void> {
-        return this.deleteOperation.execute(options);
+    async deleteAccount(options: DeleteAccountOptions): Promise<void> {
+        return await this.deleteOperation.execute(options);
     }
 
     /**
@@ -133,11 +145,11 @@ export class AccountService {
      * @param scheduleOptions - Payer, admin key, and schedule memo
      * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
      */
-    scheduleDeleteAccount(
+    async scheduleDeleteAccount(
         options: ScheduleDeleteAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
-        return this.deleteOperation.schedule(options, scheduleOptions);
+        return await this.deleteOperation.schedule(options, scheduleOptions);
     }
 
     /**
@@ -156,8 +168,8 @@ export class AccountService {
      * @param options.declineStakingReward - Whether to decline staking rewards
      * @param options.autoRenewPeriod - Auto-renew period in seconds (30–90 days)
      */
-    updateAccount(options: UpdateAccountOptions) {
-        return this.updateOperation.execute(options);
+    async updateAccount(options: UpdateAccountOptions): Promise<void> {
+        return await this.updateOperation.execute(options);
     }
 
     /**
@@ -175,11 +187,11 @@ export class AccountService {
      * @param scheduleOptions - Payer, admin key, and schedule memo
      * @returns The schedule entity ID and the transaction ID of the `ScheduleCreateTransaction`
      */
-    scheduleUpdateAccount(
+    async scheduleUpdateAccount(
         options: UpdateAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
-        return this.updateOperation.schedule(options, scheduleOptions);
+        return await this.updateOperation.schedule(options, scheduleOptions);
     }
 
     /**
@@ -188,8 +200,8 @@ export class AccountService {
      * @param accountId - Account to query
      * @returns The account balance
      */
-    getAccountBalance(accountId: string | AccountId): Promise<Balance> {
-        return this.balanceQuery.execute(accountId);
+    async getAccountBalance(accountId: string | AccountId): Promise<Balance> {
+        return await this.balanceQuery.execute(accountId);
     }
 
     /**
@@ -197,7 +209,85 @@ export class AccountService {
      *
      * @returns The operator account balance
      */
-    getOperatorAccountBalance(): Promise<Balance> {
-        return this.balanceQuery.execute(this.context.operatorAccountId);
+    async getOperatorAccountBalance(): Promise<Balance> {
+        return await this.balanceQuery.execute(this.context.operatorAccountId);
+    }
+
+    /**
+     * Approve HBAR allowances — grant a spender permission to spend
+     * HBAR on the owner's behalf.
+     *
+     * The owner's key must sign the transaction. If the operator is not the owner,
+     * pass the owner's key via `additionalSigners`.
+     *
+     * @param options.hbarAllowances - HBAR spending allowances to approve (at least one)
+     */
+    async approveHbarAllowance(
+        options: ApproveHbarAllowanceOptions,
+    ): Promise<TransactionReceipt> {
+        if (!options.hbarAllowances?.length) {
+            throw normalizeError(
+                new Error(
+                    "hbarAllowances must be provided with at least one entry.",
+                ),
+                "AccountService.approveHbarAllowance",
+            );
+        }
+        return await this.approveAllowanceOperation.execute(
+            options,
+            "approveHbarAllowance",
+        );
+    }
+
+    /**
+     * Approve fungible token allowances — grant a spender permission to transfer
+     * tokens on the owner's behalf.
+     *
+     * The owner's key must sign the transaction. If the operator is not the owner,
+     * pass the owner's key via `additionalSigners`.
+     *
+     * @param options.tokenAllowances - Fungible token allowances to approve (at least one)
+     */
+    async approveTokenAllowance(
+        options: ApproveTokenAllowanceOptions,
+    ): Promise<TransactionReceipt> {
+        if (!options.tokenAllowances?.length) {
+            throw normalizeError(
+                new Error(
+                    "tokenAllowances must be provided with at least one entry.",
+                ),
+                "AccountService.approveTokenAllowance",
+            );
+        }
+        return await this.approveAllowanceOperation.execute(
+            options,
+            "approveTokenAllowance",
+        );
+    }
+
+    /**
+     * Approve NFT allowances — grant a spender permission to transfer
+     * NFTs on the owner's behalf. Supports specific serials or all serials.
+     *
+     * The owner's key must sign the transaction. If the operator is not the owner,
+     * pass the owner's key via `additionalSigners`.
+     *
+     * @param options.nftAllowances - NFT allowances to approve (at least one)
+     */
+    async approveNftAllowance(
+        options: ApproveNftAllowanceOptions,
+    ): Promise<TransactionReceipt> {
+        if (!options.nftAllowances?.length) {
+            throw normalizeError(
+                new Error(
+                    "nftAllowances must be provided with at least one entry.",
+                ),
+                "AccountService.approveNftAllowance",
+            );
+        }
+        return await this.approveAllowanceOperation.execute(
+            options,
+            "approveNftAllowance",
+        );
     }
 }

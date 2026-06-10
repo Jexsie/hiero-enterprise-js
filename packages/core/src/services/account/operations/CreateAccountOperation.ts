@@ -115,7 +115,7 @@ export class CreateAccountOperation {
         const tx = this.build(options);
 
         // Execute the transaction and map the receipt to the Account return type
-        return this.executor.run(
+        return await this.executor.run(
             tx,
             options,
             {
@@ -135,7 +135,7 @@ export class CreateAccountOperation {
     ): Promise<ScheduledResult> {
         this.validator.validate(options);
         const tx = this.build(options);
-        return this.executor.scheduleRun(
+        return await this.executor.scheduleRun(
             tx,
             options,
             {

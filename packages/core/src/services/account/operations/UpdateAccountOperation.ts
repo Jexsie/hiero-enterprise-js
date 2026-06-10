@@ -79,7 +79,7 @@ export class UpdateAccountOperation {
         this.validator.validate(options);
         const tx = this.build(options);
 
-        return this.executor.run(
+        return await this.executor.run(
             tx,
             options,
             {
@@ -103,7 +103,7 @@ export class UpdateAccountOperation {
     ): Promise<ScheduledResult> {
         this.validator.validate(options);
         const tx = this.build(options);
-        return this.executor.scheduleRun(
+        return await this.executor.scheduleRun(
             tx,
             options,
             {

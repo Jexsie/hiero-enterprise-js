@@ -16,7 +16,7 @@ describe("hieroPlugin", () => {
 
         await app.register(hieroPlugin, { config });
 
-        app.get("/probe", async () => {
+        app.get("/probe", () => {
             return {
                 hasAccountService: !!app.hiero.accountService,
                 hasNetworkRepository: !!app.hiero.networkRepository,
