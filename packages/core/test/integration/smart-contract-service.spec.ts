@@ -1,15 +1,17 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { setupIntegrationTestEnv, SOLO_OPERATOR_ID } from "../utils/env.js";
+import { setupIntegrationTestEnv } from "../utils/env.js";
 import { waitForMirrorNodeRecord } from "../utils/mirror-node.js";
 import { SmartContractService } from "../../src/services/smart-contract-service.js";
 
 describe("SmartContractService [Integration]", () => {
     let client: SmartContractService;
     let testContractId: string;
+    let operatorId: string;
 
     beforeAll(() => {
         const ctx = setupIntegrationTestEnv();
         client = new SmartContractService(ctx);
+        operatorId = ctx.operatorAccountId.toString();
     });
 
     it("deploys a smart contract bypassing the file service via direct bytecode", async () => {
@@ -31,7 +33,6 @@ describe("SmartContractService [Integration]", () => {
 
     it("deletes the deployed smart contract", async () => {
         // Contract deployed without adminKey is immutable and cannot be deleted
-        const operatorId = SOLO_OPERATOR_ID;
         await expect(
             client.deleteContract(testContractId, operatorId),
         ).rejects.toThrow(/MODIFYING_IMMUTABLE_CONTRACT/);

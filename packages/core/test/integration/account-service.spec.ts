@@ -233,6 +233,8 @@ describe("AccountService [Integration]", () => {
         });
 
         await waitForMirrorNodeRecord();
+        // NFT allowances may need extra propagation time on the mirror node
+        await new Promise((r) => setTimeout(r, 3000));
 
         const res = await fetch(
             `${MIRROR_URL}/api/v1/accounts/${owner.accountId}/allowances/nfts`,
