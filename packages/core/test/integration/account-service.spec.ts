@@ -246,9 +246,15 @@ describe("AccountService [Integration]", () => {
                 approved_for_all?: boolean;
             }[];
         };
+
         const match = (data.allowances ?? []).find(
             (a) => a.spender === spender.accountId && a.token_id === tokenId,
         );
+
         expect(match).toBeDefined();
+        expect(match?.approved_for_all).not.toBe(true);
+        expect(match?.serial_numbers ?? []).toEqual(
+            expect.arrayContaining([1, 2]),
+        );
     }, 30000);
 });
