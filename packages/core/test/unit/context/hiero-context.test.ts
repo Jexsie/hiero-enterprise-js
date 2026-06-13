@@ -124,8 +124,8 @@ describe("HieroContext", () => {
             const ctx = new HieroContext({
                 ...validConfig,
                 network: "local",
-                mirrorNodeUrl: "http://localhost:5551",
-                networkNodes: { "127.0.0.1:50211": "0.0.3" },
+                mirrorNodeUrl: "http://localhost:38081",
+                networkNodes: { "127.0.0.1:35211": "0.0.3" },
             });
             expect(Client.forNetwork).toHaveBeenCalled();
             expect(ctx).toBeDefined();

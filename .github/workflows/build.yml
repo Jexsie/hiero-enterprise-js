@@ -54,7 +54,7 @@ jobs:
                   installMirrorNode: true
                   hieroVersion: v0.66.0
                   mirrorNodeVersion: v0.138.0
-                  mirrorNodePortRest: 5551
+                  mirrorNodePortRest: 38081
                   mirrorNodePortGrpc: 5600
                   mirrorNodePortWeb3Rest: 8545
                   soloVersion: 0.46.1
@@ -63,7 +63,7 @@ jobs:
               run: |
                   echo "Waiting for Mirror Node REST API to be ready..."
                   for i in $(seq 1 60); do
-                    if curl -s http://localhost:5551/api/v1/accounts | grep -q "accounts"; then
+                    if curl -s http://localhost:38081/api/v1/accounts | grep -q "accounts"; then
                       echo "Mirror Node is ready!"
                       break
                     fi
@@ -81,7 +81,7 @@ jobs:
                   HIERO_NETWORK: hiero-solo-action
                   HIERO_OPERATOR_ID: ${{ steps.solo.outputs.accountId }}
                   HIERO_OPERATOR_KEY: ${{ steps.solo.outputs.privateKey }}
-                  HIERO_MIRROR_NODE_URL: http://localhost:5551
+                  HIERO_MIRROR_NODE_URL: http://localhost:38081
               run: pnpm run test:integration
 
             - name: Run unit tests
@@ -89,7 +89,7 @@ jobs:
                   HIERO_NETWORK: hiero-solo-action
                   HIERO_OPERATOR_ID: ${{ steps.solo.outputs.accountId }}
                   HIERO_OPERATOR_KEY: ${{ steps.solo.outputs.privateKey }}
-                  HIERO_MIRROR_NODE_URL: http://localhost:5551
+                  HIERO_MIRROR_NODE_URL: http://localhost:38081
               run: pnpm run test:unit
 
             - name: Run examples
@@ -99,6 +99,6 @@ jobs:
                   HIERO_ED25519_OPERATOR_KEY: ${{ steps.solo.outputs.ed25519PrivateKey }}
                   HIERO_ECDSA_OPERATOR_ID: ${{ steps.solo.outputs.ecdsaAccountId }}
                   HIERO_ECDSA_OPERATOR_KEY: ${{ steps.solo.outputs.ecdsaPrivateKey }}
-                  HIERO_MIRROR_NODE_URL: http://localhost:5551
-                  HIERO_NETWORK_NODES: "127.0.0.1:50211=0.0.3"
+                  HIERO_MIRROR_NODE_URL: http://localhost:38081
+                  HIERO_NETWORK_NODES: "127.0.0.1:35211=0.0.3"
               run: pnpm --filter @hiero-enterprise/examples examples

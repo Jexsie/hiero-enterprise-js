@@ -22,12 +22,12 @@ export function setupIntegrationTestEnv(): HieroContext {
         operatorKey: SOLO_OPERATOR_KEY,
         operatorKeyType: OperatorKeyType.DER,
         mirrorNodeUrl:
-            process.env["HIERO_MIRROR_NODE_URL"] || "http://127.0.0.1:5551",
+            process.env["HIERO_MIRROR_NODE_URL"] || "http://127.0.0.1:38081",
     });
 
     // Override the client to point to local consensus node
     const localClient = Client.forNetwork({
-        "127.0.0.1:50211": "0.0.3",
+        "127.0.0.1:35211": "0.0.3",
     });
     localClient.setOperator(ctx.operatorAccountId, SOLO_OPERATOR_KEY);
 
