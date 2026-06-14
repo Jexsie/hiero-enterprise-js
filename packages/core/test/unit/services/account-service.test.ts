@@ -902,11 +902,11 @@ describe("AccountService", () => {
         });
     });
 
-    // deleteAllTokenNftAllowances (approve-for-all-serials revocation)
+    // deleteAllNftAllowances (approve-for-all-serials revocation)
 
-    describe("deleteAllTokenNftAllowances", () => {
+    describe("deleteAllNftAllowances", () => {
         it("revokes approve-for-all-serials with correct SDK arguments", async () => {
-            await service.deleteAllTokenNftAllowances([
+            await service.deleteAllNftAllowances([
                 {
                     tokenId: "0.0.600",
                     ownerAccountId: "0.0.100",
@@ -927,7 +927,7 @@ describe("AccountService", () => {
         });
 
         it("handles multiple approve-for-all-serials revocations", async () => {
-            await service.deleteAllTokenNftAllowances([
+            await service.deleteAllNftAllowances([
                 {
                     tokenId: "0.0.600",
                     ownerAccountId: "0.0.100",
@@ -959,7 +959,7 @@ describe("AccountService", () => {
 
         it("forwards TransactionOptions (additionalSigners) to the executor", async () => {
             const ownerKey = PrivateKey.generateED25519();
-            await service.deleteAllTokenNftAllowances(
+            await service.deleteAllNftAllowances(
                 [
                     {
                         tokenId: "0.0.600",
@@ -976,15 +976,15 @@ describe("AccountService", () => {
             expect(tx.sign).toHaveBeenCalledWith(ownerKey);
         });
 
-        it("rejects deleteAllTokenNftAllowances when allowances is empty", async () => {
-            await expect(
-                service.deleteAllTokenNftAllowances([]),
-            ).rejects.toThrow(/nftAllowances must be provided/);
+        it("rejects deleteAllNftAllowances when allowances is empty", async () => {
+            await expect(service.deleteAllNftAllowances([])).rejects.toThrow(
+                /nftAllowances must be provided/,
+            );
         });
 
-        it("rejects deleteAllTokenNftAllowances when tokenId is missing", async () => {
+        it("rejects deleteAllNftAllowances when tokenId is missing", async () => {
             await expect(
-                service.deleteAllTokenNftAllowances([
+                service.deleteAllNftAllowances([
                     {
                         tokenId: "",
                         ownerAccountId: "0.0.100",
@@ -994,9 +994,9 @@ describe("AccountService", () => {
             ).rejects.toThrow(/tokenId is required/);
         });
 
-        it("rejects deleteAllTokenNftAllowances when ownerAccountId is missing", async () => {
+        it("rejects deleteAllNftAllowances when ownerAccountId is missing", async () => {
             await expect(
-                service.deleteAllTokenNftAllowances([
+                service.deleteAllNftAllowances([
                     {
                         tokenId: "0.0.600",
                         ownerAccountId: "",
@@ -1006,9 +1006,9 @@ describe("AccountService", () => {
             ).rejects.toThrow(/ownerAccountId is required/);
         });
 
-        it("rejects deleteAllTokenNftAllowances when spenderAccountId is missing", async () => {
+        it("rejects deleteAllNftAllowances when spenderAccountId is missing", async () => {
             await expect(
-                service.deleteAllTokenNftAllowances([
+                service.deleteAllNftAllowances([
                     {
                         tokenId: "0.0.600",
                         ownerAccountId: "0.0.100",

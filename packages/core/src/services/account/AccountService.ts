@@ -318,7 +318,7 @@ export class AccountService {
      * Note: Only per-serial NFT allowance deletion is supported by the protocol.
      * To remove HBAR or fungible token allowances, call `approveHbarAllowance`
      * / `approveTokenAllowance` with `amount: 0`. To revoke an
-     * "approve-for-all-serials" grant, use `deleteAllTokenNftAllowances`.
+     * "approve-for-all-serials" grant, use `deleteAllNftAllowances`.
      *
      * @param allowances - NFT allowance deletions to apply (at least one)
      * @param options - Optional base transaction options (signers, memo, etc.)
@@ -355,7 +355,7 @@ export class AccountService {
      * @param allowances - Approve-for-all-serials deletions to apply (at least one)
      * @param options - Optional base transaction options (signers, memo, etc.)
      */
-    async deleteAllTokenNftAllowances(
+    async deleteAllNftAllowances(
         allowances: NftAllSerialsAllowanceDeletion[],
         options: DeleteAllNftAllowancesOptions = {},
     ): Promise<TransactionReceipt> {
@@ -364,13 +364,13 @@ export class AccountService {
                 new Error(
                     "nftAllowances must be provided with at least one entry.",
                 ),
-                "AccountService.deleteAllTokenNftAllowances",
+                "AccountService.deleteAllNftAllowances",
             );
         }
         return await this.deleteAllNftAllowancesOperation.execute(
             allowances,
             options,
-            "deleteAllTokenNftAllowances",
+            "deleteAllNftAllowances",
         );
     }
 

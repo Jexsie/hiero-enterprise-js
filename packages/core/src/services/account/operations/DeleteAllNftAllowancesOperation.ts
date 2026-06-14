@@ -48,7 +48,7 @@ export class DeleteAllNftAllowancesOperation {
     async execute(
         allowances: NftAllSerialsAllowanceDeletion[],
         options: DeleteAllNftAllowancesOptions = {},
-        methodName = "deleteAllTokenNftAllowances",
+        methodName = "deleteAllNftAllowances",
     ): Promise<TransactionReceipt> {
         this.validator.validate(allowances);
         const tx = this.build(allowances);
