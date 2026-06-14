@@ -22,17 +22,19 @@
     "scripts": {
         "build": "tsc",
         "clean": "rm -rf dist",
-        "test:unit": "vitest run test/unit",
-        "test:integration": "vitest run -c test/vitest.config.integration.ts",
-        "test": "pnpm run test:unit && pnpm run test:integration",
-        "test:watch": "vitest test/unit"
+        "test:unit": "vitest run -c test/vitest.config.ts",
+        "test:unit:coverage": "vitest run -c test/vitest.config.ts --coverage",
+        "test:integration": "vitest run -c test/vitest-integration.config.ts",
+        "test:integration:coverage": "vitest run -c test/vitest-integration.config.ts --coverage",
+        "test": "pnpm run test:unit && pnpm run test:integration"
     },
     "dependencies": {
         "@hiero-ledger/sdk": "^2.84.0"
     },
     "devDependencies": {
         "@types/node": "^25.9.1",
-        "vitest": "^4.1.7"
+        "@vitest/coverage-v8": "^4.1.8",
+        "vitest": "^4.1.8"
     },
     "publishConfig": {
         "access": "public",

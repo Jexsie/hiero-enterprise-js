@@ -80,14 +80,36 @@ jobs:
                   HIERO_OPERATOR_KEY_TYPE: der
                   HIERO_NETWORK_NODES: "127.0.0.1:35211=0.0.3"
                   HIERO_MIRROR_NODE_URL: http://localhost:38081
-              run: pnpm run test:integration
+              run: pnpm --filter @hiero-enterprise/core run test:integration:coverage
+
+            - name: Upload integration coverage to Codecov
+              if: ${{ always() && matrix.node-version == 24 }}
+              # TODO: pin to SHA via Dependabot once the workflow lands
+              uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+              with:
+                  files: ./packages/core/coverage/integration/lcov.info
+                  flags: integration
+                  name: core-integration
+                  fail_ci_if_error: false
+                  token: ${{ secrets.CODECOV_TOKEN }}
 
             - name: Run unit tests
               env:
                   HIERO_NETWORK: hiero-solo-action
                   HIERO_OPERATOR_ID: ${{ steps.solo.outputs.accountId }}
                   HIERO_OPERATOR_KEY: ${{ steps.solo.outputs.privateKey }}
-              run: pnpm run test:unit
+              run: pnpm --filter @hiero-enterprise/core run test:unit:coverage
+
+            - name: Upload unit coverage to Codecov
+              if: ${{ always() && matrix.node-version == 24 }}
+              # TODO: pin to SHA via Dependabot once the workflow lands
+              uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+              with:
+                  files: ./packages/core/coverage/node/lcov.info
+                  flags: unit
+                  name: core-unit
+                  fail_ci_if_error: false
+                  token: ${{ secrets.CODECOV_TOKEN }}
 
             - name: Run examples
               env:

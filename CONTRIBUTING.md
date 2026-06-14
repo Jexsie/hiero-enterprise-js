@@ -50,34 +50,52 @@ Please ensure that your bug report contains the following:
 pnpm install
 
 # Build all packages
-pnpm run build
+pnpm build
 
 # Run unit tests
-pnpm run test
+pnpm test
 
 # Lint (type check + ESLint)
-pnpm run lint
+pnpm lint
 
 # Format code
-pnpm run format
+pnpm format
 ```
 
 ### Running Integration Tests
 
-> **Note:** Integration tests are not yet implemented. The CI workflow includes a commented-out integration job using [hiero-solo-action](https://github.com/hiero-ledger/hiero-solo-action) that will be activated once integration tests are written.
+Integration tests live under [`packages/core/test/integration/`](packages/core/test/integration) and exercise the SDK end-to-end against a live consensus + mirror node. They are designed to run against a local [Solo](https://solo.hiero.org) network.
 
-When integration tests are available:
+1. **Bring up a Solo network locally** by following the [Solo quickstart](https://solo.hiero.org/docs/simple-solo-setup/quickstart/) (requires Docker, 12+ GB RAM, and a local Kubernetes cluster — Kind / Minikube / similar).
 
-1. **Setup Solo local network:**
+2. **Copy the env template:**
+
    ```bash
-   # Requires Docker and sufficient RAM (12+ GB)
-   # Solo will spin up consensus node(s) and mirror node services
+   cp packages/core/test/.env.example packages/core/test/.env
    ```
 
-2. **Run integration tests:**
+   The defaults point at the Solo genesis treasury (`0.0.2`) and the standard Solo node + mirror ports, so no edits are needed for the common case. The test runner auto-loads `packages/core/test/.env` via [`test/utils/setup-env.ts`](packages/core/test/utils/setup-env.ts).
+
+3. **Run the integration suite:**
    ```bash
    pnpm run test:integration
+
+   # or with a coverage report (lcov + text summary written to
+   # packages/core/coverage/integration/)
+   pnpm run test:integration:coverage
    ```
+
+ **Using a custom operator instead of the genesis treasury** — create a fresh account on the Solo deployment, then swap `HIERO_OPERATOR_ID` / `HIERO_OPERATOR_KEY` / `HIERO_OPERATOR_KEY_TYPE` in `.env` for the values Solo prints:
+
+ ```bash
+ # ED25519 operator (default)
+ solo ledger account create --deployment solo-deployment --hbar-amount 100 --private-key --dev
+
+ # ECDSA operator — also set HIERO_OPERATOR_KEY_TYPE=ecdsa in .env
+ solo ledger account create --deployment solo-deployment --hbar-amount 100 --generate-ecdsa-key --private-key --dev
+ ```
+
+Coverage thresholds (80% statements / 70% branches / 80% functions / 80% lines) are enforced by the unit run only; the integration run emits coverage without gating.
 
 ## Feature Requests
 
