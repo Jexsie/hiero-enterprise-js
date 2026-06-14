@@ -247,4 +247,287 @@ describe("AccountService [Integration]", () => {
             expect(nft.spender).toBe(spender.accountId);
         }
     }, 30000);
+
+    it("deletes an HBAR allowance by setting amount to 0", async () => {
+        const ownerKey = PrivateKey.generateED25519();
+        const owner = await client.createAccount({
+            publicKey: ownerKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 10,
+        });
+
+        const spenderKey = PrivateKey.generateED25519();
+        const spender = await client.createAccount({
+            publicKey: spenderKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 1,
+        });
+
+        // First grant the allowance so there's something to revoke
+        await client.approveHbarAllowance({
+            hbarAllowances: [
+                {
+                    ownerAccountId: owner.accountId,
+                    spenderAccountId: spender.accountId,
+                    amount: 5,
+                },
+            ],
+            additionalSigners: [ownerKey],
+        });
+        await waitForMirrorNodeRecord();
+
+        const granted = await queryHbarAllowances(owner.accountId);
+        expect(
+            granted.find((a) => a.spender === spender.accountId),
+        ).toBeDefined();
+
+        // Now revoke it
+        await client.deleteHbarAllowance(
+            [
+                {
+                    ownerAccountId: owner.accountId,
+                    spenderAccountId: spender.accountId,
+                },
+            ],
+            { additionalSigners: [ownerKey] },
+        );
+        await waitForMirrorNodeRecord();
+
+        const after = await queryHbarAllowances(owner.accountId);
+        const match = after.find((a) => a.spender === spender.accountId);
+        // Mirror node either removes the entry or reports amount=0 after revocation
+        expect(match === undefined || match.amount === 0).toBe(true);
+    }, 45000);
+
+    it("deletes a fungible token allowance by setting amount to 0", async () => {
+        const ownerKey = PrivateKey.generateED25519();
+        const owner = await client.createAccount({
+            publicKey: ownerKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 10,
+        });
+
+        const spenderKey = PrivateKey.generateED25519();
+        const spender = await client.createAccount({
+            publicKey: spenderKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 1,
+        });
+
+        const tokenId = await tokenService.createToken({
+            name: "Delete Allowance Token",
+            symbol: "DAT",
+            decimals: 2,
+            initialSupply: 10000,
+            treasuryAccountId: owner.accountId,
+            treasuryKey: ownerKey,
+            supplyKey: ownerKey,
+        });
+
+        await client.approveTokenAllowance({
+            tokenAllowances: [
+                {
+                    tokenId,
+                    ownerAccountId: owner.accountId,
+                    spenderAccountId: spender.accountId,
+                    amount: 500,
+                },
+            ],
+            additionalSigners: [ownerKey],
+        });
+        await waitForMirrorNodeRecord();
+
+        const granted = await queryTokenAllowances(owner.accountId);
+        expect(
+            granted.find(
+                (a) =>
+                    a.spender === spender.accountId && a.token_id === tokenId,
+            ),
+        ).toBeDefined();
+
+        // Revoke it
+        await client.deleteTokenAllowance(
+            [
+                {
+                    tokenId,
+                    ownerAccountId: owner.accountId,
+                    spenderAccountId: spender.accountId,
+                },
+            ],
+            { additionalSigners: [ownerKey] },
+        );
+        await waitForMirrorNodeRecord();
+
+        const after = await queryTokenAllowances(owner.accountId);
+        const match = after.find(
+            (a) => a.spender === spender.accountId && a.token_id === tokenId,
+        );
+        expect(match === undefined || match.amount === 0).toBe(true);
+    }, 45000);
+
+    it("deletes an NFT allowance for specific serials", async () => {
+        const ownerKey = PrivateKey.generateED25519();
+        const owner = await client.createAccount({
+            publicKey: ownerKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 10,
+        });
+
+        const spenderKey = PrivateKey.generateED25519();
+        const spender = await client.createAccount({
+            publicKey: spenderKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 1,
+        });
+
+        const tokenId = await nftService.createNftType({
+            name: "Delete NFT Allowance",
+            symbol: "DNAL",
+            treasuryAccountId: owner.accountId,
+            treasuryKey: ownerKey,
+            supplyKey: ownerKey,
+        });
+
+        await nftService.mintNfts(
+            tokenId,
+            [Buffer.from("meta-1"), Buffer.from("meta-2")],
+            ownerKey,
+        );
+
+        // Grant per-serial allowance
+        await client.approveNftAllowance({
+            nftAllowances: [
+                {
+                    tokenId,
+                    ownerAccountId: owner.accountId,
+                    spenderAccountId: spender.accountId,
+                    serialNumbers: [1, 2],
+                },
+            ],
+            additionalSigners: [ownerKey],
+        });
+        await waitForMirrorNodeRecord();
+
+        // Verify spender was set on both serials
+        for (const serial of [1, 2]) {
+            const res = await fetch(
+                `${MIRROR_URL}/api/v1/tokens/${tokenId}/nfts/${serial}`,
+            );
+            const nft = (await res.json()) as { spender?: string | null };
+            expect(nft.spender).toBe(spender.accountId);
+        }
+
+        // Revoke per-serial allowance
+        await client.deleteNftAllowance(
+            [
+                {
+                    tokenId,
+                    ownerAccountId: owner.accountId,
+                    serialNumbers: [1, 2],
+                },
+            ],
+            { additionalSigners: [ownerKey] },
+        );
+        await waitForMirrorNodeRecord();
+
+        // Verify spender was cleared on both serials
+        for (const serial of [1, 2]) {
+            const res = await fetch(
+                `${MIRROR_URL}/api/v1/tokens/${tokenId}/nfts/${serial}`,
+            );
+            const nft = (await res.json()) as { spender?: string | null };
+            expect(nft.spender == null).toBe(true);
+        }
+    }, 60000);
+
+    it("deletes an approve-for-all-serials NFT allowance", async () => {
+        const ownerKey = PrivateKey.generateED25519();
+        const owner = await client.createAccount({
+            publicKey: ownerKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 10,
+        });
+
+        const spenderKey = PrivateKey.generateED25519();
+        const spender = await client.createAccount({
+            publicKey: spenderKey.publicKey.toString(),
+            keyType: AccountType.ED25519,
+            initialBalance: 1,
+        });
+
+        const tokenId = await nftService.createNftType({
+            name: "Delete All NFT Allowance",
+            symbol: "DANAL",
+            treasuryAccountId: owner.accountId,
+            treasuryKey: ownerKey,
+            supplyKey: ownerKey,
+        });
+
+        await nftService.mintNfts(tokenId, [Buffer.from("meta-1")], ownerKey);
+
+        // Grant approve-for-all-serials
+        await client.approveNftAllowance({
+            nftAllowances: [
+                {
+                    tokenId,
+                    ownerAccountId: owner.accountId,
+                    spenderAccountId: spender.accountId,
+                    allSerials: true,
+                },
+            ],
+            additionalSigners: [ownerKey],
+        });
+        await waitForMirrorNodeRecord();
+
+        interface NftAllSerialsAllowance {
+            owner: string;
+            spender: string;
+            token_id: string;
+            approved_for_all: boolean;
+        }
+
+        async function queryAllNftAllowances(
+            ownerAccountId: string,
+        ): Promise<NftAllSerialsAllowance[]> {
+            const res = await fetch(
+                `${MIRROR_URL}/api/v1/accounts/${ownerAccountId}/allowances/nfts`,
+            );
+            const data = (await res.json()) as {
+                allowances?: NftAllSerialsAllowance[];
+            };
+            return data.allowances ?? [];
+        }
+
+        const granted = await queryAllNftAllowances(owner.accountId);
+        const grantedMatch = granted.find(
+            (a) =>
+                a.spender === spender.accountId &&
+                a.token_id === tokenId &&
+                a.approved_for_all,
+        );
+        expect(grantedMatch).toBeDefined();
+
+        // Revoke approve-for-all-serials
+        await client.deleteAllNftAllowances(
+            [
+                {
+                    tokenId,
+                    ownerAccountId: owner.accountId,
+                    spenderAccountId: spender.accountId,
+                },
+            ],
+            { additionalSigners: [ownerKey] },
+        );
+        await waitForMirrorNodeRecord();
+
+        const after = await queryAllNftAllowances(owner.accountId);
+        const afterMatch = after.find(
+            (a) =>
+                a.spender === spender.accountId &&
+                a.token_id === tokenId &&
+                a.approved_for_all,
+        );
+        // After revocation, the approve-for-all entry should be gone
+        expect(afterMatch).toBeUndefined();
+    }, 60000);
 });
