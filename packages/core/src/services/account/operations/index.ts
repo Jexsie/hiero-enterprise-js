@@ -18,6 +18,8 @@ export type {
     HbarAllowanceApproval,
     TokenAllowanceApproval,
     NftAllowanceApproval,
+    HbarAllowanceDeletion,
+    TokenAllowanceDeletion,
 } from "./ApproveAllowanceOperation.js";
 export { DeleteAllowanceOperation } from "./DeleteAllowanceOperation.js";
 export type {

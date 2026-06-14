@@ -614,6 +614,159 @@ describe("AccountService", () => {
         });
     });
 
+    // deleteHbarAllowance
+
+    describe("deleteHbarAllowance", () => {
+        it("revokes HBAR allowance by approving with amount=0", async () => {
+            await service.deleteHbarAllowance([
+                {
+                    ownerAccountId: "0.0.100",
+                    spenderAccountId: "0.0.200",
+                },
+            ]);
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.approveHbarAllowance).toHaveBeenCalledTimes(1);
+            expect(tx.approveHbarAllowance).toHaveBeenCalledWith(
+                "0.0.100",
+                "0.0.200",
+                new Hbar(0),
+            );
+        });
+
+        it("handles multiple HBAR allowance deletions", async () => {
+            await service.deleteHbarAllowance([
+                {
+                    ownerAccountId: "0.0.100",
+                    spenderAccountId: "0.0.200",
+                },
+                {
+                    ownerAccountId: "0.0.100",
+                    spenderAccountId: "0.0.300",
+                },
+            ]);
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.approveHbarAllowance).toHaveBeenCalledTimes(2);
+            expect(tx.approveHbarAllowance).toHaveBeenCalledWith(
+                "0.0.100",
+                "0.0.200",
+                new Hbar(0),
+            );
+            expect(tx.approveHbarAllowance).toHaveBeenCalledWith(
+                "0.0.100",
+                "0.0.300",
+                new Hbar(0),
+            );
+        });
+
+        it("forwards TransactionOptions (additionalSigners) to the executor", async () => {
+            const ownerKey = PrivateKey.generateED25519();
+            await service.deleteHbarAllowance(
+                [
+                    {
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                    },
+                ],
+                { additionalSigners: [ownerKey] },
+            );
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.freezeWith).toHaveBeenCalledWith(context.client);
+            expect(tx.sign).toHaveBeenCalledWith(ownerKey);
+        });
+
+        it("rejects deleteHbarAllowance when allowances is empty", async () => {
+            await expect(service.deleteHbarAllowance([])).rejects.toThrow(
+                /hbarAllowances must be provided/,
+            );
+        });
+    });
+
+    // deleteTokenAllowance
+
+    describe("deleteTokenAllowance", () => {
+        it("revokes fungible token allowance by approving with amount=0", async () => {
+            await service.deleteTokenAllowance([
+                {
+                    tokenId: "0.0.500",
+                    ownerAccountId: "0.0.100",
+                    spenderAccountId: "0.0.200",
+                },
+            ]);
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.approveTokenAllowance).toHaveBeenCalledTimes(1);
+            expect(tx.approveTokenAllowance).toHaveBeenCalledWith(
+                "0.0.500",
+                "0.0.100",
+                "0.0.200",
+                BigInt(0),
+            );
+        });
+
+        it("handles multiple token allowance deletions for different tokens", async () => {
+            await service.deleteTokenAllowance([
+                {
+                    tokenId: "0.0.500",
+                    ownerAccountId: "0.0.100",
+                    spenderAccountId: "0.0.200",
+                },
+                {
+                    tokenId: "0.0.501",
+                    ownerAccountId: "0.0.100",
+                    spenderAccountId: "0.0.300",
+                },
+            ]);
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.approveTokenAllowance).toHaveBeenCalledTimes(2);
+            expect(tx.approveTokenAllowance).toHaveBeenCalledWith(
+                "0.0.500",
+                "0.0.100",
+                "0.0.200",
+                BigInt(0),
+            );
+            expect(tx.approveTokenAllowance).toHaveBeenCalledWith(
+                "0.0.501",
+                "0.0.100",
+                "0.0.300",
+                BigInt(0),
+            );
+        });
+
+        it("forwards TransactionOptions (additionalSigners) to the executor", async () => {
+            const ownerKey = PrivateKey.generateED25519();
+            await service.deleteTokenAllowance(
+                [
+                    {
+                        tokenId: "0.0.500",
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                    },
+                ],
+                { additionalSigners: [ownerKey] },
+            );
+
+            const tx = vi.mocked(AccountAllowanceApproveTransaction).mock
+                .results[0].value;
+            expect(tx.freezeWith).toHaveBeenCalledWith(context.client);
+            expect(tx.sign).toHaveBeenCalledWith(ownerKey);
+        });
+
+        it("rejects deleteTokenAllowance when allowances is empty", async () => {
+            await expect(service.deleteTokenAllowance([])).rejects.toThrow(
+                /tokenAllowances must be provided/,
+            );
+        });
+    });
+
     // deleteNftAllowance
 
     describe("deleteNftAllowance", () => {

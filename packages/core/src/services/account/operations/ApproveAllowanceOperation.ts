@@ -106,6 +106,30 @@ export interface ApproveNftAllowanceOptions extends TransactionOptions {
     nftAllowances: NftAllowanceApproval[];
 }
 
+/**
+ * A single HBAR allowance deletion — revokes a spender's previously granted
+ * permission to spend HBAR on the owner's behalf.
+ */
+export interface HbarAllowanceDeletion {
+    /** The account that originally granted the allowance (owner). */
+    ownerAccountId: string;
+    /** The spender whose approval is being revoked. */
+    spenderAccountId: string;
+}
+
+/**
+ * A single fungible token allowance deletion — revokes a spender's previously
+ * granted permission to transfer tokens on the owner's behalf.
+ */
+export interface TokenAllowanceDeletion {
+    /** The token ID for this allowance. */
+    tokenId: string;
+    /** The account that originally granted the allowance (owner). */
+    ownerAccountId: string;
+    /** The spender whose approval is being revoked. */
+    spenderAccountId: string;
+}
+
 export class ApproveAllowanceOperation {
     private readonly executor: TransactionExecutor;
     private readonly validator: ApproveAllowanceValidator;
