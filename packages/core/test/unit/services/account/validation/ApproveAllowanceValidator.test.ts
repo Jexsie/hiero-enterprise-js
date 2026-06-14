@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { ApproveAllowanceValidator } from "../../../src/services/account/validation/index.js";
-import type { ApproveAllowanceOptions } from "../../../src/services/account/operations/index.js";
+import { ApproveAllowanceValidator } from "../../../../../src/services/account/validation/index.js";
+import type { ApproveAllowanceOptions } from "../../../../../src/services/account/operations/index.js";
 
 describe("ApproveAllowanceValidator", () => {
     const validator = new ApproveAllowanceValidator();
