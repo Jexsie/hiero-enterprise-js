@@ -156,9 +156,9 @@ export class TransferValidator {
                 "TransferValidator",
             );
         }
-        if (!Number.isFinite(amount) || !Number.isInteger(amount)) {
+        if (!Number.isFinite(amount) || !Number.isSafeInteger(amount)) {
             throw normalizeError(
-                new Error("amount must be a finite integer."),
+                new Error("amount must be a safe integer."),
                 "TransferValidator",
             );
         }
@@ -177,9 +177,9 @@ export class TransferValidator {
                 "TransferValidator",
             );
         }
-        if (!Number.isFinite(serial) || !Number.isInteger(serial)) {
+        if (!Number.isFinite(serial) || !Number.isSafeInteger(serial)) {
             throw normalizeError(
-                new Error("serial must be a finite integer."),
+                new Error("serial must be a safe integer."),
                 "TransferValidator",
             );
         }

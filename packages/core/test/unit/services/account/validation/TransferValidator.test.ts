@@ -147,6 +147,42 @@ describe("TransferValidator", () => {
                 }),
             ).toThrow(/amount must be positive/);
         });
+
+        it("throws when amount is null", () => {
+            expect(() =>
+                validator.validateHbarTransfer({
+                    senderAccountId: "0.0.100",
+                    receiverAccountId: "0.0.200",
+                    amount: null as unknown as number,
+                }),
+            ).toThrow(/amount is required/);
+        });
+
+        it("throws when amount is undefined", () => {
+            expect(() =>
+                validator.validateHbarTransfer({
+                    senderAccountId: "0.0.100",
+                    receiverAccountId: "0.0.200",
+                    amount: undefined as unknown as number,
+                }),
+            ).toThrow(/amount is required/);
+        });
+
+        it("throws when Hbar.toTinybars() yields a value BigInt cannot parse", () => {
+            // Hbar-like object whose toTinybars().toString() returns a value
+            // BigInt() rejects — exercises the catch arm in validateHbarAmount.
+            const badHbar = {
+                toTinybars: () => ({ toString: () => "not-a-number" }),
+            } as unknown as Hbar;
+
+            expect(() =>
+                validator.validateHbarTransfer({
+                    senderAccountId: "0.0.100",
+                    receiverAccountId: "0.0.200",
+                    amount: badHbar,
+                }),
+            ).toThrow(/amount is not a valid Hbar value/);
+        });
     });
 
     // Fungible token transfers
@@ -260,7 +296,7 @@ describe("TransferValidator", () => {
                     receiverAccountId: "0.0.200",
                     amount: 1.5,
                 }),
-            ).toThrow(/amount must be a finite integer/);
+            ).toThrow(/amount must be a safe integer/);
         });
 
         it("throws when amount is null", () => {
@@ -364,7 +400,7 @@ describe("TransferValidator", () => {
                     senderAccountId: "0.0.100",
                     receiverAccountId: "0.0.200",
                 }),
-            ).toThrow(/serial must be a finite integer/);
+            ).toThrow(/serial must be a safe integer/);
         });
 
         it("throws when serial is null", () => {
