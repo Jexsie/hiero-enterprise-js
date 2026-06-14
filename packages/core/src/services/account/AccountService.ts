@@ -1,6 +1,7 @@
 import type {
     AccountId,
     TokenId,
+    Transaction,
     TransactionReceipt,
     Hbar,
 } from "@hiero-ledger/sdk";
@@ -39,7 +40,7 @@ import type {
     ScheduleTransferTokenOptions,
     ScheduleTransferNftOptions,
 } from "./operations/index.js";
-import { AccountBalanceQuery } from "./queries/index.js";
+import { AccountBalanceQuery, AccountSignatureQuery } from "./queries/index.js";
 import type {
     ScheduleOptions,
     ScheduledResult,
@@ -60,6 +61,7 @@ export class AccountService {
     private readonly deleteAllNftAllowancesOperation: DeleteAllNftAllowancesOperation;
     private readonly transferOperation: TransferOperation;
     private readonly balanceQuery: AccountBalanceQuery;
+    private readonly signatureQuery: AccountSignatureQuery;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new CreateAccountOperation(context);
@@ -72,6 +74,7 @@ export class AccountService {
             new DeleteAllNftAllowancesOperation(context);
         this.transferOperation = new TransferOperation(context);
         this.balanceQuery = new AccountBalanceQuery(context);
+        this.signatureQuery = new AccountSignatureQuery(context);
     }
 
     /**
@@ -242,6 +245,52 @@ export class AccountService {
      */
     async getOperatorAccountBalance(): Promise<Balance> {
         return await this.balanceQuery.execute(this.context.operatorAccountId);
+    }
+
+    /**
+     * Verify that a message signature was produced by the key currently
+     * associated with the given account.
+     *
+     * Fetches the account's key from the network and delegates to the SDK's
+     * `PublicKey.verify`. Returns `false` when the account is multi-sig
+     * (its key is a `KeyList`) since a single signature can never satisfy a
+     * composite key.
+     *
+     * @param accountId - Account whose key to check the signature against
+     * @param message   - The original message bytes that were signed
+     * @param signature - The signature bytes to verify
+     */
+    async verifyAccountSignature(
+        accountId: string | AccountId,
+        message: Uint8Array,
+        signature: Uint8Array,
+    ): Promise<boolean> {
+        return await this.signatureQuery.verifySignature(
+            accountId,
+            message,
+            signature,
+        );
+    }
+
+    /**
+     * Verify that a transaction was signed by the key currently associated
+     * with the given account.
+     *
+     * Fetches the account's key from the network and delegates to the SDK's
+     * `PublicKey.verifyTransaction`. Returns `false` when the account is
+     * multi-sig (its key is a `KeyList`).
+     *
+     * @param accountId   - Account whose key to check the transaction signature against
+     * @param transaction - The signed transaction to verify
+     */
+    async verifyAccountTransaction(
+        accountId: string | AccountId,
+        transaction: Transaction,
+    ): Promise<boolean> {
+        return await this.signatureQuery.verifyTransaction(
+            accountId,
+            transaction,
+        );
     }
 
     /**
