@@ -13,6 +13,7 @@ export {
     TokenId,
     TopicId,
     Hbar,
+    TransferTransaction,
 } from "@hiero-ledger/sdk";
 
 // Configuration
