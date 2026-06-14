@@ -9,28 +9,38 @@ const mocks = vi.hoisted(() => {
     const publicKey = { verify, verifyTransaction };
 
     const fakeKeyList = { __isKeyList: true };
+    const fakeContractId = { __isContractId: true };
 
     const mockQuery = {
         setAccountId: vi.fn().mockReturnThis(),
         execute: vi.fn().mockResolvedValue({ key: publicKey }),
     };
 
-    return { mockQuery, publicKey, verify, verifyTransaction, fakeKeyList };
+    return {
+        mockQuery,
+        publicKey,
+        verify,
+        verifyTransaction,
+        fakeKeyList,
+        fakeContractId,
+    };
 });
 
 vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     const actual = await importOriginal<Record<string, unknown>>();
-    // A minimal KeyList stand-in so `instanceof KeyList` discriminates the
-    // multi-sig branch without depending on the SDK's full implementation.
-    class FakeKeyList {}
-    Object.setPrototypeOf(mocks.fakeKeyList, FakeKeyList.prototype);
+    // A minimal PublicKey stand-in so `instanceof PublicKey` discriminates
+    // the single-sig branch without depending on the SDK's full implementation.
+    // Any other `Key` subtype (KeyList, ContractId, …) is represented as a
+    // plain object that naturally fails the `instanceof` check.
+    class FakePublicKey {}
+    Object.setPrototypeOf(mocks.publicKey, FakePublicKey.prototype);
 
     return {
         ...actual,
         AccountInfoQuery: vi.fn(function () {
             return mocks.mockQuery;
         }),
-        KeyList: FakeKeyList,
+        PublicKey: FakePublicKey,
     };
 });
 
@@ -81,6 +91,21 @@ describe("AccountSignatureQuery (via AccountService)", () => {
         it("returns false when the account is multi-sig (KeyList)", async () => {
             mocks.mockQuery.execute.mockResolvedValueOnce({
                 key: mocks.fakeKeyList,
+            });
+
+            const result = await service.verifyAccountSignature(
+                "0.0.999",
+                new Uint8Array([1]),
+                new Uint8Array([2]),
+            );
+
+            expect(result).toBe(false);
+            expect(mocks.verify).not.toHaveBeenCalled();
+        });
+
+        it("returns false when the account is contract-controlled (ContractId)", async () => {
+            mocks.mockQuery.execute.mockResolvedValueOnce({
+                key: mocks.fakeContractId,
             });
 
             const result = await service.verifyAccountSignature(

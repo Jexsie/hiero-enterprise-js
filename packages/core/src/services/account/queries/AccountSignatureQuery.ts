@@ -1,7 +1,7 @@
-import type { AccountId, PublicKey, Transaction } from "@hiero-ledger/sdk";
+import type { AccountId, Transaction } from "@hiero-ledger/sdk";
 import {
     AccountInfoQuery as SdkAccountInfoQuery,
-    KeyList,
+    PublicKey,
 } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
 import { normalizeError } from "../../../errors/index.js";
@@ -11,9 +11,10 @@ import { normalizeError } from "../../../errors/index.js";
  * account on the network.
  *
  * Fetches the account's key via `AccountInfoQuery` and delegates to the
- * SDK's `PublicKey.verify` / `PublicKey.verifyTransaction`. Multi-sig
- * accounts (whose key is a `KeyList`) cannot be satisfied by a single
- * signature, so both verify methods return `false` for them.
+ * SDK's `PublicKey.verify` / `PublicKey.verifyTransaction`. Accounts whose
+ * key is not a single `PublicKey` (e.g. `KeyList` for multi-sig, or
+ * `ContractId` for contract-controlled accounts) cannot be satisfied by a
+ * single signature, so both verify methods return `false` for them.
  */
 export class AccountSignatureQuery {
     constructor(private readonly context: IHieroContext) {}
@@ -22,7 +23,8 @@ export class AccountSignatureQuery {
      * Verify that `signature` over `message` was produced by the key of
      * the given account.
      *
-     * Returns `false` when the account is multi-sig (key is a `KeyList`).
+     * Returns `false` when the account's key is not a single `PublicKey`
+     * (e.g. multi-sig `KeyList` or contract-controlled `ContractId`).
      */
     async verifySignature(
         accountId: string | AccountId,
@@ -44,7 +46,8 @@ export class AccountSignatureQuery {
     /**
      * Verify that `transaction` was signed by the key of the given account.
      *
-     * Returns `false` when the account is multi-sig (key is a `KeyList`).
+     * Returns `false` when the account's key is not a single `PublicKey`
+     * (e.g. multi-sig `KeyList` or contract-controlled `ContractId`).
      */
     async verifyTransaction(
         accountId: string | AccountId,
@@ -64,7 +67,8 @@ export class AccountSignatureQuery {
 
     /**
      * Fetch the account's key. Returns the `PublicKey` for single-sig
-     * accounts, or `null` when the account is multi-sig (`KeyList`).
+     * accounts, or `null` for any other `Key` subtype (`KeyList`,
+     * `ContractId`, `EvmAddress`, …).
      */
     private async fetchSinglePublicKey(
         accountId: string | AccountId,
@@ -73,9 +77,9 @@ export class AccountSignatureQuery {
             .setAccountId(accountId)
             .execute(this.context.client);
 
-        if (info.key instanceof KeyList) {
+        if (!(info.key instanceof PublicKey)) {
             return null;
         }
-        return info.key as PublicKey;
+        return info.key;
     }
 }
