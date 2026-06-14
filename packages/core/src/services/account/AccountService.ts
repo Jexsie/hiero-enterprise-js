@@ -8,6 +8,8 @@ import {
     DeleteAccountOperation,
     UpdateAccountOperation,
     ApproveAllowanceOperation,
+    DeleteAllowanceOperation,
+    DeleteAllNftAllowancesOperation,
 } from "./operations/index.js";
 import type {
     CreateAccountOptions,
@@ -18,6 +20,10 @@ import type {
     ApproveHbarAllowanceOptions,
     ApproveTokenAllowanceOptions,
     ApproveNftAllowanceOptions,
+    DeleteAllowanceOptions,
+    DeleteAllNftAllowancesOptions,
+    NftAllowanceDeletion,
+    NftAllSerialsAllowanceDeletion,
 } from "./operations/index.js";
 import { AccountBalanceQuery } from "./queries/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
@@ -32,6 +38,8 @@ export class AccountService {
     private readonly deleteOperation: DeleteAccountOperation;
     private readonly updateOperation: UpdateAccountOperation;
     private readonly approveAllowanceOperation: ApproveAllowanceOperation;
+    private readonly deleteAllowanceOperation: DeleteAllowanceOperation;
+    private readonly deleteAllNftAllowancesOperation: DeleteAllNftAllowancesOperation;
     private readonly balanceQuery: AccountBalanceQuery;
 
     constructor(private readonly context: IHieroContext) {
@@ -40,6 +48,9 @@ export class AccountService {
         this.deleteOperation = new DeleteAccountOperation(context);
         this.updateOperation = new UpdateAccountOperation(context);
         this.approveAllowanceOperation = new ApproveAllowanceOperation(context);
+        this.deleteAllowanceOperation = new DeleteAllowanceOperation(context);
+        this.deleteAllNftAllowancesOperation =
+            new DeleteAllNftAllowancesOperation(context);
         this.balanceQuery = new AccountBalanceQuery(context);
     }
 
@@ -288,6 +299,72 @@ export class AccountService {
         return await this.approveAllowanceOperation.execute(
             options,
             "approveNftAllowance",
+        );
+    }
+
+    /**
+     * Delete NFT allowances — revoke a spender's approval for specific NFT
+     * serial numbers previously granted by the owner.
+     *
+     * The owner's key must sign the transaction. If the operator is not the
+     * owner, pass the owner's key via `options.additionalSigners`.
+     *
+     * Note: Only per-serial NFT allowance deletion is supported by the protocol.
+     * To remove HBAR or fungible token allowances, call `approveHbarAllowance`
+     * / `approveTokenAllowance` with `amount: 0`. To revoke an
+     * "approve-for-all-serials" grant, use `deleteAllTokenNftAllowances`.
+     *
+     * @param allowances - NFT allowance deletions to apply (at least one)
+     * @param options - Optional base transaction options (signers, memo, etc.)
+     */
+    async deleteNftAllowance(
+        allowances: NftAllowanceDeletion[],
+        options: DeleteAllowanceOptions = {},
+    ): Promise<TransactionReceipt> {
+        if (!allowances?.length) {
+            throw normalizeError(
+                new Error(
+                    "nftAllowances must be provided with at least one entry.",
+                ),
+                "AccountService.deleteNftAllowance",
+            );
+        }
+        return await this.deleteAllowanceOperation.execute(
+            allowances,
+            options,
+            "deleteNftAllowance",
+        );
+    }
+
+    /**
+     * Delete "approve-for-all-serials" NFT allowances — revoke a spender's
+     * blanket approval to transfer any NFT in the collection on the owner's
+     * behalf. Use this to undo a previous `approveNftAllowance`
+     *
+     * For revoking specific serial numbers, use `deleteNftAllowance` instead.
+     *
+     * The owner's key must sign the transaction. If the operator is not the
+     * owner, pass the owner's key via `options.additionalSigners`.
+     *
+     * @param allowances - Approve-for-all-serials deletions to apply (at least one)
+     * @param options - Optional base transaction options (signers, memo, etc.)
+     */
+    async deleteAllTokenNftAllowances(
+        allowances: NftAllSerialsAllowanceDeletion[],
+        options: DeleteAllNftAllowancesOptions = {},
+    ): Promise<TransactionReceipt> {
+        if (!allowances?.length) {
+            throw normalizeError(
+                new Error(
+                    "nftAllowances must be provided with at least one entry.",
+                ),
+                "AccountService.deleteAllTokenNftAllowances",
+            );
+        }
+        return await this.deleteAllNftAllowancesOperation.execute(
+            allowances,
+            options,
+            "deleteAllTokenNftAllowances",
         );
     }
 }

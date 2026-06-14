@@ -19,3 +19,13 @@ export type {
     TokenAllowanceApproval,
     NftAllowanceApproval,
 } from "./ApproveAllowanceOperation.js";
+export { DeleteAllowanceOperation } from "./DeleteAllowanceOperation.js";
+export type {
+    DeleteAllowanceOptions,
+    NftAllowanceDeletion,
+} from "./DeleteAllowanceOperation.js";
+export { DeleteAllNftAllowancesOperation } from "./DeleteAllNftAllowancesOperation.js";
+export type {
+    DeleteAllNftAllowancesOptions,
+    NftAllSerialsAllowanceDeletion,
+} from "./DeleteAllNftAllowancesOperation.js";
