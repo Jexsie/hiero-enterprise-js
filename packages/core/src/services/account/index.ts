@@ -15,3 +15,11 @@ export type {
     TokenAllowanceApproval,
     NftAllowanceApproval,
 } from "./operations/index.js";
+export type {
+    TransferHbarOptions,
+    TransferTokenOptions,
+    TransferNftOptions,
+    ScheduleTransferHbarOptions,
+    ScheduleTransferTokenOptions,
+    ScheduleTransferNftOptions,
+} from "./operations/index.js";

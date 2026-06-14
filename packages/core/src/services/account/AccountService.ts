@@ -1,4 +1,9 @@
-import type { AccountId, TransactionReceipt } from "@hiero-ledger/sdk";
+import type {
+    AccountId,
+    TokenId,
+    TransactionReceipt,
+    Hbar,
+} from "@hiero-ledger/sdk";
 import type { Account, Balance } from "../../types/index.js";
 import type { IHieroContext } from "../../context/index.js";
 import { normalizeError } from "../../errors/index.js";
@@ -10,6 +15,7 @@ import {
     ApproveAllowanceOperation,
     DeleteAllowanceOperation,
     DeleteAllNftAllowancesOperation,
+    TransferOperation,
 } from "./operations/index.js";
 import type {
     CreateAccountOptions,
@@ -26,6 +32,12 @@ import type {
     NftAllSerialsAllowanceDeletion,
     HbarAllowanceDeletion,
     TokenAllowanceDeletion,
+    TransferHbarOptions,
+    TransferTokenOptions,
+    TransferNftOptions,
+    ScheduleTransferHbarOptions,
+    ScheduleTransferTokenOptions,
+    ScheduleTransferNftOptions,
 } from "./operations/index.js";
 import { AccountBalanceQuery } from "./queries/index.js";
 import type {
@@ -46,6 +58,7 @@ export class AccountService {
     private readonly approveAllowanceOperation: ApproveAllowanceOperation;
     private readonly deleteAllowanceOperation: DeleteAllowanceOperation;
     private readonly deleteAllNftAllowancesOperation: DeleteAllNftAllowancesOperation;
+    private readonly transferOperation: TransferOperation;
     private readonly balanceQuery: AccountBalanceQuery;
 
     constructor(private readonly context: IHieroContext) {
@@ -57,6 +70,7 @@ export class AccountService {
         this.deleteAllowanceOperation = new DeleteAllowanceOperation(context);
         this.deleteAllNftAllowancesOperation =
             new DeleteAllNftAllowancesOperation(context);
+        this.transferOperation = new TransferOperation(context);
         this.balanceQuery = new AccountBalanceQuery(context);
     }
 
@@ -442,6 +456,160 @@ export class AccountService {
                 })),
             },
             "deleteTokenAllowance",
+        );
+    }
+
+    // Crypto Transfers
+
+    /**
+     * Transfer HBAR to another account.
+     *
+     * @param receiverAccountId - Recipient account (string `"0.0.123"` or `AccountId`)
+     * @param amount - Amount in HBAR or an `Hbar` instance for tinybar precision
+     * @param senderAccountId - Sender account. Pass the operator account when the
+     *   operator is the sender; otherwise pass the sender's account **and** its
+     *   private key via `options.additionalSigners` — otherwise the transaction
+     *   will be rejected with `INVALID_SIGNATURE`.
+     * @param options - Transaction options (fees, validity, signers, memo, etc.)
+     */
+    async transferHbar(
+        receiverAccountId: string | AccountId,
+        amount: number | Hbar,
+        senderAccountId: string | AccountId,
+        options?: TransferHbarOptions,
+    ): Promise<void> {
+        return await this.transferOperation.transferHbar(
+            receiverAccountId,
+            amount,
+            senderAccountId,
+            options,
+        );
+    }
+
+    /**
+     * Schedule an HBAR transfer.
+     *
+     * @param receiverAccountId - Recipient account
+     * @param amount - Amount in HBAR or `Hbar`
+     * @param senderAccountId - Sender account. Pass the operator account when the
+     *   operator is the sender; otherwise pass the sender's account **and** its
+     *   private key via `options.additionalSigners`.
+     * @param options - Combined transaction + schedule options
+     *   (`payerAccountId`, `adminKey`, `scheduleMemo`, plus base transaction fields)
+     */
+    async scheduleTransferHbar(
+        receiverAccountId: string | AccountId,
+        amount: number | Hbar,
+        senderAccountId: string | AccountId,
+        options?: ScheduleTransferHbarOptions,
+    ): Promise<ScheduledResult> {
+        return await this.transferOperation.scheduleTransferHbar(
+            receiverAccountId,
+            amount,
+            senderAccountId,
+            options,
+        );
+    }
+
+    /**
+     * Transfer fungible tokens to another account.
+     *
+     * @param tokenId - The token type to transfer (string `"0.0.456"` or `TokenId`)
+     * @param receiverAccountId - Recipient account (string or `AccountId`)
+     * @param amount - Amount in the token's smallest unit
+     * @param senderAccountId - Sender account. Pass the operator account when the
+     *   operator is the sender; otherwise pass the sender's account **and** its
+     *   private key via `options.additionalSigners`.
+     * @param options - Transaction options; `expectedDecimals` enables magnitude safety check
+     */
+    async transferToken(
+        tokenId: string | TokenId,
+        receiverAccountId: string | AccountId,
+        amount: number,
+        senderAccountId: string | AccountId,
+        options?: TransferTokenOptions,
+    ): Promise<void> {
+        return await this.transferOperation.transferToken(
+            tokenId,
+            receiverAccountId,
+            amount,
+            senderAccountId,
+            options,
+        );
+    }
+
+    /**
+     * Schedule a fungible token transfer.
+     *
+     * @param senderAccountId - Sender account. Pass the operator account when the
+     *   operator is the sender; otherwise pass the sender's account **and** its
+     *   private key via `options.additionalSigners`.
+     * @param options - Combined transaction + schedule options
+     */
+    async scheduleTransferToken(
+        tokenId: string | TokenId,
+        receiverAccountId: string | AccountId,
+        amount: number,
+        senderAccountId: string | AccountId,
+        options?: ScheduleTransferTokenOptions,
+    ): Promise<ScheduledResult> {
+        return await this.transferOperation.scheduleTransferToken(
+            tokenId,
+            receiverAccountId,
+            amount,
+            senderAccountId,
+            options,
+        );
+    }
+
+    /**
+     * Transfer an NFT to another account.
+     *
+     * @param tokenId - The NFT collection token ID (string `"0.0.789"` or `TokenId`)
+     * @param serial - Serial number of the NFT
+     * @param receiverAccountId - Recipient account (string or `AccountId`)
+     * @param senderAccountId - Sender account. Pass the operator account when the
+     *   operator is the sender; otherwise pass the sender's account **and** its
+     *   private key via `options.additionalSigners`.
+     * @param options - Transaction options (fees, validity, signers, memo, etc.)
+     */
+    async transferNft(
+        tokenId: string | TokenId,
+        serial: number,
+        receiverAccountId: string | AccountId,
+        senderAccountId: string | AccountId,
+        options?: TransferNftOptions,
+    ): Promise<void> {
+        return await this.transferOperation.transferNft(
+            tokenId,
+            serial,
+            receiverAccountId,
+            senderAccountId,
+            options,
+        );
+    }
+
+    /**
+     * Schedule an NFT transfer.
+     *
+     * @param senderAccountId - Sender account. Pass the operator account when the
+     *   operator is the sender; otherwise pass the sender's account **and** its
+     *   private key via `options.additionalSigners`.
+     * @param options - Combined transaction + schedule options
+     */
+    async scheduleTransferNft(
+        tokenId: string | TokenId,
+        serial: number,
+        receiverAccountId: string | AccountId,
+        senderAccountId: string | AccountId,
+        options?: ScheduleTransferNftOptions,
+    ): Promise<ScheduledResult> {
+        return await this.transferOperation.scheduleTransferNft(
+            tokenId,
+            serial,
+            receiverAccountId,
+            senderAccountId,
+            options,
         );
     }
 }
