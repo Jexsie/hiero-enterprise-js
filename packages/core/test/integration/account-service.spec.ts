@@ -21,9 +21,13 @@ interface MirrorAllowance {
 async function queryHbarAllowances(
     ownerAccountId: string,
 ): Promise<MirrorAllowance[]> {
-    const res = await fetch(
-        `${MIRROR_URL}/api/v1/accounts/${ownerAccountId}/allowances/crypto`,
-    );
+    const url = `${MIRROR_URL}/api/v1/accounts/${ownerAccountId}/allowances/crypto`;
+    const res = await fetch(url);
+    if (!res.ok) {
+        throw new Error(
+            `Mirror Node GET ${url} failed with status ${res.status}: ${await res.text()}`,
+        );
+    }
     const data = (await res.json()) as { allowances?: MirrorAllowance[] };
     return data.allowances ?? [];
 }
@@ -31,9 +35,13 @@ async function queryHbarAllowances(
 async function queryTokenAllowances(
     ownerAccountId: string,
 ): Promise<MirrorAllowance[]> {
-    const res = await fetch(
-        `${MIRROR_URL}/api/v1/accounts/${ownerAccountId}/allowances/tokens`,
-    );
+    const url = `${MIRROR_URL}/api/v1/accounts/${ownerAccountId}/allowances/tokens`;
+    const res = await fetch(url);
+    if (!res.ok) {
+        throw new Error(
+            `Mirror Node GET ${url} failed with status ${res.status}: ${await res.text()}`,
+        );
+    }
     const data = (await res.json()) as { allowances?: MirrorAllowance[] };
     return data.allowances ?? [];
 }
@@ -418,9 +426,13 @@ describe("AccountService [Integration]", () => {
 
         // Verify spender was set on both serials
         for (const serial of [1, 2]) {
-            const res = await fetch(
-                `${MIRROR_URL}/api/v1/tokens/${tokenId}/nfts/${serial}`,
-            );
+            const url = `${MIRROR_URL}/api/v1/tokens/${tokenId}/nfts/${serial}`;
+            const res = await fetch(url);
+            if (!res.ok) {
+                throw new Error(
+                    `Mirror Node GET ${url} failed with status ${res.status}: ${await res.text()}`,
+                );
+            }
             const nft = (await res.json()) as { spender?: string | null };
             expect(nft.spender).toBe(spender.accountId);
         }
@@ -441,10 +453,15 @@ describe("AccountService [Integration]", () => {
 
         // Verify spender was cleared on both serials
         for (const serial of [1, 2]) {
-            const res = await fetch(
-                `${MIRROR_URL}/api/v1/tokens/${tokenId}/nfts/${serial}`,
-            );
+            const url = `${MIRROR_URL}/api/v1/tokens/${tokenId}/nfts/${serial}`;
+            const res = await fetch(url);
+            if (!res.ok) {
+                throw new Error(
+                    `Mirror Node GET ${url} failed with status ${res.status}: ${await res.text()}`,
+                );
+            }
             const nft = (await res.json()) as { spender?: string | null };
+            expect(res.ok).toBe(true);
             expect(nft.spender == null).toBe(true);
         }
     }, 60000);

@@ -362,14 +362,17 @@ async function main() {
     const accountService = new AccountService(context);
     const tokenService = new FungibleTokenService(context);
     const nftService = new NftService(context);
-
-    await deleteHbarAllowance(accountService);
-    await deleteTokenAllowance(accountService, tokenService);
-    await deleteNftAllowanceBySerials(accountService, nftService);
-    await deleteAllNftAllowances(accountService, nftService);
-
-    console.log("All allowance revocation scenarios complete.");
-    context.client.close();
+    try {
+        await deleteHbarAllowance(accountService);
+        await deleteTokenAllowance(accountService, tokenService);
+        await deleteNftAllowanceBySerials(accountService, nftService);
+        await deleteAllNftAllowances(accountService, nftService);
+        console.log("All allowance revocation scenarios complete.");
+    } finally {
+        context.client.close();
+    }
 }
-
-void main();
+void main().catch((error) => {
+    console.error("delete-allowance sample failed:", error);
+    process.exitCode = 1;
+});
