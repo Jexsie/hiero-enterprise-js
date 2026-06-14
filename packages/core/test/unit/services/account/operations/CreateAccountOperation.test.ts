@@ -3,59 +3,24 @@ import { AccountCreateTransaction, PrivateKey } from "@hiero-ledger/sdk";
 import { AccountService } from "../../../../../src/services/account/index.js";
 import { AccountType } from "../../../../../src/types/index.js";
 import { createMockContext } from "../../../../utils/mock-context.js";
+import { reattachMockChain } from "../../../../utils/sdk-mocks.js";
 import type { IHieroContext } from "../../../../../src/context/index.js";
 
-const mocks = vi.hoisted(() => {
-    const mockReceipt = {
-        status: { toString: () => "SUCCESS" },
-        accountId: { toString: () => "0.0.999" },
-        scheduleId: { toString: () => "0.0.777" },
-    };
-    const mockResponse = {
-        transactionId: { toString: () => "0.0.123@1234567890.000000000" },
-        getReceipt: vi.fn().mockResolvedValue(mockReceipt),
-    };
-    const mockScheduleTx = {
-        setPayerAccountId: vi.fn().mockReturnThis(),
-        setAdminKey: vi.fn().mockReturnThis(),
-        setScheduleMemo: vi.fn().mockReturnThis(),
-        setMaxTransactionFee: vi.fn().mockReturnThis(),
-        setTransactionMemo: vi.fn().mockReturnThis(),
-        setTransactionValidDuration: vi.fn().mockReturnThis(),
-        setRegenerateTransactionId: vi.fn().mockReturnThis(),
-        setHighVolume: vi.fn().mockReturnThis(),
-        setNodeAccountIds: vi.fn().mockReturnThis(),
-        _addSignatureLegacy: vi.fn().mockReturnThis(),
-        freezeWith: vi.fn().mockReturnThis(),
-        sign: vi.fn().mockResolvedValue(undefined),
-        signWith: vi.fn().mockResolvedValue(undefined),
-        execute: vi.fn().mockResolvedValue(mockResponse),
-    };
-    const mockTx = {
-        setKeyWithoutAlias: vi.fn().mockReturnThis(),
-        setECDSAKeyWithAlias: vi.fn().mockReturnThis(),
-        setKeyWithAlias: vi.fn().mockReturnThis(),
-        setInitialBalance: vi.fn().mockReturnThis(),
-        setMaxAutomaticTokenAssociations: vi.fn().mockReturnThis(),
-        setAccountMemo: vi.fn().mockReturnThis(),
-        setReceiverSignatureRequired: vi.fn().mockReturnThis(),
-        setStakedAccountId: vi.fn().mockReturnThis(),
-        setStakedNodeId: vi.fn().mockReturnThis(),
-        setDeclineStakingReward: vi.fn().mockReturnThis(),
-        setMaxTransactionFee: vi.fn().mockReturnThis(),
-        setTransactionMemo: vi.fn().mockReturnThis(),
-        setTransactionValidDuration: vi.fn().mockReturnThis(),
-        setRegenerateTransactionId: vi.fn().mockReturnThis(),
-        setHighVolume: vi.fn().mockReturnThis(),
-        setNodeAccountIds: vi.fn().mockReturnThis(),
-        _addSignatureLegacy: vi.fn().mockReturnThis(),
-        freezeWith: vi.fn().mockReturnThis(),
-        sign: vi.fn().mockResolvedValue(undefined),
-        signWith: vi.fn().mockResolvedValue(undefined),
-        schedule: vi.fn().mockReturnValue(mockScheduleTx),
-        execute: vi.fn().mockResolvedValue(mockResponse),
-    };
-    return { mockReceipt, mockResponse, mockScheduleTx, mockTx };
+const mocks = await vi.hoisted(async () => {
+    const { buildMockTxBundle } =
+        await import("../../../../utils/sdk-mocks.js");
+    return buildMockTxBundle([
+        "setKeyWithoutAlias",
+        "setECDSAKeyWithAlias",
+        "setKeyWithAlias",
+        "setInitialBalance",
+        "setMaxAutomaticTokenAssociations",
+        "setAccountMemo",
+        "setReceiverSignatureRequired",
+        "setStakedAccountId",
+        "setStakedNodeId",
+        "setDeclineStakingReward",
+    ]);
 });
 
 vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
@@ -63,7 +28,7 @@ vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     return {
         ...actual,
         AccountCreateTransaction: vi.fn(function () {
-            return mocks.mockTx;
+            return mocks.tx;
         }),
     };
 });
@@ -74,13 +39,7 @@ describe("CreateAccountOperation (via AccountService)", () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.mockResponse.getReceipt.mockResolvedValue(mocks.mockReceipt);
-        mocks.mockTx.execute.mockResolvedValue(mocks.mockResponse);
-        mocks.mockTx.sign.mockResolvedValue(undefined);
-        mocks.mockTx.schedule.mockReturnValue(mocks.mockScheduleTx);
-        mocks.mockScheduleTx.execute.mockResolvedValue(mocks.mockResponse);
-        mocks.mockScheduleTx.sign.mockResolvedValue(undefined);
-
+        reattachMockChain(mocks);
         context = createMockContext();
         service = new AccountService(context);
     });
@@ -219,8 +178,8 @@ describe("CreateAccountOperation (via AccountService)", () => {
                 { scheduleMemo: "pending approval" },
             );
 
-            expect(mocks.mockTx.schedule).toHaveBeenCalled();
-            expect(mocks.mockScheduleTx.setScheduleMemo).toHaveBeenCalledWith(
+            expect(mocks.tx.schedule).toHaveBeenCalled();
+            expect(mocks.scheduleTx.setScheduleMemo).toHaveBeenCalledWith(
                 "pending approval",
             );
             expect(result.scheduleId).toBe("0.0.777");

@@ -18,7 +18,7 @@ describe("AccountService [facade validation]", () => {
         service = new AccountService(context);
     });
 
-    describe("approve*", () => {
+    describe("approve allowances", () => {
         it("rejects approveHbarAllowance when hbarAllowances is empty", async () => {
             await expect(
                 service.approveHbarAllowance({ hbarAllowances: [] }),
@@ -38,7 +38,7 @@ describe("AccountService [facade validation]", () => {
         });
     });
 
-    describe("delete*", () => {
+    describe("delete allowances", () => {
         it("rejects deleteHbarAllowance when allowances is empty", async () => {
             await expect(service.deleteHbarAllowance([])).rejects.toThrow(
                 /hbarAllowances must be provided/,

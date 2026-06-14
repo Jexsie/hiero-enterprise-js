@@ -5,7 +5,7 @@ import type { ApproveAllowanceOptions } from "../../../../../src/services/accoun
 describe("ApproveAllowanceValidator", () => {
     const validator = new ApproveAllowanceValidator();
 
-    // ─── At least one allowance required ────────────────────────────────────
+    // At least one allowance required
 
     it("throws when no allowances are provided", () => {
         expect(() => validator.validate({} as ApproveAllowanceOptions)).toThrow(
@@ -23,7 +23,7 @@ describe("ApproveAllowanceValidator", () => {
         ).toThrow(/At least one allowance must be provided/);
     });
 
-    // ─── HBAR allowances ────────────────────────────────────────────────────
+    // HBAR allowances
 
     describe("hbarAllowances", () => {
         it("passes with valid HBAR allowance", () => {
@@ -111,7 +111,7 @@ describe("ApproveAllowanceValidator", () => {
         });
     });
 
-    // ─── Token allowances ───────────────────────────────────────────────────
+    // Token allowances
 
     describe("tokenAllowances", () => {
         it("passes with valid token allowance", () => {
@@ -265,7 +265,7 @@ describe("ApproveAllowanceValidator", () => {
         });
     });
 
-    // ─── NFT allowances ─────────────────────────────────────────────────────
+    // NFT allowances
 
     describe("nftAllowances", () => {
         it("passes with serial numbers", () => {
@@ -419,7 +419,7 @@ describe("ApproveAllowanceValidator", () => {
         });
     });
 
-    // ─── Mixed allowances ───────────────────────────────────────────────────
+    // Mixed allowances
 
     it("passes with mixed allowance types", () => {
         expect(() =>
