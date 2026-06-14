@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { PrivateKey } from "@hiero-ledger/sdk";
 import { setupIntegrationTestEnv } from "../../../utils/env.js";
-import { waitForMirrorNodeRecord } from "../../../utils/mirror-node.js";
 import { AccountService } from "../../../../src/services/index.js";
 import { AccountType } from "../../../../src/types/index.js";
 
@@ -25,9 +24,6 @@ describe("AccountService.createAccount [Integration]", () => {
         expect(account.accountId).toBeDefined();
         expect(account.publicKey).toBeDefined();
         expect(account.evmAddress).toBeUndefined();
-
-        // Wait for consensus propagation to Mirror Node locally
-        await waitForMirrorNodeRecord();
 
         const balance = await client.getAccountBalance(account.accountId);
         expect(balance.hbars).toBe(String(15 * 100_000_000));

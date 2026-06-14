@@ -197,7 +197,9 @@ export function reattachMockChain(bundle: MockTxBundle): void {
     bundle.response.getReceipt.mockResolvedValue(bundle.receipt);
     bundle.tx.execute.mockResolvedValue(bundle.response);
     bundle.tx.sign.mockResolvedValue(undefined);
+    bundle.tx.signWith.mockResolvedValue(undefined);
     bundle.tx.schedule.mockReturnValue(bundle.scheduleTx);
     bundle.scheduleTx.execute.mockResolvedValue(bundle.response);
     bundle.scheduleTx.sign.mockResolvedValue(undefined);
+    bundle.scheduleTx.signWith.mockResolvedValue(undefined);
 }

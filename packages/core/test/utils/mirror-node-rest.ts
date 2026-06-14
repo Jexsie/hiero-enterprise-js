@@ -6,11 +6,20 @@
  * helpers centralise the URL building, status checking, and JSON parsing so
  * every integration test can assert against the Mirror Node uniformly.
  *
- * Reads `HIERO_MIRROR_NODE_URL` from the environment (set in
- * `setupIntegrationTestEnv`).
+ * Reads `HIERO_MIRROR_NODE_URL` from the environment (loaded by
+ * `test/utils/setup-env.ts`). The lookup is deferred until first call so it
+ * happens after the vitest setup file has populated `process.env`.
  */
 
-const MIRROR_URL = process.env.HIERO_MIRROR_NODE_URL;
+function getMirrorUrl(): string {
+    const url = process.env.HIERO_MIRROR_NODE_URL;
+    if (!url) {
+        throw new Error(
+            "HIERO_MIRROR_NODE_URL is not set (required for Mirror Node REST integration tests).",
+        );
+    }
+    return url;
+}
 
 export interface MirrorAllowance {
     owner: string;
@@ -42,7 +51,7 @@ export async function queryHbarAllowances(
     ownerAccountId: string,
 ): Promise<MirrorAllowance[]> {
     const data = await getJson<{ allowances?: MirrorAllowance[] }>(
-        `${MIRROR_URL}/api/v1/accounts/${ownerAccountId}/allowances/crypto`,
+        `${getMirrorUrl()}/api/v1/accounts/${ownerAccountId}/allowances/crypto`,
     );
     return data.allowances ?? [];
 }
@@ -54,7 +63,7 @@ export async function queryTokenAllowances(
     ownerAccountId: string,
 ): Promise<MirrorAllowance[]> {
     const data = await getJson<{ allowances?: MirrorAllowance[] }>(
-        `${MIRROR_URL}/api/v1/accounts/${ownerAccountId}/allowances/tokens`,
+        `${getMirrorUrl()}/api/v1/accounts/${ownerAccountId}/allowances/tokens`,
     );
     return data.allowances ?? [];
 }
@@ -68,6 +77,6 @@ export async function queryNftRecord(
     serial: number,
 ): Promise<MirrorNftRecord> {
     return getJson<MirrorNftRecord>(
-        `${MIRROR_URL}/api/v1/tokens/${tokenId}/nfts/${serial}`,
+        `${getMirrorUrl()}/api/v1/tokens/${tokenId}/nfts/${serial}`,
     );
 }
