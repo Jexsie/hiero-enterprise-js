@@ -15,9 +15,21 @@
             "require": "./dist/index.cjs"
         }
     },
+    "repository": "https://github.com/hiero-hackers/hiero-enterprise-js",
+    "bugs": "https://github.com/hiero-hackers/hiero-enterprise-js/issues",
+    "keywords": [
+        "hiero",
+        "hedera",
+        "fastify",
+        "transactions",
+        "hiero-enterprise"
+    ],
     "files": [
         "dist"
     ],
+    "engines": {
+        "node": ">=18.0.0"
+    },
     "scripts": {
         "build": "tsup",
         "clean": "rm -rf dist",
@@ -27,23 +39,12 @@
         "test:watch": "vitest test/integration"
     },
     "dependencies": {
-        "fastify-plugin": "^5.1.0"
-    },
-    "peerDependencies": {
-        "@hiero-enterprise/core": "workspace:*",
-        "fastify": ">=5"
-    },
-    "devDependencies": {
         "@hiero-enterprise/core": "workspace:*",
         "fastify": "^5.8.5",
-        "tsup": "^8.3.5",
-        "vitest": "^4.1.7"
+        "fastify-plugin": "^5.1.0"
     },
     "publishConfig": {
         "access": "public",
         "provenance": true
-    },
-    "engines": {
-        "node": ">=20.12.0"
     }
 }

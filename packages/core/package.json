@@ -4,23 +4,34 @@
     "description": "Core services, repositories, and data models for the Hiero network",
     "license": "Apache-2.0",
     "type": "module",
-    "main": "./dist/index.js",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
+        "./package.json": "./package.json",
         ".": {
             "types": "./dist/index.d.ts",
-            "import": "./dist/index.js"
-        },
-        "./testing": {
-            "types": "./dist/testing/index.d.ts",
-            "import": "./dist/testing/index.js"
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
         }
     },
+    "repository": "https://github.com/hiero-hackers/hiero-enterprise-js",
+    "bugs": "https://github.com/hiero-hackers/hiero-enterprise-js/issues",
+    "keywords": [
+        "core",
+        "hiero",
+        "hedera",
+        "transactions",
+        "hiero-enterprise"
+    ],
     "files": [
         "dist"
     ],
+    "engines": {
+        "node": ">=18.0.0"
+    },
     "scripts": {
-        "build": "tsc",
+        "build": "tsup",
         "clean": "rm -rf dist",
         "test:unit": "vitest run -c test/vitest.config.ts",
         "test:unit:coverage": "vitest run -c test/vitest.config.ts --coverage",
@@ -32,15 +43,10 @@
         "@hiero-ledger/sdk": "^2.84.0"
     },
     "devDependencies": {
-        "@types/node": "^25.9.1",
-        "@vitest/coverage-v8": "^4.1.8",
-        "vitest": "^4.1.8"
+        "@vitest/coverage-v8": "^4.1.8"
     },
     "publishConfig": {
         "access": "public",
         "provenance": true
-    },
-    "engines": {
-        "node": ">=20.12.0"
     }
 }

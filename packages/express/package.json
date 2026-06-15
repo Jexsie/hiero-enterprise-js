@@ -15,9 +15,21 @@
             "require": "./dist/index.cjs"
         }
     },
+    "repository": "https://github.com/hiero-hackers/hiero-enterprise-js",
+    "bugs": "https://github.com/hiero-hackers/hiero-enterprise-js/issues",
+    "keywords": [
+        "hiero",
+        "hedera",
+        "express",
+        "transactions",
+        "hiero-enterprise"
+    ],
     "files": [
         "dist"
     ],
+    "engines": {
+        "node": ">=18.0.0"
+    },
     "scripts": {
         "build": "tsup",
         "clean": "rm -rf dist",
@@ -26,21 +38,15 @@
         "test:integration": "vitest run test/integration",
         "test:watch": "vitest test/integration"
     },
-    "peerDependencies": {
+    "dependencies": {
         "@hiero-enterprise/core": "workspace:*",
-        "express": ">=4"
+        "express": "^5.1.0"
     },
     "devDependencies": {
-        "@hiero-enterprise/core": "workspace:*",
-        "@types/express": "^5.0.0",
-        "tsup": "^8.3.5",
-        "vitest": "^4.1.7"
+        "@types/express": "^5.0.0"
     },
     "publishConfig": {
         "access": "public",
         "provenance": true
-    },
-    "engines": {
-        "node": ">=20.12.0"
     }
 }
