@@ -6,6 +6,6 @@ export default defineConfig({
     dts: true,
     sourcemap: true,
     clean: true,
-    target: "node20",
+    target: "node18",
     external: ["express", "@hiero-enterprise/core"],
 });

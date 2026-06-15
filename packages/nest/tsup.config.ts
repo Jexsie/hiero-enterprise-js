@@ -6,7 +6,7 @@ export default defineConfig({
     dts: true,
     sourcemap: true,
     clean: true,
-    target: "node20",
+    target: "node18",
     external: [
         "@nestjs/common",
         "@nestjs/core",
