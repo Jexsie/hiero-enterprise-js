@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { TransactionRepository } from "../../../src/repositories/transaction-repository.js";
-import { createMockMirrorNodeClient } from "../../../src/testing/index.js";
+import { createMockMirrorNodeClient } from "../../utils/mock-mirror-node.js";
 import type { MirrorNodeClient } from "../../../src/mirror/index.js";
 
 describe("TransactionRepository", () => {

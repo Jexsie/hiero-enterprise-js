@@ -12,12 +12,7 @@ export default defineConfig({
             reporter: ["lcov", "text-summary"],
             reportsDirectory: "./coverage/integration",
             include: ["src/**/*.ts"],
-            exclude: [
-                "src/**/index.ts",
-                "src/**/*.d.ts",
-                "src/testing/**",
-                "src/types/**",
-            ],
+            exclude: ["src/**/index.ts", "src/**/*.d.ts", "src/types/**"],
 
             // No thresholds for integration runs — they exercise happy-path
             // network flows and aren't expected to cover every branch in

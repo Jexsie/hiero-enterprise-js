@@ -14,6 +14,7 @@ import {
     assertEnvConfigValid,
     MirrorNodeClient,
     AccountService,
+    ScheduleService,
     FileService,
     FungibleTokenService,
     NftService,
@@ -32,6 +33,36 @@ import {
 export const HIERO_CONFIG = "HIERO_CONFIG";
 export const HIERO_CONTEXT = "HIERO_CONTEXT";
 const HIERO_RUNTIME = "HIERO_RUNTIME";
+
+/**
+ * Single source of truth: DI class token → HieroRuntime property key.
+ * Adding a service to createHieroRuntime in core flows through here
+ * automatically
+ */
+const SERVICE_TOKENS = [
+    [MirrorNodeClient, "mirrorNodeClient"],
+    [AccountService, "accountService"],
+    [ScheduleService, "scheduleService"],
+    [FileService, "fileService"],
+    [FungibleTokenService, "fungibleTokenService"],
+    [NftService, "nftService"],
+    [SmartContractService, "smartContractService"],
+    [TopicService, "topicService"],
+    [AccountRepository, "accountRepository"],
+    [NftRepository, "nftRepository"],
+    [TokenRepository, "tokenRepository"],
+    [TopicRepository, "topicRepository"],
+    [TransactionRepository, "transactionRepository"],
+    [NetworkRepository, "networkRepository"],
+] as const satisfies ReadonlyArray<
+    readonly [Type<unknown>, keyof HieroRuntime]
+>;
+
+const EXPORTED_TOKENS = [
+    HIERO_CONFIG,
+    HIERO_CONTEXT,
+    ...SERVICE_TOKENS.map(([token]) => token),
+];
 
 type NestImport =
     | Type<unknown>
@@ -53,7 +84,7 @@ export interface HieroModuleAsyncOptions {
     global?: boolean;
 }
 
-// ─── HieroModule ───────────────────────────────────────────────
+// HieroModule definition
 
 /**
  * NestJS module that provides all Hiero services via dependency injection.
@@ -105,15 +136,22 @@ export class HieroModule {
             assertEnvConfigValid();
         }
         const resolved = config ?? resolveConfigFromEnv()!;
+        const runtime = createHieroRuntime(resolved);
 
-        const providers = createProviders(resolved);
+        const providers: Provider[] = [
+            { provide: HIERO_CONFIG, useValue: resolved },
+            { provide: HIERO_CONTEXT, useValue: runtime.context },
+            ...SERVICE_TOKENS.map(([token, key]) => ({
+                provide: token,
+                // eslint-disable-next-line security/detect-object-injection -- key is constrained to keyof HieroRuntime
+                useValue: runtime[key],
+            })),
+        ];
 
         return {
             module: HieroModule,
             providers,
-            exports: providers.map((p) =>
-                typeof p === "object" && "provide" in p ? p.provide : p,
-            ),
+            exports: EXPORTED_TOKENS,
             global: opts?.global ?? false,
         };
     }
@@ -123,160 +161,45 @@ export class HieroModule {
      * from other modules (e.g., ConfigModule, vault services).
      */
     static forRootAsync(options: HieroModuleAsyncOptions): DynamicModule {
-        const configProvider: Provider = {
-            provide: HIERO_CONFIG,
-            useFactory: options.useFactory,
-            inject: options.inject ?? [],
-        };
-
-        const runtimeProvider: Provider = {
-            provide: HIERO_RUNTIME,
-            useFactory: (config: HieroConfig) => createHieroRuntime(config),
-            inject: [HIERO_CONFIG],
-        };
-
-        const serviceProviders = createServiceProviders();
+        const providers: Provider[] = [
+            {
+                provide: HIERO_CONFIG,
+                useFactory: options.useFactory,
+                inject: options.inject ?? [],
+            },
+            {
+                provide: HIERO_RUNTIME,
+                useFactory: (config: HieroConfig) => createHieroRuntime(config),
+                inject: [HIERO_CONFIG],
+            },
+            {
+                provide: HIERO_CONTEXT,
+                useFactory: (runtime: HieroRuntime) => runtime.context,
+                inject: [HIERO_RUNTIME],
+            },
+            ...SERVICE_TOKENS.map(([token, key]) => ({
+                provide: token,
+                // eslint-disable-next-line security/detect-object-injection -- key is constrained to keyof HieroRuntime
+                useFactory: (runtime: HieroRuntime) => runtime[key],
+                inject: [HIERO_RUNTIME],
+            })),
+        ];
 
         return {
             module: HieroModule,
             imports: options.imports ?? [],
-            providers: [configProvider, runtimeProvider, ...serviceProviders],
-            exports: [
-                HIERO_CONFIG,
-                HIERO_CONTEXT,
-                MirrorNodeClient,
-                AccountService,
-                FileService,
-                FungibleTokenService,
-                NftService,
-                SmartContractService,
-                TopicService,
-                AccountRepository,
-                NftRepository,
-                TokenRepository,
-                TopicRepository,
-                TransactionRepository,
-                NetworkRepository,
-            ],
+            providers,
+            exports: EXPORTED_TOKENS,
             global: options.global ?? false,
         };
     }
 }
 
-function createProviders(config: HieroConfig): Provider[] {
-    const runtime = createHieroRuntime(config);
-
-    return [
-        { provide: HIERO_CONFIG, useValue: config },
-        { provide: HIERO_RUNTIME, useValue: runtime },
-        { provide: HIERO_CONTEXT, useValue: runtime.context },
-        { provide: MirrorNodeClient, useValue: runtime.mirrorNodeClient },
-        { provide: AccountService, useValue: runtime.accountService },
-        { provide: FileService, useValue: runtime.fileService },
-        {
-            provide: FungibleTokenService,
-            useValue: runtime.fungibleTokenService,
-        },
-        { provide: NftService, useValue: runtime.nftService },
-        {
-            provide: SmartContractService,
-            useValue: runtime.smartContractService,
-        },
-        { provide: TopicService, useValue: runtime.topicService },
-        { provide: AccountRepository, useValue: runtime.accountRepository },
-        { provide: NftRepository, useValue: runtime.nftRepository },
-        { provide: TokenRepository, useValue: runtime.tokenRepository },
-        { provide: TopicRepository, useValue: runtime.topicRepository },
-        {
-            provide: TransactionRepository,
-            useValue: runtime.transactionRepository,
-        },
-        { provide: NetworkRepository, useValue: runtime.networkRepository },
-    ];
-}
-
-function createServiceProviders(): Provider[] {
-    return [
-        {
-            provide: HIERO_CONTEXT,
-            useFactory: (runtime: HieroRuntime) => runtime.context,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: MirrorNodeClient,
-            useFactory: (runtime: HieroRuntime) => runtime.mirrorNodeClient,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: AccountService,
-            useFactory: (runtime: HieroRuntime) => runtime.accountService,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: FileService,
-            useFactory: (runtime: HieroRuntime) => runtime.fileService,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: FungibleTokenService,
-            useFactory: (runtime: HieroRuntime) => runtime.fungibleTokenService,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: NftService,
-            useFactory: (runtime: HieroRuntime) => runtime.nftService,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: SmartContractService,
-            useFactory: (runtime: HieroRuntime) => runtime.smartContractService,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: TopicService,
-            useFactory: (runtime: HieroRuntime) => runtime.topicService,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: AccountRepository,
-            useFactory: (runtime: HieroRuntime) => runtime.accountRepository,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: NftRepository,
-            useFactory: (runtime: HieroRuntime) => runtime.nftRepository,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: TokenRepository,
-            useFactory: (runtime: HieroRuntime) => runtime.tokenRepository,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: TopicRepository,
-            useFactory: (runtime: HieroRuntime) => runtime.topicRepository,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: TransactionRepository,
-            useFactory: (runtime: HieroRuntime) =>
-                runtime.transactionRepository,
-            inject: [HIERO_RUNTIME],
-        },
-        {
-            provide: NetworkRepository,
-            useFactory: (runtime: HieroRuntime) => runtime.networkRepository,
-            inject: [HIERO_RUNTIME],
-        },
-    ];
-}
-
 // Re-export service and repository classes used as NestJS DI tokens.
-// Consumers should install @hiero-enterprise/core directly for types,
-// options interfaces, and standalone (non-framework) usage.
 export {
     MirrorNodeClient,
     AccountService,
+    ScheduleService,
     FileService,
     FungibleTokenService,
     NftService,
@@ -288,6 +211,8 @@ export {
     TopicRepository,
     TransactionRepository,
     NetworkRepository,
+    AccountType,
+    OperatorKeyType,
 } from "@hiero-enterprise/core";
 export type { HieroConfig, HieroServices } from "@hiero-enterprise/core";
 

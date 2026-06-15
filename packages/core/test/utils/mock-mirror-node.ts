@@ -1,12 +1,4 @@
-/**
- * Test helpers for @hiero-enterprise/core.
- *
- * Provides mocks and utilities for testing applications
- * that use Hiero services without connecting to a real network.
- */
-
-import type { HieroConfig } from "../config/index.js";
-import type { MirrorNodeClient } from "../mirror/index.js";
+import type { MirrorNodeClient } from "../../src/mirror/index.js";
 import type {
     MirrorAccountInfo,
     Balance,
@@ -18,44 +10,30 @@ import type {
     ExchangeRates,
     NetworkStake,
     NetworkSupplies,
-} from "../types/index.js";
+} from "../../src/types/index.js";
 
 /**
- * A test-friendly HieroConfig with default values.
- */
-export const testConfig: HieroConfig = {
-    network: "testnet",
-    operatorId: "0.0.1001",
-    operatorKey:
-        "302e020100300506032b6570042204203b054ddd0c62d577ce0fbb0e92dcce0d5bea42a98a5c9663271939881ce19208",
-    operatorKeyType: "der",
-    mirrorNodeUrl: "http://localhost:38081",
-};
-
-/**
- * Create a no-op MirrorNodeClient mock.
+ * Create a no-op MirrorNodeClient mock for unit tests.
  * Each method returns a sensible empty/default value.
  */
 export function createMockMirrorNodeClient(): MockMirrorNodeClient {
     return {
-        queryAccount: () => Promise.resolve(createMockAccountInfo()),
-        queryAccountBalance: () => Promise.resolve(createMockBalance()),
+        queryAccount: () => Promise.resolve(accountInfo()),
+        queryAccountBalance: () => Promise.resolve(balance()),
         queryNftsByAccount: () => Promise.resolve(emptyPage()),
         queryNftsByTokenId: () => Promise.resolve(emptyPage()),
-        queryNftsByTokenIdAndSerial: () => Promise.resolve(createMockNft()),
+        queryNftsByTokenIdAndSerial: () => Promise.resolve(nft()),
         queryNftsByAccountAndTokenId: () => Promise.resolve(emptyPage()),
-        queryTokenById: () => Promise.resolve(createMockTokenInfo()),
+        queryTokenById: () => Promise.resolve(tokenInfo()),
         queryTokensByAccountId: () => Promise.resolve(emptyPage()),
         queryTopicMessages: () => Promise.resolve(emptyPage()),
-        queryTopicMessageBySequence: () =>
-            Promise.resolve(createMockTopicMessage()),
+        queryTopicMessageBySequence: () => Promise.resolve(topicMessage()),
         queryTransactionsByAccount: () => Promise.resolve(emptyPage()),
         queryTransactionsByAccountAndType: () => Promise.resolve(emptyPage()),
-        queryTransaction: () => Promise.resolve(createMockTransactionInfo()),
-        queryExchangeRates: () => Promise.resolve(createMockExchangeRates()),
-        queryNetworkSupplies: () =>
-            Promise.resolve(createMockNetworkSupplies()),
-        queryNetworkStake: () => Promise.resolve(createMockNetworkStake()),
+        queryTransaction: () => Promise.resolve(transactionInfo()),
+        queryExchangeRates: () => Promise.resolve(exchangeRates()),
+        queryNetworkSupplies: () => Promise.resolve(networkSupplies()),
+        queryNetworkStake: () => Promise.resolve(networkStake()),
         fetchNextPage: () => Promise.resolve(emptyPage()),
     };
 }
@@ -64,13 +42,11 @@ type MockMirrorNodeClient = {
     [K in keyof MirrorNodeClient]: MirrorNodeClient[K];
 };
 
-// ─── Factory Functions ─────────────────────────────────────────
-
 function emptyPage<T>(): Page<T> {
     return { data: [], links: { next: null } };
 }
 
-function createMockAccountInfo(): MirrorAccountInfo {
+function accountInfo(): MirrorAccountInfo {
     return {
         accountId: "0.0.12345",
         balance: 100_000_000,
@@ -78,7 +54,7 @@ function createMockAccountInfo(): MirrorAccountInfo {
     };
 }
 
-function createMockBalance(): Balance {
+function balance(): Balance {
     return {
         accountId: "0.0.12345",
         hbars: "100000000",
@@ -86,7 +62,7 @@ function createMockBalance(): Balance {
     };
 }
 
-function createMockNft(): Nft {
+function nft(): Nft {
     return {
         tokenId: "0.0.99999",
         serialNumber: 1,
@@ -96,7 +72,7 @@ function createMockNft(): Nft {
     };
 }
 
-function createMockTokenInfo(): MirrorTokenInfo {
+function tokenInfo(): MirrorTokenInfo {
     return {
         tokenId: "0.0.99999",
         name: "Test Token",
@@ -112,7 +88,7 @@ function createMockTokenInfo(): MirrorTokenInfo {
     };
 }
 
-function createMockTopicMessage(): MirrorTopicMessage {
+function topicMessage(): MirrorTopicMessage {
     return {
         topicId: "0.0.88888",
         sequenceNumber: "1",
@@ -122,7 +98,7 @@ function createMockTopicMessage(): MirrorTopicMessage {
     };
 }
 
-function createMockTransactionInfo(): TransactionInfo {
+function transactionInfo(): TransactionInfo {
     return {
         transactionId: "0.0.12345@1234567890.000000000",
         type: "CRYPTOTRANSFER",
@@ -139,7 +115,7 @@ function createMockTransactionInfo(): TransactionInfo {
     };
 }
 
-function createMockExchangeRates(): ExchangeRates {
+function exchangeRates(): ExchangeRates {
     return {
         currentRate: {
             hbarEquivalent: 30000,
@@ -154,7 +130,7 @@ function createMockExchangeRates(): ExchangeRates {
     };
 }
 
-function createMockNetworkSupplies(): NetworkSupplies {
+function networkSupplies(): NetworkSupplies {
     return {
         releasedSupply: "5000000000000000000",
         totalSupply: "5000000000000000000",
@@ -162,7 +138,7 @@ function createMockNetworkSupplies(): NetworkSupplies {
     };
 }
 
-function createMockNetworkStake(): NetworkStake {
+function networkStake(): NetworkStake {
     return {
         maxStakeRewarded: 0,
         maxStakingRewardRatePerHbar: 0,

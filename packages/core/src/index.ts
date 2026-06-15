@@ -39,6 +39,3 @@ export * from "./factory/index.js";
 
 // Interceptors
 export * from "./listeners/index.js";
-
-// Testing utilities
-export * from "./testing/index.js";

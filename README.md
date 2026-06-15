@@ -179,14 +179,6 @@ Clients handle write operations through the Hiero SDK — transactions that go o
 | `TransactionRepository` | Query transactions by account or type |
 | `NetworkRepository` | Exchange rates, supply stats, staking rewards |
 
-## Testing
-
-```ts
-import { testConfig, createMockMirrorNodeClient } from '@hiero-enterprise/core/testing';
-```
-
-`testConfig` gives you safe dummy credentials that pass validation without hitting the network. `createMockMirrorNodeClient()` returns a fully typed mock with sensible defaults, so you can test your service layer without spinning up a node.
-
 ## Samples
 
 Working examples are in [`samples/`](./samples). Each one is a minimal but real service you can run against testnet.
