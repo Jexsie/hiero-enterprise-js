@@ -45,6 +45,9 @@
     "devDependencies": {
         "@types/express": "^5.0.0"
     },
+    "peerDependencies": {
+        "express": "^5.1.0"
+    },
     "publishConfig": {
         "access": "public",
         "provenance": true
