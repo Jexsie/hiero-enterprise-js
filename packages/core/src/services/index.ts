@@ -14,10 +14,14 @@ export type {
     NftAllowanceApproval,
 } from "./account/index.js";
 export { FileService } from "./file-service.js";
-export { FungibleTokenService } from "./fungible-token-service.js";
-export type { CreateTokenOptions } from "./fungible-token-service.js";
 export { NftService } from "./nft-service.js";
 export type { CreateNftTypeOptions } from "./nft-service.js";
+export { TokenService } from "./token/index.js";
+export type {
+    CreateFungibleTokenOptions,
+    CreateNftOptions,
+    TokenCreateOperationOptions,
+} from "./token/index.js";
 export { SmartContractService } from "./smart-contract-service.js";
 export { TopicService } from "./topic-service.js";
 export type {
