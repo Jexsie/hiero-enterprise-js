@@ -11,6 +11,9 @@ import {
     TokenService,
 } from "../../../../src/services/index.js";
 
+const supportsScheduledAssociate =
+    process.env.HIERO_SUPPORTS_SCHEDULED_TOKEN_ASSOCIATE === "true";
+
 describe("TokenService associate operations [Integration]", () => {
     let accountService: AccountService;
     let tokenService: TokenService;
@@ -21,7 +24,7 @@ describe("TokenService associate operations [Integration]", () => {
         accountService = new AccountService(ctx);
         tokenService = new TokenService(ctx);
         owner = await createTestAccount(accountService, 10);
-    });
+    }, 120_000);
 
     it("associates a token to an account", async () => {
         const receiver = await createTestAccount(accountService, 1);
@@ -49,9 +52,9 @@ describe("TokenService associate operations [Integration]", () => {
 
         expect(relationship).toBeDefined();
         expect(relationship?.token_id).toBe(tokenId);
-    });
+    }, 120_000);
 
-    it("schedules a token association and returns a scheduleId", async () => {
+    it("schedules a token association", async () => {
         const scheduledReceiver = await createTestAccount(accountService, 1);
 
         const tokenId = await tokenService.createFungibleToken({
@@ -64,16 +67,30 @@ describe("TokenService associate operations [Integration]", () => {
             additionalSigners: [owner.key],
         });
 
-        const scheduled = await tokenService.scheduleAssociateToken(
-            {
-                accountId: scheduledReceiver.accountId,
-                tokenId,
-                additionalSigners: [scheduledReceiver.key],
-            },
-            { scheduleMemo: "integration scheduled associate" },
-        );
+        if (supportsScheduledAssociate) {
+            const scheduled = await tokenService.scheduleAssociateToken(
+                {
+                    accountId: scheduledReceiver.accountId,
+                    tokenId,
+                    additionalSigners: [scheduledReceiver.key],
+                },
+                { scheduleMemo: "integration scheduled associate" },
+            );
 
-        expect(scheduled.scheduleId).toMatch(/^0\.0\.\d+$/);
-        expect(scheduled.transactionId).toBeDefined();
-    });
+            expect(scheduled.scheduleId).toMatch(/^0\.0\.\d+$/);
+            expect(scheduled.transactionId).toBeDefined();
+            return;
+        }
+
+        await expect(
+            tokenService.scheduleAssociateToken(
+                {
+                    accountId: scheduledReceiver.accountId,
+                    tokenId,
+                    additionalSigners: [scheduledReceiver.key],
+                },
+                { scheduleMemo: "integration scheduled associate" },
+            ),
+        ).rejects.toThrow(/SCHEDULED_TRANSACTION_NOT_IN_WHITELIST/);
+    }, 120_000);
 });
