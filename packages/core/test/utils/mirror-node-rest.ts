@@ -51,6 +51,7 @@ export interface MirrorTokenInfo {
     decimals?: string | number;
     type?: string;
     supply_type?: string;
+    deleted?: boolean;
 }
 
 async function getJson<T>(url: string): Promise<T> {

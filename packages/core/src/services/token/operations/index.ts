@@ -14,3 +14,7 @@ export {
     TokenUpdateOperation,
     type TokenUpdateOperationOptions,
 } from "./TokenUpdateOperation.js";
+export {
+    TokenDeleteOperation,
+    type TokenDeleteOperationOptions,
+} from "./TokenDeleteOperation.js";
