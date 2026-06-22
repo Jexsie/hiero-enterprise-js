@@ -48,30 +48,4 @@ describe("TokenService delete operations [Integration]", () => {
         const info = await queryTokenInfo(tokenId);
         expect(info.deleted).toBe(true);
     });
-
-    it("schedules a token deletion", async () => {
-        const adminKey = PrivateKey.generateED25519();
-
-        const tokenId = await tokenService.createFungibleToken({
-            tokenName: "Schedule Delete",
-            tokenSymbol: "SDL",
-            decimals: 0,
-            initialSupply: 100,
-            treasuryAccountId: owner.accountId,
-            adminKey: adminKey.publicKey,
-            supplyKey: owner.key.publicKey,
-            additionalSigners: [owner.key, adminKey],
-        });
-
-        const scheduled = await tokenService.scheduleDeleteToken(
-            {
-                tokenId,
-                additionalSigners: [adminKey],
-            },
-            { scheduleMemo: "integration scheduled delete" },
-        );
-
-        expect(scheduled.scheduleId).toMatch(/^0\.0\.\d+$/);
-        expect(scheduled.transactionId).toBeDefined();
-    });
 });

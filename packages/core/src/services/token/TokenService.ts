@@ -361,25 +361,13 @@ export class TokenService {
      * via `additionalSigners`. Once deleted, the token cannot be used for
      * any operation (transfers, mints, associations, etc.).
      *
+     * Note: `TokenDelete` is not whitelisted for scheduling on the network,
+     * so no scheduled variant is exposed.
+     *
      * @param options.tokenId - Token to delete
      */
     async deleteToken(options: DeleteTokenOptions): Promise<void> {
         return await this.deleteOperation.execute(options);
-    }
-
-    /**
-     * Schedule a token deletion for deferred multi-sig execution.
-     *
-     * @param options.tokenId - Token to delete
-     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
-     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
-     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
-     */
-    async scheduleDeleteToken(
-        options: DeleteTokenOptions,
-        scheduleOptions?: ScheduleOptions,
-    ): Promise<ScheduledResult> {
-        return await this.deleteOperation.schedule(options, scheduleOptions);
     }
 
     private buildFungibleOperationOptions(

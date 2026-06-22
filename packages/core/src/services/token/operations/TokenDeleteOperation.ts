@@ -2,11 +2,7 @@ import type { TokenId } from "@hiero-ledger/sdk";
 import { TokenDeleteTransaction } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
 import { TransactionExecutor } from "../../transaction/index.js";
-import type {
-    TransactionOptions,
-    ScheduleOptions,
-    ScheduledResult,
-} from "../../transaction/index.js";
+import type { TransactionOptions } from "../../transaction/index.js";
 import { TokenDeleteValidator } from "../validation/index.js";
 
 /**
@@ -16,8 +12,9 @@ import { TokenDeleteValidator } from "../validation/index.js";
  * token as deleted on the network; the token's admin key must sign the
  * transaction (supply it via `additionalSigners`).
  *
- * Extends `TransactionOptions` for fees, validity window, additional signers,
- * and scheduling.
+ * Extends `TransactionOptions` for fees, validity window, and additional
+ * signers. Note: `TokenDelete` is not whitelisted for scheduling on the
+ * network, so no `schedule()` variant is exposed.
  */
 export interface TokenDeleteOperationOptions extends TransactionOptions {
     tokenId: TokenId | string;
@@ -48,28 +45,6 @@ export class TokenDeleteOperation {
                 timestamp: new Date(),
             },
             () => undefined,
-        );
-    }
-
-    /** Schedule a `TokenDeleteTransaction` for deferred multi-sig execution. */
-    async schedule(
-        options: TokenDeleteOperationOptions,
-        scheduleOptions?: ScheduleOptions,
-    ): Promise<ScheduledResult> {
-        this.validator.validate(options);
-
-        const tx = this.build(options);
-
-        return await this.executor.scheduleRun(
-            tx,
-            options,
-            {
-                type: "TokenDelete",
-                serviceName: "TokenService",
-                methodName: "deleteToken",
-                timestamp: new Date(),
-            },
-            scheduleOptions,
         );
     }
 

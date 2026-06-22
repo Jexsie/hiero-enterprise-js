@@ -61,20 +61,6 @@ describe("TokenDeleteOperation (via TokenService)", () => {
         expect(tx.sign).toHaveBeenCalledWith(adminSigner);
     });
 
-    it("wraps the deletion in a ScheduleCreateTransaction", async () => {
-        const result = await service.scheduleDeleteToken(
-            { tokenId: "0.0.500" },
-            { scheduleMemo: "pending approval" },
-        );
-
-        expect(mocks.tx.schedule).toHaveBeenCalled();
-        expect(mocks.scheduleTx.setScheduleMemo).toHaveBeenCalledWith(
-            "pending approval",
-        );
-        expect(result.scheduleId).toBe("0.0.777");
-        expect(result.transactionId).toBeDefined();
-    });
-
     it("throws when tokenId is missing", async () => {
         await expect(
             service.deleteToken({
@@ -87,13 +73,5 @@ describe("TokenDeleteOperation (via TokenService)", () => {
         await expect(service.deleteToken({ tokenId: "" })).rejects.toThrow(
             /tokenId cannot be empty/,
         );
-    });
-
-    it("validates before scheduling", async () => {
-        await expect(
-            service.scheduleDeleteToken({
-                tokenId: undefined as unknown as string,
-            }),
-        ).rejects.toThrow(/tokenId is required/);
     });
 });
