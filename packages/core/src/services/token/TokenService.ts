@@ -10,11 +10,13 @@ import {
     TokenCreateOperation,
     TokenMintOperation,
     TokenAssociateOperation,
+    TokenUpdateOperation,
 } from "./operations/index.js";
 import type {
     TokenCreateOperationOptions,
     TokenMintOperationOptions,
     TokenAssociateOperationOptions,
+    TokenUpdateOperationOptions,
 } from "./operations/index.js";
 
 /**
@@ -58,6 +60,9 @@ export type MintTokenOptions = TokenMintOperationOptions;
 /** Options for associating a single token to an account. */
 export type AssociateTokenOptions = TokenAssociateOperationOptions;
 
+/** Options for updating an existing token's mutable properties. */
+export type UpdateTokenOptions = TokenUpdateOperationOptions;
+
 /**
  * Service for managing native tokens on the Hiero network (HTS) — covers
  * both fungible tokens and non-fungible token (NFT) collections via a
@@ -67,11 +72,13 @@ export class TokenService {
     private readonly createOperation: TokenCreateOperation;
     private readonly mintOperation: TokenMintOperation;
     private readonly associateOperation: TokenAssociateOperation;
+    private readonly updateOperation: TokenUpdateOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TokenCreateOperation(context);
         this.mintOperation = new TokenMintOperation(context);
         this.associateOperation = new TokenAssociateOperation(context);
+        this.updateOperation = new TokenUpdateOperation(context);
     }
 
     /**
@@ -292,6 +299,51 @@ export class TokenService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.associateOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Update mutable properties of an existing token.
+     *
+     * Only fields explicitly set on `options` are updated; omitted fields
+     * are left unchanged. Note: most updates require the token's admin key
+     * to sign — supply it via `additionalSigners`.
+     *
+     * @param options.tokenId - Token to update
+     * @param options.tokenName - New token name (max 100 bytes)
+     * @param options.tokenSymbol - New token symbol (max 100 bytes)
+     * @param options.treasuryAccountId - New treasury account (requires the new treasury's key)
+     * @param options.adminKey - Replace the admin key
+     * @param options.kycKey - Replace the KYC key
+     * @param options.freezeKey - Replace the freeze key
+     * @param options.wipeKey - Replace the wipe key
+     * @param options.supplyKey - Replace the supply key
+     * @param options.feeScheduleKey - Replace the fee schedule key
+     * @param options.pauseKey - Replace the pause key
+     * @param options.metadataKey - Replace the metadata key
+     * @param options.autoRenewAccountId - New auto-renew account
+     * @param options.autoRenewPeriod - New auto-renew period (seconds)
+     * @param options.expirationTime - New explicit expiration time
+     * @param options.tokenMemo - New token memo (max 100 bytes)
+     * @param options.metadata - New token-level metadata bytes
+     * @param options.keyVerificationMode - How to verify replacement keys (`TokenKeyValidation.FullValidation` or `TokenKeyValidation.NoValidation`)
+     */
+    async updateToken(options: UpdateTokenOptions): Promise<void> {
+        return await this.updateOperation.execute(options);
+    }
+
+    /**
+     * Schedule a token update for deferred multi-sig execution.
+     *
+     * @param options - See {@link TokenService.updateToken} for field details
+     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
+     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
+     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
+     */
+    async scheduleUpdateToken(
+        options: UpdateTokenOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return await this.updateOperation.schedule(options, scheduleOptions);
     }
 
     private buildFungibleOperationOptions(

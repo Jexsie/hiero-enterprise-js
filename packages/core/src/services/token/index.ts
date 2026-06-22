@@ -4,9 +4,11 @@ export type {
     CreateNftOptions,
     MintTokenOptions,
     AssociateTokenOptions,
+    UpdateTokenOptions,
 } from "./TokenService.js";
 export type {
     TokenCreateOperationOptions,
     TokenMintOperationOptions,
     TokenAssociateOperationOptions,
+    TokenUpdateOperationOptions,
 } from "./operations/index.js";

@@ -10,3 +10,7 @@ export {
     TokenAssociateOperation,
     type TokenAssociateOperationOptions,
 } from "./TokenAssociateOperation.js";
+export {
+    TokenUpdateOperation,
+    type TokenUpdateOperationOptions,
+} from "./TokenUpdateOperation.js";
