@@ -351,6 +351,9 @@ export class TokenService {
      * - Fungible: set `amount` to wipe from the account
      * - NFT: set `serials` to wipe specific serial numbers held by the account
      *
+     * Note: `TokenWipe` is not whitelisted for scheduling on the network,
+     * so no scheduled variant is exposed.
+     *
      * @param options.tokenId - Token to wipe supply from
      * @param options.accountId - Holder account to wipe the supply from
      * @param options.amount - Fungible amount to wipe
@@ -359,24 +362,6 @@ export class TokenService {
      */
     async wipeToken(options: WipeTokenOptions): Promise<Long> {
         return await this.wipeOperation.execute(options);
-    }
-
-    /**
-     * Schedule a token wipe for deferred multi-sig execution.
-     *
-     * @param options.tokenId - Token to wipe supply from
-     * @param options.accountId - Holder account to wipe the supply from
-     * @param options.amount - Fungible amount to wipe
-     * @param options.serials - NFT serial numbers to wipe
-     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
-     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
-     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
-     */
-    async scheduleWipeToken(
-        options: WipeTokenOptions,
-        scheduleOptions?: ScheduleOptions,
-    ): Promise<ScheduledResult> {
-        return await this.wipeOperation.schedule(options, scheduleOptions);
     }
 
     /**

@@ -87,24 +87,6 @@ describe("TokenWipeOperation (via TokenService)", () => {
         expect(tx.sign).toHaveBeenCalledWith(signer);
     });
 
-    it("wraps wipe in ScheduleCreateTransaction", async () => {
-        const result = await service.scheduleWipeToken(
-            {
-                tokenId: "0.0.500",
-                accountId: "0.0.700",
-                amount: 10,
-            },
-            { scheduleMemo: "pending approval" },
-        );
-
-        expect(mocks.tx.schedule).toHaveBeenCalled();
-        expect(mocks.scheduleTx.setScheduleMemo).toHaveBeenCalledWith(
-            "pending approval",
-        );
-        expect(result.scheduleId).toBe("0.0.777");
-        expect(result.transactionId).toBeDefined();
-    });
-
     it("returns the new total supply from the receipt", async () => {
         const totalSupply = await service.wipeToken({
             tokenId: "0.0.500",

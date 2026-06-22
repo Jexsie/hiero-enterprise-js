@@ -3,11 +3,7 @@ import type { TokenId, AccountId, Long } from "@hiero-ledger/sdk";
 import { TokenWipeTransaction } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
 import { TransactionExecutor } from "../../transaction/index.js";
-import type {
-    TransactionOptions,
-    ScheduleOptions,
-    ScheduledResult,
-} from "../../transaction/index.js";
+import type { TransactionOptions } from "../../transaction/index.js";
 import { TokenWipeValidator } from "../validation/index.js";
 
 /**
@@ -16,6 +12,9 @@ import { TokenWipeValidator } from "../validation/index.js";
  * Mirrors SDK props while extending `TransactionOptions`. Exactly one of
  * `amount` (fungible) or `serials` (NFT) must be supplied. The target
  * holder is identified by `accountId` — the wipe key must sign.
+ *
+ * Note: `TokenWipe` is not whitelisted for scheduling on the network,
+ * so no `schedule()` method is exposed.
  */
 export interface TokenWipeOperationOptions extends TransactionOptions {
     tokenId: TokenId | string;
@@ -60,28 +59,6 @@ export class TokenWipeOperation {
                 }
                 return receipt.totalSupply;
             },
-        );
-    }
-
-    /** Schedule a `TokenWipeTransaction` for deferred multi-sig execution. */
-    async schedule(
-        options: TokenWipeOperationOptions,
-        scheduleOptions?: ScheduleOptions,
-    ): Promise<ScheduledResult> {
-        this.validator.validate(options);
-
-        const tx = this.build(options);
-
-        return await this.executor.scheduleRun(
-            tx,
-            options,
-            {
-                type: "TokenWipe",
-                serviceName: "TokenService",
-                methodName: "wipeToken",
-                timestamp: new Date(),
-            },
-            scheduleOptions,
         );
     }
 

@@ -128,46 +128,4 @@ describe("TokenService wipe operations [Integration]", () => {
         const info = await queryTokenInfo(tokenId);
         expect(info.total_supply).toBe("1");
     });
-
-    it("schedules a token wipe and returns a scheduleId", async () => {
-        const holder = await createTestAccount(accountService, 2);
-
-        const tokenId = await tokenService.createFungibleToken({
-            tokenName: "Scheduled Wipe",
-            tokenSymbol: "SWP",
-            decimals: 0,
-            initialSupply: 500,
-            treasuryAccountId: owner.accountId,
-            supplyKey: owner.key.publicKey,
-            wipeKey: owner.key.publicKey,
-            additionalSigners: [owner.key],
-        });
-
-        await tokenService.associateToken({
-            accountId: holder.accountId,
-            tokenId,
-            additionalSigners: [holder.key],
-        });
-
-        await accountService.transferToken(
-            tokenId,
-            holder.accountId,
-            200,
-            owner.accountId,
-            { additionalSigners: [owner.key] },
-        );
-
-        const scheduled = await tokenService.scheduleWipeToken(
-            {
-                tokenId,
-                accountId: holder.accountId,
-                amount: 100,
-                additionalSigners: [owner.key],
-            },
-            { scheduleMemo: "integration scheduled wipe" },
-        );
-
-        expect(scheduled.scheduleId).toMatch(/^0\.0\.\d+$/);
-        expect(scheduled.transactionId).toBeDefined();
-    });
 });
