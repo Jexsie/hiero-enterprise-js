@@ -10,6 +10,7 @@ import {
     TokenCreateOperation,
     TokenMintOperation,
     TokenAssociateOperation,
+    TokenDissociateOperation,
     TokenUpdateOperation,
     TokenDeleteOperation,
 } from "./operations/index.js";
@@ -17,6 +18,7 @@ import type {
     TokenCreateOperationOptions,
     TokenMintOperationOptions,
     TokenAssociateOperationOptions,
+    TokenDissociateOperationOptions,
     TokenUpdateOperationOptions,
     TokenDeleteOperationOptions,
 } from "./operations/index.js";
@@ -62,6 +64,9 @@ export type MintTokenOptions = TokenMintOperationOptions;
 /** Options for associating a single token to an account. */
 export type AssociateTokenOptions = TokenAssociateOperationOptions;
 
+/** Options for dissociating a single token from an account. */
+export type DissociateTokenOptions = TokenDissociateOperationOptions;
+
 /** Options for updating an existing token's mutable properties. */
 export type UpdateTokenOptions = TokenUpdateOperationOptions;
 
@@ -77,6 +82,7 @@ export class TokenService {
     private readonly createOperation: TokenCreateOperation;
     private readonly mintOperation: TokenMintOperation;
     private readonly associateOperation: TokenAssociateOperation;
+    private readonly dissociateOperation: TokenDissociateOperation;
     private readonly updateOperation: TokenUpdateOperation;
     private readonly deleteOperation: TokenDeleteOperation;
 
@@ -84,6 +90,7 @@ export class TokenService {
         this.createOperation = new TokenCreateOperation(context);
         this.mintOperation = new TokenMintOperation(context);
         this.associateOperation = new TokenAssociateOperation(context);
+        this.dissociateOperation = new TokenDissociateOperation(context);
         this.updateOperation = new TokenUpdateOperation(context);
         this.deleteOperation = new TokenDeleteOperation(context);
     }
@@ -306,6 +313,40 @@ export class TokenService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.associateOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Dissociate one or more tokens from an account.
+     *
+     * The account must hold a zero balance of each token being dissociated.
+     * The account's key must sign — supply it via `additionalSigners` when
+     * the account is not the operator. After dissociation, the account can
+     * no longer receive those tokens unless re-associated.
+     *
+     * @param options.accountId - Account to dissociate the tokens from
+     * @param options.tokenIds - Tokens to dissociate from the account (at least one)
+     */
+    async dissociateToken(options: DissociateTokenOptions): Promise<void> {
+        return await this.dissociateOperation.execute(options);
+    }
+
+    /**
+     * Schedule token dissociation for deferred multi-sig execution.
+     *
+     * @param options.accountId - Account to dissociate the tokens from
+     * @param options.tokenIds - Tokens to dissociate from the account (at least one)
+     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
+     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
+     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
+     */
+    async scheduleDissociateToken(
+        options: DissociateTokenOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return await this.dissociateOperation.schedule(
+            options,
+            scheduleOptions,
+        );
     }
 
     /**

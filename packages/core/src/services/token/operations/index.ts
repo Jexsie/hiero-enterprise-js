@@ -11,6 +11,10 @@ export {
     type TokenAssociateOperationOptions,
 } from "./TokenAssociateOperation.js";
 export {
+    TokenDissociateOperation,
+    type TokenDissociateOperationOptions,
+} from "./TokenDissociateOperation.js";
+export {
     TokenUpdateOperation,
     type TokenUpdateOperationOptions,
 } from "./TokenUpdateOperation.js";
