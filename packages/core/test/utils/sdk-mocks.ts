@@ -75,6 +75,7 @@ export interface MockReceipt {
     fileId: { toString(): string };
     contractId: { toString(): string };
     tokenId: { toString(): string };
+    totalSupply: { toString(): string } | null;
 }
 
 export interface MockTransactionResponse {
@@ -126,6 +127,7 @@ export function buildMockReceipt(
         fileId: { toString: () => "0.0.555" },
         contractId: { toString: () => "0.0.666" },
         tokenId: { toString: () => "0.0.500" },
+        totalSupply: { toString: () => "1000" },
         ...overrides,
     };
 }
