@@ -83,10 +83,6 @@ async function updateToken(
  * not applied until enough required signers have signed the schedule (via
  * `ScheduleService`). Useful for governance flows where multiple parties
  * must agree before a token's metadata changes.
- *
- * Note: some networks do not whitelist `TokenUpdate` for scheduling. If
- * this scenario throws `SCHEDULED_TRANSACTION_NOT_IN_WHITELIST` the error
- * is logged and the example continues.
  */
 async function scheduleUpdateToken(
     accountService: AccountService,
@@ -116,29 +112,18 @@ async function scheduleUpdateToken(
     });
     console.log("Created token:", tokenId);
 
-    try {
-        const scheduled = await tokenService.scheduleUpdateToken(
-            {
-                tokenId,
-                tokenName: "Scheduled Renamed",
-                tokenSymbol: "SRN",
-                additionalSigners: [adminKey],
-            },
-            { scheduleMemo: "pending governance approval" },
-        );
+    const scheduled = await tokenService.scheduleUpdateToken(
+        {
+            tokenId,
+            tokenName: "Scheduled Renamed",
+            tokenSymbol: "SRN",
+            additionalSigners: [adminKey],
+        },
+        { scheduleMemo: "pending governance approval" },
+    );
 
-        console.log("Schedule ID:", scheduled.scheduleId);
-        console.log("Transaction ID:", scheduled.transactionId);
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        if (message.includes("SCHEDULED_TRANSACTION_NOT_IN_WHITELIST")) {
-            console.log(
-                "Network does not whitelist scheduled TokenUpdate — skipping.",
-            );
-        } else {
-            throw error;
-        }
-    }
+    console.log("Schedule ID:", scheduled.scheduleId);
+    console.log("Transaction ID:", scheduled.transactionId);
     console.log();
 }
 

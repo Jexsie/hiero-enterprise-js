@@ -12,9 +12,6 @@ import {
     TokenService,
 } from "../../../../src/services/index.js";
 
-const supportsScheduledUpdate =
-    process.env.HIERO_SUPPORTS_SCHEDULED_TOKEN_UPDATE === "true";
-
 describe("TokenService update operations [Integration]", () => {
     let accountService: AccountService;
     let tokenService: TokenService;
@@ -108,32 +105,17 @@ describe("TokenService update operations [Integration]", () => {
             additionalSigners: [owner.key, adminKey],
         });
 
-        if (supportsScheduledUpdate) {
-            const scheduled = await tokenService.scheduleUpdateToken(
-                {
-                    tokenId,
-                    tokenName: "Scheduled Rename",
-                    tokenSymbol: "SRN",
-                    additionalSigners: [adminKey],
-                },
-                { scheduleMemo: "integration scheduled update" },
-            );
+        const scheduled = await tokenService.scheduleUpdateToken(
+            {
+                tokenId,
+                tokenName: "Scheduled Rename",
+                tokenSymbol: "SRN",
+                additionalSigners: [adminKey],
+            },
+            { scheduleMemo: "integration scheduled update" },
+        );
 
-            expect(scheduled.scheduleId).toMatch(/^0\.0\.\d+$/);
-            expect(scheduled.transactionId).toBeDefined();
-            return;
-        }
-
-        await expect(
-            tokenService.scheduleUpdateToken(
-                {
-                    tokenId,
-                    tokenName: "Scheduled Rename",
-                    tokenSymbol: "SRN",
-                    additionalSigners: [adminKey],
-                },
-                { scheduleMemo: "integration scheduled update" },
-            ),
-        ).rejects.toThrow(/SCHEDULED_TRANSACTION_NOT_IN_WHITELIST/);
+        expect(scheduled.scheduleId).toMatch(/^0\.0\.\d+$/);
+        expect(scheduled.transactionId).toBeDefined();
     });
 });
