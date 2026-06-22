@@ -10,6 +10,7 @@ import {
     TokenCreateOperation,
     TokenMintOperation,
     TokenBurnOperation,
+    TokenWipeOperation,
     TokenAssociateOperation,
     TokenDissociateOperation,
     TokenUpdateOperation,
@@ -19,6 +20,7 @@ import type {
     TokenCreateOperationOptions,
     TokenMintOperationOptions,
     TokenBurnOperationOptions,
+    TokenWipeOperationOptions,
     TokenAssociateOperationOptions,
     TokenDissociateOperationOptions,
     TokenUpdateOperationOptions,
@@ -66,6 +68,9 @@ export type MintTokenOptions = TokenMintOperationOptions;
 /** Options for burning token supply (fungible amount or NFT serials). */
 export type BurnTokenOptions = TokenBurnOperationOptions;
 
+/** Options for wiping token supply from a specific account (fungible amount or NFT serials). */
+export type WipeTokenOptions = TokenWipeOperationOptions;
+
 /** Options for associating a single token to an account. */
 export type AssociateTokenOptions = TokenAssociateOperationOptions;
 
@@ -87,6 +92,7 @@ export class TokenService {
     private readonly createOperation: TokenCreateOperation;
     private readonly mintOperation: TokenMintOperation;
     private readonly burnOperation: TokenBurnOperation;
+    private readonly wipeOperation: TokenWipeOperation;
     private readonly associateOperation: TokenAssociateOperation;
     private readonly dissociateOperation: TokenDissociateOperation;
     private readonly updateOperation: TokenUpdateOperation;
@@ -96,6 +102,7 @@ export class TokenService {
         this.createOperation = new TokenCreateOperation(context);
         this.mintOperation = new TokenMintOperation(context);
         this.burnOperation = new TokenBurnOperation(context);
+        this.wipeOperation = new TokenWipeOperation(context);
         this.associateOperation = new TokenAssociateOperation(context);
         this.dissociateOperation = new TokenDissociateOperation(context);
         this.updateOperation = new TokenUpdateOperation(context);
@@ -328,6 +335,33 @@ export class TokenService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.burnOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Wipe supply from a specific holder account.
+     *
+     * Removes supply held by a non-treasury account. Unlike `burnToken`,
+     * which burns supply from the treasury, wipe targets a specific holder
+     * — typical use cases include enforcing compliance or revoking issued
+     * tokens.
+     *
+     * The wipe key (not the supply key) must sign — supply it via
+     * `additionalSigners`. The target account cannot be the treasury.
+     *
+     * - Fungible: set `amount` to wipe from the account
+     * - NFT: set `serials` to wipe specific serial numbers held by the account
+     *
+     * Note: `TokenWipe` is not whitelisted for scheduling on the network,
+     * so no scheduled variant is exposed.
+     *
+     * @param options.tokenId - Token to wipe supply from
+     * @param options.accountId - Holder account to wipe the supply from
+     * @param options.amount - Fungible amount to wipe
+     * @param options.serials - NFT serial numbers to wipe
+     * @returns The token's new total supply after the wipe (as a `Long`)
+     */
+    async wipeToken(options: WipeTokenOptions): Promise<Long> {
+        return await this.wipeOperation.execute(options);
     }
 
     /**
