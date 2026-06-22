@@ -7,6 +7,10 @@ export {
     type TokenMintOperationOptions,
 } from "./TokenMintOperation.js";
 export {
+    TokenBurnOperation,
+    type TokenBurnOperationOptions,
+} from "./TokenBurnOperation.js";
+export {
     TokenAssociateOperation,
     type TokenAssociateOperationOptions,
 } from "./TokenAssociateOperation.js";

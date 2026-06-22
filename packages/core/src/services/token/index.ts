@@ -3,6 +3,7 @@ export type {
     CreateFungibleTokenOptions,
     CreateNftOptions,
     MintTokenOptions,
+    BurnTokenOptions,
     AssociateTokenOptions,
     DissociateTokenOptions,
     UpdateTokenOptions,
@@ -11,6 +12,7 @@ export type {
 export type {
     TokenCreateOperationOptions,
     TokenMintOperationOptions,
+    TokenBurnOperationOptions,
     TokenAssociateOperationOptions,
     TokenDissociateOperationOptions,
     TokenUpdateOperationOptions,

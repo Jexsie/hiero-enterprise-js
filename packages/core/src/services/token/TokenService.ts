@@ -9,6 +9,7 @@ import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
 import {
     TokenCreateOperation,
     TokenMintOperation,
+    TokenBurnOperation,
     TokenAssociateOperation,
     TokenDissociateOperation,
     TokenUpdateOperation,
@@ -17,6 +18,7 @@ import {
 import type {
     TokenCreateOperationOptions,
     TokenMintOperationOptions,
+    TokenBurnOperationOptions,
     TokenAssociateOperationOptions,
     TokenDissociateOperationOptions,
     TokenUpdateOperationOptions,
@@ -61,6 +63,9 @@ export type CreateNftOptions = Omit<
 /** Options for minting token supply (fungible amount or NFT metadata). */
 export type MintTokenOptions = TokenMintOperationOptions;
 
+/** Options for burning token supply (fungible amount or NFT serials). */
+export type BurnTokenOptions = TokenBurnOperationOptions;
+
 /** Options for associating a single token to an account. */
 export type AssociateTokenOptions = TokenAssociateOperationOptions;
 
@@ -81,6 +86,7 @@ export type DeleteTokenOptions = TokenDeleteOperationOptions;
 export class TokenService {
     private readonly createOperation: TokenCreateOperation;
     private readonly mintOperation: TokenMintOperation;
+    private readonly burnOperation: TokenBurnOperation;
     private readonly associateOperation: TokenAssociateOperation;
     private readonly dissociateOperation: TokenDissociateOperation;
     private readonly updateOperation: TokenUpdateOperation;
@@ -89,6 +95,7 @@ export class TokenService {
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TokenCreateOperation(context);
         this.mintOperation = new TokenMintOperation(context);
+        this.burnOperation = new TokenBurnOperation(context);
         this.associateOperation = new TokenAssociateOperation(context);
         this.dissociateOperation = new TokenDissociateOperation(context);
         this.updateOperation = new TokenUpdateOperation(context);
@@ -285,6 +292,42 @@ export class TokenService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.mintOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Burn supply from an existing token.
+     *
+     * - Fungible: set `amount` to reduce the total supply
+     * - NFT: set `serials` to burn specific serial numbers
+     *
+     * The supply key must sign — supply it via `additionalSigners`. The
+     * burned supply must be held by the treasury account; transfer NFTs
+     * back to the treasury before burning.
+     *
+     * @param options.tokenId - Token to burn supply from
+     * @param options.amount - Fungible amount to burn
+     * @param options.serials - NFT serial numbers to burn
+     * @returns The token's new total supply after the burn (as a `Long`)
+     */
+    async burnToken(options: BurnTokenOptions): Promise<Long> {
+        return await this.burnOperation.execute(options);
+    }
+
+    /**
+     * Schedule a token burn for deferred multi-sig execution.
+     *
+     * @param options.tokenId - Token to burn supply from
+     * @param options.amount - Fungible amount to burn
+     * @param options.serials - NFT serial numbers to burn
+     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
+     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
+     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
+     */
+    async scheduleBurnToken(
+        options: BurnTokenOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return await this.burnOperation.schedule(options, scheduleOptions);
     }
 
     /**

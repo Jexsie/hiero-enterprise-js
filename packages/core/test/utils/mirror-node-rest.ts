@@ -51,6 +51,7 @@ export interface MirrorTokenInfo {
     decimals?: string | number;
     type?: string;
     supply_type?: string;
+    total_supply?: string;
     deleted?: boolean;
 }
 
