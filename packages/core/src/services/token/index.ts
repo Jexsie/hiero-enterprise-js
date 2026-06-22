@@ -8,6 +8,7 @@ export type {
     DissociateTokenOptions,
     UpdateTokenOptions,
     DeleteTokenOptions,
+    FreezeTokenOptions,
 } from "./TokenService.js";
 export type {
     TokenCreateOperationOptions,
@@ -17,4 +18,5 @@ export type {
     TokenDissociateOperationOptions,
     TokenUpdateOperationOptions,
     TokenDeleteOperationOptions,
+    TokenFreezeOperationOptions,
 } from "./operations/index.js";

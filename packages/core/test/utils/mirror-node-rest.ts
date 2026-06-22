@@ -39,6 +39,7 @@ export interface MirrorAccountToken {
     token_id: string;
     balance: string;
     decimals?: number;
+    freeze_status?: "NOT_APPLICABLE" | "FROZEN" | "UNFROZEN";
 }
 
 export interface MirrorTokenInfo {

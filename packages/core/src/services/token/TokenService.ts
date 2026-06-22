@@ -14,6 +14,7 @@ import {
     TokenDissociateOperation,
     TokenUpdateOperation,
     TokenDeleteOperation,
+    TokenFreezeOperation,
 } from "./operations/index.js";
 import type {
     TokenCreateOperationOptions,
@@ -23,6 +24,7 @@ import type {
     TokenDissociateOperationOptions,
     TokenUpdateOperationOptions,
     TokenDeleteOperationOptions,
+    TokenFreezeOperationOptions,
 } from "./operations/index.js";
 
 /**
@@ -78,6 +80,9 @@ export type UpdateTokenOptions = TokenUpdateOperationOptions;
 /** Options for deleting an existing token. */
 export type DeleteTokenOptions = TokenDeleteOperationOptions;
 
+/** Options for freezing a token relationship on a specific account. */
+export type FreezeTokenOptions = TokenFreezeOperationOptions;
+
 /**
  * Service for managing native tokens on the Hiero network (HTS) — covers
  * both fungible tokens and non-fungible token (NFT) collections via a
@@ -91,6 +96,7 @@ export class TokenService {
     private readonly dissociateOperation: TokenDissociateOperation;
     private readonly updateOperation: TokenUpdateOperation;
     private readonly deleteOperation: TokenDeleteOperation;
+    private readonly freezeOperation: TokenFreezeOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TokenCreateOperation(context);
@@ -100,6 +106,7 @@ export class TokenService {
         this.dissociateOperation = new TokenDissociateOperation(context);
         this.updateOperation = new TokenUpdateOperation(context);
         this.deleteOperation = new TokenDeleteOperation(context);
+        this.freezeOperation = new TokenFreezeOperation(context);
     }
 
     /**
@@ -452,6 +459,25 @@ export class TokenService {
      */
     async deleteToken(options: DeleteTokenOptions): Promise<void> {
         return await this.deleteOperation.execute(options);
+    }
+
+    /**
+     * Freeze a token relationship on a specific account.
+     *
+     * Prevents `accountId` from sending or receiving the given token until
+     * the relationship is unfrozen. The token must have been created with a
+     * freeze key, and that freeze key must sign — supply it via
+     * `additionalSigners`. The target account must already be associated
+     * with the token.
+     *
+     * Note: `TokenFreeze` is not whitelisted for scheduling on the network,
+     * so no scheduled variant is exposed.
+     *
+     * @param options.tokenId - Token whose relationship will be frozen
+     * @param options.accountId - Account whose relationship will be frozen
+     */
+    async freezeToken(options: FreezeTokenOptions): Promise<void> {
+        return await this.freezeOperation.execute(options);
     }
 
     private buildFungibleOperationOptions(
