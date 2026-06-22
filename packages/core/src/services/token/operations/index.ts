@@ -11,6 +11,10 @@ export {
     type TokenBurnOperationOptions,
 } from "./TokenBurnOperation.js";
 export {
+    TokenWipeOperation,
+    type TokenWipeOperationOptions,
+} from "./TokenWipeOperation.js";
+export {
     TokenAssociateOperation,
     type TokenAssociateOperationOptions,
 } from "./TokenAssociateOperation.js";

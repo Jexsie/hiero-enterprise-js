@@ -1,6 +1,7 @@
 export { TokenCreateValidator } from "./TokenCreateValidator.js";
 export { TokenMintValidator } from "./TokenMintValidator.js";
 export { TokenBurnValidator } from "./TokenBurnValidator.js";
+export { TokenWipeValidator } from "./TokenWipeValidator.js";
 export { TokenAssociateValidator } from "./TokenAssociateValidator.js";
 export { TokenDissociateValidator } from "./TokenDissociateValidator.js";
 export { TokenUpdateValidator } from "./TokenUpdateValidator.js";
