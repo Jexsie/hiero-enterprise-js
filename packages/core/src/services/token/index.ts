@@ -10,4 +10,5 @@ export type {
     TokenCreateOperationOptions,
     TokenMintOperationOptions,
     TokenAssociateOperationOptions,
+    TokenUpdateOperationOptions,
 } from "./operations/index.js";

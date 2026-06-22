@@ -41,6 +41,18 @@ export interface MirrorAccountToken {
     decimals?: number;
 }
 
+export interface MirrorTokenInfo {
+    token_id: string;
+    name?: string;
+    symbol?: string;
+    memo?: string;
+    treasury_account_id?: string;
+    auto_renew_account?: string | null;
+    decimals?: string | number;
+    type?: string;
+    supply_type?: string;
+}
+
 async function getJson<T>(url: string): Promise<T> {
     const res = await fetch(url);
     if (!res.ok) {
@@ -98,4 +110,17 @@ export async function queryAccountTokens(
         `${getMirrorUrl()}/api/v1/accounts/${accountId}/tokens`,
     );
     return data.tokens ?? [];
+}
+
+/**
+ * Fetch token info by ID. Used to verify token-update integration tests
+ * — `name`, `symbol`, `memo`, `treasury_account_id`, and `auto_renew_account`
+ * are all observable via the Mirror Node after the consensus node propagates.
+ */
+export async function queryTokenInfo(
+    tokenId: string,
+): Promise<MirrorTokenInfo> {
+    return getJson<MirrorTokenInfo>(
+        `${getMirrorUrl()}/api/v1/tokens/${tokenId}`,
+    );
 }
