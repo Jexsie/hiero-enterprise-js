@@ -325,7 +325,7 @@ export class TokenService {
      * @param options.expirationTime - New explicit expiration time
      * @param options.tokenMemo - New token memo (max 100 bytes)
      * @param options.metadata - New token-level metadata bytes
-     * @param options.keyVerificationMode - How to verify replacement keys (`FULL_VALIDATION` or `NO_VALIDATION`)
+     * @param options.keyVerificationMode - How to verify replacement keys (`TokenKeyValidation.FullValidation` or `TokenKeyValidation.NoValidation`)
      */
     async updateToken(options: UpdateTokenOptions): Promise<void> {
         return await this.updateOperation.execute(options);
