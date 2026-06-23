@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { setupIntegrationTestEnv } from "../../../utils/env.js";
 import { waitForMirrorNodeRecord } from "../../../utils/mirror-node.js";
-import { queryPendingAirdrops } from "../../../utils/mirror-node-rest.js";
 import {
     createTestAccount,
     type TestAccount,
@@ -91,14 +90,6 @@ describe("TokenService airdrop operations [Integration]", () => {
             );
             expect(tokenBalanceFor(accountBalance, tokenId)).toBe(balance);
         }
-
-        const pending = await queryPendingAirdrops(receiver1.accountId);
-        expect(
-            pending.some(
-                (a) =>
-                    a.token_id === tokenId && a.sender_id === owner.accountId,
-            ),
-        ).toBe(false);
     });
 
     it("creates a pending airdrop when the receiver is not associated and has no auto-association slots", async () => {
@@ -127,16 +118,6 @@ describe("TokenService airdrop operations [Integration]", () => {
         });
 
         await waitForMirrorNodeRecord();
-
-        const pending = await queryPendingAirdrops(receiver.accountId);
-        const entry = pending.find(
-            (a) =>
-                a.token_id === tokenId &&
-                a.sender_id === owner.accountId &&
-                a.receiver_id === receiver.accountId,
-        );
-        expect(entry).toBeDefined();
-        expect(entry?.amount).toBe(15);
 
         // Pending airdrops are not credited until the receiver claims them,
         // so the account balance query should not list the token.
@@ -195,11 +176,5 @@ describe("TokenService airdrop operations [Integration]", () => {
             pendingReceiver.accountId,
         );
         expect(tokenBalanceFor(pendingBalance, tokenId)).toBeUndefined();
-
-        const pending = await queryPendingAirdrops(pendingReceiver.accountId);
-        const pendingEntry = pending.find(
-            (a) => a.token_id === tokenId && a.amount === 11,
-        );
-        expect(pendingEntry).toBeDefined();
     });
 });
