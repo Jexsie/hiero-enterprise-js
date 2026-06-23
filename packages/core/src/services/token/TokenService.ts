@@ -22,6 +22,7 @@ import {
     TokenPauseOperation,
     TokenUnpauseOperation,
     TokenFeeScheduleUpdateOperation,
+    TokenAirdropOperation,
 } from "./operations/index.js";
 import type {
     TokenCreateOperationOptions,
@@ -39,6 +40,7 @@ import type {
     TokenPauseOperationOptions,
     TokenUnpauseOperationOptions,
     TokenFeeScheduleUpdateOperationOptions,
+    TokenAirdropOperationOptions,
 } from "./operations/index.js";
 
 /**
@@ -119,6 +121,9 @@ export type UnpauseTokenOptions = TokenUnpauseOperationOptions;
 export type UpdateTokenFeeScheduleOptions =
     TokenFeeScheduleUpdateOperationOptions;
 
+/** Options for airdropping fungible tokens from a sender to a receiver. */
+export type AirdropFungibleTokenOptions = TokenAirdropOperationOptions;
+
 /**
  * Service for managing native tokens on the Hiero network (HTS) — covers
  * both fungible tokens and non-fungible token (NFT) collections via a
@@ -140,6 +145,7 @@ export class TokenService {
     private readonly pauseOperation: TokenPauseOperation;
     private readonly unpauseOperation: TokenUnpauseOperation;
     private readonly feeScheduleUpdateOperation: TokenFeeScheduleUpdateOperation;
+    private readonly airdropOperation: TokenAirdropOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TokenCreateOperation(context);
@@ -159,6 +165,7 @@ export class TokenService {
         this.feeScheduleUpdateOperation = new TokenFeeScheduleUpdateOperation(
             context,
         );
+        this.airdropOperation = new TokenAirdropOperation(context);
     }
 
     /**
@@ -667,6 +674,36 @@ export class TokenService {
         options: UpdateTokenFeeScheduleOptions,
     ): Promise<void> {
         return await this.feeScheduleUpdateOperation.execute(options);
+    }
+
+    /**
+     * Airdrop fungible tokens from a sender to a receiver.
+     *
+     * Behaviour depends on the receiver's association state:
+     *
+     * - Already associated: tokens are credited immediately.
+     * - Has free auto-association slots: the token is auto-associated
+     *   and credited immediately.
+     * - Receiver-sig-required or no auto-association slots: a "Pending
+     *   Airdrop" is created that the receiver can later claim.
+     *
+     * The transaction payer (operator) covers all transfer, association,
+     * association-renewal, airdrop, and custom fees. The sender account's
+     * key must sign — supply it via `additionalSigners`.
+     *
+     * Note: `TokenAirdrop` is not whitelisted for scheduling on the
+     * network, so no scheduled variant is exposed.
+     *
+     * @param options.tokenId - Token to airdrop
+     * @param options.senderAccountId - Account sending the tokens
+     * @param options.receiverAccountId - Account receiving the tokens
+     * @param options.amount - Amount (in smallest units) to airdrop
+     * @param options.expectedDecimals - Optional decimals safety check
+     */
+    async airdropFungibleToken(
+        options: AirdropFungibleTokenOptions,
+    ): Promise<void> {
+        return await this.airdropOperation.execute(options);
     }
 
     private buildFungibleOperationOptions(

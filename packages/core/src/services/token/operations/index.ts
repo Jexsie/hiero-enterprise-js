@@ -58,3 +58,7 @@ export {
     TokenFeeScheduleUpdateOperation,
     type TokenFeeScheduleUpdateOperationOptions,
 } from "./TokenFeeScheduleUpdateOperation.js";
+export {
+    TokenAirdropOperation,
+    type TokenAirdropOperationOptions,
+} from "./TokenAirdropOperation.js";

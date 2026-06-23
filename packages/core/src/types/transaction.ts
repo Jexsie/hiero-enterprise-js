@@ -108,6 +108,7 @@ export type TransactionType =
     | "SYSTEMDELETE"
     | "SYSTEMUNDELETE"
     | "TOKENASSOCIATE"
+    | "TOKENAIRDROP"
     | "TOKENBURN"
     | "TOKENCREATION"
     | "TOKENDELETION"

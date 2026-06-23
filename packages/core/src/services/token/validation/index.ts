@@ -13,3 +13,4 @@ export { TokenRevokeKycValidator } from "./TokenRevokeKycValidator.js";
 export { TokenPauseValidator } from "./TokenPauseValidator.js";
 export { TokenUnpauseValidator } from "./TokenUnpauseValidator.js";
 export { TokenFeeScheduleUpdateValidator } from "./TokenFeeScheduleUpdateValidator.js";
+export { TokenAirdropValidator } from "./TokenAirdropValidator.js";
