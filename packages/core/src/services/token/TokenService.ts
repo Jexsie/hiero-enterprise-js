@@ -23,6 +23,7 @@ import {
     TokenUnpauseOperation,
     TokenFeeScheduleUpdateOperation,
     TokenAirdropOperation,
+    TokenAirdropNftOperation,
 } from "./operations/index.js";
 import type {
     TokenCreateOperationOptions,
@@ -42,6 +43,8 @@ import type {
     TokenFeeScheduleUpdateOperationOptions,
     TokenAirdropOperationOptions,
     TokenAirdrop,
+    TokenAirdropNftOperationOptions,
+    NftAirdrop,
 } from "./operations/index.js";
 
 /**
@@ -128,6 +131,12 @@ export type AirdropFungibleTokenOptions = TokenAirdropOperationOptions;
 /** A single (token, sender, receiver, amount) entry in an airdrop batch. */
 export type AirdropFungibleToken = TokenAirdrop;
 
+/** Options for airdropping NFT serials from a sender to a receiver. */
+export type AirdropNftOptions = TokenAirdropNftOperationOptions;
+
+/** A single (token, serial, sender, receiver) entry in an NFT airdrop batch. */
+export type AirdropNft = NftAirdrop;
+
 /**
  * Service for managing native tokens on the Hiero network (HTS) — covers
  * both fungible tokens and non-fungible token (NFT) collections via a
@@ -150,6 +159,7 @@ export class TokenService {
     private readonly unpauseOperation: TokenUnpauseOperation;
     private readonly feeScheduleUpdateOperation: TokenFeeScheduleUpdateOperation;
     private readonly airdropOperation: TokenAirdropOperation;
+    private readonly airdropNftOperation: TokenAirdropNftOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TokenCreateOperation(context);
@@ -170,6 +180,7 @@ export class TokenService {
             context,
         );
         this.airdropOperation = new TokenAirdropOperation(context);
+        this.airdropNftOperation = new TokenAirdropNftOperation(context);
     }
 
     /**
@@ -708,6 +719,36 @@ export class TokenService {
         options: AirdropFungibleTokenOptions,
     ): Promise<void> {
         return await this.airdropOperation.execute(options);
+    }
+
+    /**
+     * Airdrop NFT serials from senders to receivers, batching one or more
+     * `(tokenId, serial, sender, receiver)` entries into a single
+     * `TokenAirdropTransaction`.
+     *
+     * Each entry in `options.airdrops` may name a distinct NFT collection,
+     * serial, sender, and receiver. Behaviour per receiver depends on its
+     * association state:
+     *
+     * - Already associated: the NFT is credited immediately.
+     * - Has free auto-association slots: the collection is auto-associated
+     *   and the NFT is credited immediately.
+     * - Receiver-sig-required or no auto-association slots: a "Pending
+     *   Airdrop" is created that the receiver can later claim.
+     *
+     * The transaction payer (operator) covers all transfer, association,
+     * association-renewal, airdrop, and custom fees. Every distinct sender
+     * account's key must sign — supply them via `additionalSigners`.
+     *
+     * Note: `TokenAirdrop` is not whitelisted for scheduling on the
+     * network, so no scheduled variant is exposed.
+     *
+     * @param options.airdrops - One or more `(tokenId, serial,
+     *     senderAccountId, receiverAccountId)` entries to apply atomically
+     *     in a single transaction.
+     */
+    async airdropNft(options: AirdropNftOptions): Promise<void> {
+        return await this.airdropNftOperation.execute(options);
     }
 
     private buildFungibleOperationOptions(
