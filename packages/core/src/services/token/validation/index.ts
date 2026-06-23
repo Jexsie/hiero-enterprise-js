@@ -8,3 +8,4 @@ export { TokenUpdateValidator } from "./TokenUpdateValidator.js";
 export { TokenDeleteValidator } from "./TokenDeleteValidator.js";
 export { TokenFreezeValidator } from "./TokenFreezeValidator.js";
 export { TokenUnfreezeValidator } from "./TokenUnfreezeValidator.js";
+export { TokenGrantKycValidator } from "./TokenGrantKycValidator.js";

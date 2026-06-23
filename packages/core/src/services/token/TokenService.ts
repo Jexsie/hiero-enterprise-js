@@ -17,6 +17,7 @@ import {
     TokenDeleteOperation,
     TokenFreezeOperation,
     TokenUnfreezeOperation,
+    TokenGrantKycOperation,
 } from "./operations/index.js";
 import type {
     TokenCreateOperationOptions,
@@ -29,6 +30,7 @@ import type {
     TokenDeleteOperationOptions,
     TokenFreezeOperationOptions,
     TokenUnfreezeOperationOptions,
+    TokenGrantKycOperationOptions,
 } from "./operations/index.js";
 
 /**
@@ -93,6 +95,9 @@ export type FreezeTokenOptions = TokenFreezeOperationOptions;
 /** Options for unfreezing a previously frozen token relationship on a specific account. */
 export type UnfreezeTokenOptions = TokenUnfreezeOperationOptions;
 
+/** Options for granting KYC approval on a token relationship for a specific account. */
+export type GrantKycTokenOptions = TokenGrantKycOperationOptions;
+
 /**
  * Service for managing native tokens on the Hiero network (HTS) — covers
  * both fungible tokens and non-fungible token (NFT) collections via a
@@ -109,6 +114,7 @@ export class TokenService {
     private readonly deleteOperation: TokenDeleteOperation;
     private readonly freezeOperation: TokenFreezeOperation;
     private readonly unfreezeOperation: TokenUnfreezeOperation;
+    private readonly grantKycOperation: TokenGrantKycOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TokenCreateOperation(context);
@@ -121,6 +127,7 @@ export class TokenService {
         this.deleteOperation = new TokenDeleteOperation(context);
         this.freezeOperation = new TokenFreezeOperation(context);
         this.unfreezeOperation = new TokenUnfreezeOperation(context);
+        this.grantKycOperation = new TokenGrantKycOperation(context);
     }
 
     /**
@@ -537,6 +544,25 @@ export class TokenService {
      */
     async unfreezeToken(options: UnfreezeTokenOptions): Promise<void> {
         return await this.unfreezeOperation.execute(options);
+    }
+
+    /**
+     * Grant KYC approval on a token relationship for a specific account.
+     *
+     * Marks the target account as KYC-approved for the given token,
+     * allowing it to send and receive that token. The token must have
+     * been created with a KYC key, and that KYC key must sign — supply
+     * it via `additionalSigners`. The target account must already be
+     * associated with the token.
+     *
+     * Note: `TokenGrantKyc` is not whitelisted for scheduling on the
+     * network, so no scheduled variant is exposed.
+     *
+     * @param options.tokenId - Token whose relationship will be granted KYC
+     * @param options.accountId - Account to grant KYC approval to
+     */
+    async grantKycToken(options: GrantKycTokenOptions): Promise<void> {
+        return await this.grantKycOperation.execute(options);
     }
 
     private buildFungibleOperationOptions(

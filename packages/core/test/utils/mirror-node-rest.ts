@@ -40,6 +40,7 @@ export interface MirrorAccountToken {
     balance: string;
     decimals?: number;
     freeze_status?: "NOT_APPLICABLE" | "FROZEN" | "UNFROZEN";
+    kyc_status?: "NOT_APPLICABLE" | "GRANTED" | "REVOKED";
 }
 
 export interface MirrorTokenInfo {

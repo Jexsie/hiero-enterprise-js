@@ -38,3 +38,7 @@ export {
     TokenUnfreezeOperation,
     type TokenUnfreezeOperationOptions,
 } from "./TokenUnfreezeOperation.js";
+export {
+    TokenGrantKycOperation,
+    type TokenGrantKycOperationOptions,
+} from "./TokenGrantKycOperation.js";

@@ -11,6 +11,7 @@ export type {
     DeleteTokenOptions,
     FreezeTokenOptions,
     UnfreezeTokenOptions,
+    GrantKycTokenOptions,
 } from "./TokenService.js";
 export type {
     TokenCreateOperationOptions,
@@ -23,4 +24,5 @@ export type {
     TokenDeleteOperationOptions,
     TokenFreezeOperationOptions,
     TokenUnfreezeOperationOptions,
+    TokenGrantKycOperationOptions,
 } from "./operations/index.js";
