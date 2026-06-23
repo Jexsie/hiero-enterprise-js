@@ -63,3 +63,8 @@ export {
     type TokenAirdropOperationOptions,
     type TokenAirdrop,
 } from "./TokenAirdropOperation.js";
+export {
+    TokenAirdropNftOperation,
+    type TokenAirdropNftOperationOptions,
+    type NftAirdrop,
+} from "./TokenAirdropNftOperation.js";

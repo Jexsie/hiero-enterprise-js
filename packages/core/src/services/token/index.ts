@@ -18,6 +18,8 @@ export type {
     UpdateTokenFeeScheduleOptions,
     AirdropFungibleTokenOptions,
     AirdropFungibleToken,
+    AirdropNftOptions,
+    AirdropNft,
 } from "./TokenService.js";
 export type {
     TokenCreateOperationOptions,
@@ -37,4 +39,6 @@ export type {
     TokenFeeScheduleUpdateOperationOptions,
     TokenAirdropOperationOptions,
     TokenAirdrop,
+    TokenAirdropNftOperationOptions,
+    NftAirdrop,
 } from "./operations/index.js";
