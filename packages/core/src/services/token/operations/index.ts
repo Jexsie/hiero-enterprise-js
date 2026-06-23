@@ -61,4 +61,5 @@ export {
 export {
     TokenAirdropOperation,
     type TokenAirdropOperationOptions,
+    type TokenAirdrop,
 } from "./TokenAirdropOperation.js";

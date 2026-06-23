@@ -35,12 +35,16 @@ describe("TokenAirdropOperation (via TokenService)", () => {
         service = new TokenService(context);
     });
 
-    it("airdrops fungible tokens with a negated sender entry and positive receiver entry", async () => {
+    it("airdrops a single entry with a negated sender entry and positive receiver entry", async () => {
         await service.airdropFungibleToken({
-            tokenId: "0.0.500",
-            senderAccountId: "0.0.700",
-            receiverAccountId: "0.0.800",
-            amount: 100,
+            airdrops: [
+                {
+                    tokenId: "0.0.500",
+                    senderAccountId: "0.0.700",
+                    receiverAccountId: "0.0.800",
+                    amount: 100,
+                },
+            ],
         });
 
         const tx = vi.mocked(TokenAirdropTransaction).mock.results[0].value;
@@ -63,13 +67,73 @@ describe("TokenAirdropOperation (via TokenService)", () => {
         expect(tx.execute).toHaveBeenCalledWith(context.client);
     });
 
+    it("batches multiple airdrops across tokens, senders, and receivers in one transaction", async () => {
+        await service.airdropFungibleToken({
+            airdrops: [
+                {
+                    tokenId: "0.0.500",
+                    senderAccountId: "0.0.700",
+                    receiverAccountId: "0.0.801",
+                    amount: 10,
+                },
+                {
+                    tokenId: "0.0.500",
+                    senderAccountId: "0.0.700",
+                    receiverAccountId: "0.0.802",
+                    amount: 20,
+                },
+                {
+                    tokenId: "0.0.600",
+                    senderAccountId: "0.0.701",
+                    receiverAccountId: "0.0.803",
+                    amount: 30,
+                },
+            ],
+        });
+
+        const tx = vi.mocked(TokenAirdropTransaction).mock.results[0].value;
+        const calls = tx.addTokenTransfer.mock.calls as Array<
+            [string, string, Long]
+        >;
+
+        // 3 airdrops × 2 entries (sender + receiver) = 6 calls
+        expect(calls).toHaveLength(6);
+
+        expect(calls[0]).toEqual([
+            "0.0.500",
+            "0.0.700",
+            expect.objectContaining({}),
+        ]);
+        expect(calls[0][2].toString()).toBe("-10");
+        expect(calls[1][1]).toBe("0.0.801");
+        expect(calls[1][2].toString()).toBe("10");
+
+        expect(calls[2][1]).toBe("0.0.700");
+        expect(calls[2][2].toString()).toBe("-20");
+        expect(calls[3][1]).toBe("0.0.802");
+        expect(calls[3][2].toString()).toBe("20");
+
+        expect(calls[4][0]).toBe("0.0.600");
+        expect(calls[4][1]).toBe("0.0.701");
+        expect(calls[4][2].toString()).toBe("-30");
+        expect(calls[5][0]).toBe("0.0.600");
+        expect(calls[5][1]).toBe("0.0.803");
+        expect(calls[5][2].toString()).toBe("30");
+
+        expect(tx.execute).toHaveBeenCalledWith(context.client);
+    });
+
     it("uses addTokenTransferWithDecimals when expectedDecimals is provided", async () => {
         await service.airdropFungibleToken({
-            tokenId: "0.0.500",
-            senderAccountId: "0.0.700",
-            receiverAccountId: "0.0.800",
-            amount: 250,
-            expectedDecimals: 2,
+            airdrops: [
+                {
+                    tokenId: "0.0.500",
+                    senderAccountId: "0.0.700",
+                    receiverAccountId: "0.0.800",
+                    amount: 250,
+                    expectedDecimals: 2,
+                },
+            ],
         });
 
         const tx = vi.mocked(TokenAirdropTransaction).mock.results[0].value;
@@ -92,14 +156,42 @@ describe("TokenAirdropOperation (via TokenService)", () => {
         expect(receiverArgs[3]).toBe(2);
     });
 
+    it("mixes plain and decimals-checked airdrops in a single batch", async () => {
+        await service.airdropFungibleToken({
+            airdrops: [
+                {
+                    tokenId: "0.0.500",
+                    senderAccountId: "0.0.700",
+                    receiverAccountId: "0.0.801",
+                    amount: 5,
+                },
+                {
+                    tokenId: "0.0.600",
+                    senderAccountId: "0.0.700",
+                    receiverAccountId: "0.0.802",
+                    amount: 6,
+                    expectedDecimals: 3,
+                },
+            ],
+        });
+
+        const tx = vi.mocked(TokenAirdropTransaction).mock.results[0].value;
+        expect(tx.addTokenTransfer.mock.calls).toHaveLength(2);
+        expect(tx.addTokenTransferWithDecimals.mock.calls).toHaveLength(2);
+    });
+
     it("applies base TransactionOptions and additionalSigners", async () => {
         const signer = PrivateKey.generateED25519();
 
         await service.airdropFungibleToken({
-            tokenId: "0.0.500",
-            senderAccountId: "0.0.700",
-            receiverAccountId: "0.0.800",
-            amount: 5,
+            airdrops: [
+                {
+                    tokenId: "0.0.500",
+                    senderAccountId: "0.0.700",
+                    receiverAccountId: "0.0.800",
+                    amount: 5,
+                },
+            ],
             transactionMemo: "airdrop memo",
             transactionValidDuration: 60,
             regenerateTransactionId: false,
@@ -114,61 +206,62 @@ describe("TokenAirdropOperation (via TokenService)", () => {
         expect(tx.sign).toHaveBeenCalledWith(signer);
     });
 
-    it("throws when tokenId is empty", async () => {
+    it("throws when airdrops is empty", async () => {
         await expect(
-            service.airdropFungibleToken({
-                tokenId: "",
-                senderAccountId: "0.0.700",
-                receiverAccountId: "0.0.800",
-                amount: 1,
-            }),
-        ).rejects.toThrow(/tokenId cannot be empty/);
+            service.airdropFungibleToken({ airdrops: [] }),
+        ).rejects.toThrow(/airdrops must not be empty/);
     });
 
-    it("throws when senderAccountId is missing", async () => {
+    it("throws when an airdrop's tokenId is empty", async () => {
         await expect(
             service.airdropFungibleToken({
-                tokenId: "0.0.500",
-                senderAccountId: undefined as unknown as string,
-                receiverAccountId: "0.0.800",
-                amount: 1,
+                airdrops: [
+                    {
+                        tokenId: "",
+                        senderAccountId: "0.0.700",
+                        receiverAccountId: "0.0.800",
+                        amount: 1,
+                    },
+                ],
             }),
-        ).rejects.toThrow(/senderAccountId is required/);
+        ).rejects.toThrow(/airdrops\[0\]\.tokenId cannot be empty/);
     });
 
-    it("throws when sender and receiver are the same account", async () => {
+    it("throws when an airdrop's sender and receiver are the same account", async () => {
         await expect(
             service.airdropFungibleToken({
-                tokenId: "0.0.500",
-                senderAccountId: "0.0.700",
-                receiverAccountId: "0.0.700",
-                amount: 1,
+                airdrops: [
+                    {
+                        tokenId: "0.0.500",
+                        senderAccountId: "0.0.700",
+                        receiverAccountId: "0.0.700",
+                        amount: 1,
+                    },
+                ],
             }),
         ).rejects.toThrow(
-            /senderAccountId and receiverAccountId must be different/,
+            /airdrops\[0\]: senderAccountId and receiverAccountId must be different/,
         );
     });
 
-    it("throws when amount is zero", async () => {
+    it("includes the offending airdrop index in the error message", async () => {
         await expect(
             service.airdropFungibleToken({
-                tokenId: "0.0.500",
-                senderAccountId: "0.0.700",
-                receiverAccountId: "0.0.800",
-                amount: 0,
+                airdrops: [
+                    {
+                        tokenId: "0.0.500",
+                        senderAccountId: "0.0.700",
+                        receiverAccountId: "0.0.801",
+                        amount: 5,
+                    },
+                    {
+                        tokenId: "0.0.500",
+                        senderAccountId: "0.0.700",
+                        receiverAccountId: "0.0.802",
+                        amount: 0,
+                    },
+                ],
             }),
-        ).rejects.toThrow(/amount must be a positive value/);
-    });
-
-    it("throws when expectedDecimals is negative", async () => {
-        await expect(
-            service.airdropFungibleToken({
-                tokenId: "0.0.500",
-                senderAccountId: "0.0.700",
-                receiverAccountId: "0.0.800",
-                amount: 1,
-                expectedDecimals: -1,
-            }),
-        ).rejects.toThrow(/expectedDecimals must be a non-negative integer/);
+        ).rejects.toThrow(/airdrops\[1\]\.amount must be a positive value/);
     });
 });

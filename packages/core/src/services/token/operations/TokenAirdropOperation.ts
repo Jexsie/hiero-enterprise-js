@@ -7,25 +7,13 @@ import type { TransactionOptions } from "../../transaction/index.js";
 import { TokenAirdropValidator } from "../validation/index.js";
 
 /**
- * Low-level options for the `TokenAirdropTransaction` SDK transaction.
+ * A single fungible airdrop entry: tokens move from `senderAccountId`
+ * to `receiverAccountId` in the given `amount` (smallest units).
  *
- * Models a single-sender / single-receiver fungible airdrop. Behaviour
- * depends on the receiver's association state:
- *
- * - Already associated: tokens are credited immediately.
- * - Has free auto-association slots: token is auto-associated and credited.
- * - Receiver-sig-required or no auto-association slots: a "Pending
- *   Airdrop" is created that the receiver can later claim.
- *
- * The transaction payer (operator) covers all transfer, association,
- * association-renewal, airdrop, and custom fees. The sender account's
- * key must sign — supply it via `additionalSigners`.
- *
- * Extends `TransactionOptions` for fees, validity window, and additional
- * signers. Note: `TokenAirdrop` is not whitelisted for scheduling on the
- * network, so no `schedule()` variant is exposed.
+ * Multiple airdrops can be batched into a single `TokenAirdropTransaction`
+ * — they may span different tokens, senders, and receivers.
  */
-export interface TokenAirdropOperationOptions extends TransactionOptions {
+export interface TokenAirdrop {
     tokenId: TokenId | string;
     senderAccountId: AccountId | string;
     receiverAccountId: AccountId | string;
@@ -37,6 +25,29 @@ export interface TokenAirdropOperationOptions extends TransactionOptions {
      * denomination.
      */
     expectedDecimals?: number;
+}
+
+/**
+ * Low-level options for the `TokenAirdropTransaction` SDK transaction.
+ *
+ * Bundles one or more fungible airdrops into a single transaction.
+ * Behaviour per receiver depends on its association state:
+ *
+ * - Already associated: tokens are credited immediately.
+ * - Has free auto-association slots: token is auto-associated and credited.
+ * - Receiver-sig-required or no auto-association slots: a "Pending
+ *   Airdrop" is created that the receiver can later claim.
+ *
+ * The transaction payer (operator) covers all transfer, association,
+ * association-renewal, airdrop, and custom fees. Every distinct sender
+ * account's key must sign — supply them via `additionalSigners`.
+ *
+ * Extends `TransactionOptions` for fees, validity window, and additional
+ * signers. Note: `TokenAirdrop` is not whitelisted for scheduling on the
+ * network, so no `schedule()` variant is exposed.
+ */
+export interface TokenAirdropOperationOptions extends TransactionOptions {
+    airdrops: TokenAirdrop[];
 }
 
 export class TokenAirdropOperation {
@@ -70,33 +81,35 @@ export class TokenAirdropOperation {
     private build(
         options: TokenAirdropOperationOptions,
     ): TokenAirdropTransaction {
-        const positive = Long.fromString(options.amount.toString());
-        const negative = positive.negate();
-
         const tx = new TokenAirdropTransaction();
 
-        if (options.expectedDecimals != null) {
-            tx.addTokenTransferWithDecimals(
-                options.tokenId,
-                options.senderAccountId,
-                negative,
-                options.expectedDecimals,
-            ).addTokenTransferWithDecimals(
-                options.tokenId,
-                options.receiverAccountId,
-                positive,
-                options.expectedDecimals,
-            );
-        } else {
-            tx.addTokenTransfer(
-                options.tokenId,
-                options.senderAccountId,
-                negative,
-            ).addTokenTransfer(
-                options.tokenId,
-                options.receiverAccountId,
-                positive,
-            );
+        for (const airdrop of options.airdrops) {
+            const positive = Long.fromString(airdrop.amount.toString());
+            const negative = positive.negate();
+
+            if (airdrop.expectedDecimals != null) {
+                tx.addTokenTransferWithDecimals(
+                    airdrop.tokenId,
+                    airdrop.senderAccountId,
+                    negative,
+                    airdrop.expectedDecimals,
+                ).addTokenTransferWithDecimals(
+                    airdrop.tokenId,
+                    airdrop.receiverAccountId,
+                    positive,
+                    airdrop.expectedDecimals,
+                );
+            } else {
+                tx.addTokenTransfer(
+                    airdrop.tokenId,
+                    airdrop.senderAccountId,
+                    negative,
+                ).addTokenTransfer(
+                    airdrop.tokenId,
+                    airdrop.receiverAccountId,
+                    positive,
+                );
+            }
         }
 
         return tx;

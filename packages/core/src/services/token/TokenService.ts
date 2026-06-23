@@ -41,6 +41,7 @@ import type {
     TokenUnpauseOperationOptions,
     TokenFeeScheduleUpdateOperationOptions,
     TokenAirdropOperationOptions,
+    TokenAirdrop,
 } from "./operations/index.js";
 
 /**
@@ -123,6 +124,9 @@ export type UpdateTokenFeeScheduleOptions =
 
 /** Options for airdropping fungible tokens from a sender to a receiver. */
 export type AirdropFungibleTokenOptions = TokenAirdropOperationOptions;
+
+/** A single (token, sender, receiver, amount) entry in an airdrop batch. */
+export type AirdropFungibleToken = TokenAirdrop;
 
 /**
  * Service for managing native tokens on the Hiero network (HTS) — covers
@@ -677,9 +681,11 @@ export class TokenService {
     }
 
     /**
-     * Airdrop fungible tokens from a sender to a receiver.
+     * Airdrop fungible tokens from senders to receivers, batching one or
+     * more airdrops into a single `TokenAirdropTransaction`.
      *
-     * Behaviour depends on the receiver's association state:
+     * Each entry in `options.airdrops` may name a distinct token, sender,
+     * and receiver. Behaviour per receiver depends on its association state:
      *
      * - Already associated: tokens are credited immediately.
      * - Has free auto-association slots: the token is auto-associated
@@ -688,17 +694,15 @@ export class TokenService {
      *   Airdrop" is created that the receiver can later claim.
      *
      * The transaction payer (operator) covers all transfer, association,
-     * association-renewal, airdrop, and custom fees. The sender account's
-     * key must sign — supply it via `additionalSigners`.
+     * association-renewal, airdrop, and custom fees. Every distinct sender
+     * account's key must sign — supply them via `additionalSigners`.
      *
      * Note: `TokenAirdrop` is not whitelisted for scheduling on the
      * network, so no scheduled variant is exposed.
      *
-     * @param options.tokenId - Token to airdrop
-     * @param options.senderAccountId - Account sending the tokens
-     * @param options.receiverAccountId - Account receiving the tokens
-     * @param options.amount - Amount (in smallest units) to airdrop
-     * @param options.expectedDecimals - Optional decimals safety check
+     * @param options.airdrops - One or more `(tokenId, senderAccountId,
+     *     receiverAccountId, amount, expectedDecimals?)` entries to apply
+     *     atomically in a single transaction.
      */
     async airdropFungibleToken(
         options: AirdropFungibleTokenOptions,

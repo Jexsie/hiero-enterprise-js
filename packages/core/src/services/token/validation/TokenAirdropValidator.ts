@@ -1,7 +1,10 @@
 import type BigNumber from "bignumber.js";
 import { Long } from "@hiero-ledger/sdk";
 import { normalizeError } from "../../../errors/index.js";
-import type { TokenAirdropOperationOptions } from "../operations/TokenAirdropOperation.js";
+import type {
+    TokenAirdropOperationOptions,
+    TokenAirdrop,
+} from "../operations/TokenAirdropOperation.js";
 
 /**
  * Validates `TokenAirdropOperationOptions` before they reach the SDK.
@@ -17,116 +20,152 @@ export class TokenAirdropValidator {
      * @throws {HieroError} If validation fails
      */
     validate(options: TokenAirdropOperationOptions): void {
-        this.validateTokenId(options);
-        this.validateAccount(options, "senderAccountId");
-        this.validateAccount(options, "receiverAccountId");
-        this.validateDistinctAccounts(options);
-        this.validateAmount(options);
-        this.validateExpectedDecimals(options);
+        this.validateAirdropsList(options);
+        options.airdrops.forEach((airdrop, index) => {
+            this.validateAirdrop(airdrop, index);
+        });
     }
 
-    private validateTokenId(options: TokenAirdropOperationOptions): void {
-        if (options.tokenId == null) {
+    private validateAirdropsList(options: TokenAirdropOperationOptions): void {
+        if (options.airdrops == null) {
             throw normalizeError(
-                new Error("tokenId is required."),
+                new Error("airdrops is required."),
+                "TokenAirdropValidator",
+            );
+        }
+
+        if (!Array.isArray(options.airdrops)) {
+            throw normalizeError(
+                new Error("airdrops must be an array."),
+                "TokenAirdropValidator",
+            );
+        }
+
+        if (options.airdrops.length === 0) {
+            throw normalizeError(
+                new Error("airdrops must not be empty."),
+                "TokenAirdropValidator",
+            );
+        }
+    }
+
+    private validateAirdrop(airdrop: TokenAirdrop, index: number): void {
+        const prefix = `airdrops[${index}]`;
+        this.validateTokenId(airdrop, prefix);
+        this.validateAccount(airdrop, "senderAccountId", prefix);
+        this.validateAccount(airdrop, "receiverAccountId", prefix);
+        this.validateDistinctAccounts(airdrop, prefix);
+        this.validateAmount(airdrop, prefix);
+        this.validateExpectedDecimals(airdrop, prefix);
+    }
+
+    private validateTokenId(airdrop: TokenAirdrop, prefix: string): void {
+        if (airdrop.tokenId == null) {
+            throw normalizeError(
+                new Error(`${prefix}.tokenId is required.`),
                 "TokenAirdropValidator",
             );
         }
 
         if (
-            typeof options.tokenId === "string" &&
-            options.tokenId.trim().length === 0
+            typeof airdrop.tokenId === "string" &&
+            airdrop.tokenId.trim().length === 0
         ) {
             throw normalizeError(
-                new Error("tokenId cannot be empty."),
+                new Error(`${prefix}.tokenId cannot be empty.`),
                 "TokenAirdropValidator",
             );
         }
     }
 
     private validateAccount(
-        options: TokenAirdropOperationOptions,
+        airdrop: TokenAirdrop,
         field: "senderAccountId" | "receiverAccountId",
+        prefix: string,
     ): void {
-        const value = options[field];
+        const value = airdrop[field];
 
         if (value == null) {
             throw normalizeError(
-                new Error(`${field} is required.`),
+                new Error(`${prefix}.${field} is required.`),
                 "TokenAirdropValidator",
             );
         }
 
         if (typeof value === "string" && value.trim().length === 0) {
             throw normalizeError(
-                new Error(`${field} cannot be empty.`),
+                new Error(`${prefix}.${field} cannot be empty.`),
                 "TokenAirdropValidator",
             );
         }
     }
 
     private validateDistinctAccounts(
-        options: TokenAirdropOperationOptions,
+        airdrop: TokenAirdrop,
+        prefix: string,
     ): void {
         const sender =
-            typeof options.senderAccountId === "string"
-                ? options.senderAccountId
-                : options.senderAccountId.toString();
+            typeof airdrop.senderAccountId === "string"
+                ? airdrop.senderAccountId
+                : airdrop.senderAccountId.toString();
         const receiver =
-            typeof options.receiverAccountId === "string"
-                ? options.receiverAccountId
-                : options.receiverAccountId.toString();
+            typeof airdrop.receiverAccountId === "string"
+                ? airdrop.receiverAccountId
+                : airdrop.receiverAccountId.toString();
 
         if (sender === receiver) {
             throw normalizeError(
                 new Error(
-                    "senderAccountId and receiverAccountId must be different.",
+                    `${prefix}: senderAccountId and receiverAccountId must be different.`,
                 ),
                 "TokenAirdropValidator",
             );
         }
     }
 
-    private validateAmount(options: TokenAirdropOperationOptions): void {
-        if (options.amount == null) {
+    private validateAmount(airdrop: TokenAirdrop, prefix: string): void {
+        if (airdrop.amount == null) {
             throw normalizeError(
-                new Error("amount is required."),
+                new Error(`${prefix}.amount is required.`),
                 "TokenAirdropValidator",
             );
         }
 
         let isPositive: boolean;
-        if (typeof options.amount === "number") {
-            isPositive = options.amount > 0;
-        } else if (typeof options.amount === "bigint") {
-            isPositive = options.amount > 0n;
-        } else if (Long.isLong(options.amount)) {
+        if (typeof airdrop.amount === "number") {
+            isPositive = airdrop.amount > 0;
+        } else if (typeof airdrop.amount === "bigint") {
+            isPositive = airdrop.amount > 0n;
+        } else if (Long.isLong(airdrop.amount)) {
             isPositive =
-                !options.amount.isNegative() && !options.amount.isZero();
+                !airdrop.amount.isNegative() && !airdrop.amount.isZero();
         } else {
             // BigNumber
-            isPositive = (options.amount as BigNumber).isGreaterThan(0);
+            isPositive = (airdrop.amount as BigNumber).isGreaterThan(0);
         }
 
         if (!isPositive) {
             throw normalizeError(
-                new Error("amount must be a positive value."),
+                new Error(`${prefix}.amount must be a positive value.`),
                 "TokenAirdropValidator",
             );
         }
     }
 
     private validateExpectedDecimals(
-        options: TokenAirdropOperationOptions,
+        airdrop: TokenAirdrop,
+        prefix: string,
     ): void {
-        if (options.expectedDecimals == null) return;
+        if (airdrop.expectedDecimals == null) return;
 
         if (
-            !Number.isInteger(options.expectedDecimals) ||
-            options.expectedDecimals < 0
+            !Number.isInteger(airdrop.expectedDecimals) ||
+            airdrop.expectedDecimals < 0
         ) {
             throw normalizeError(
-                new Error("expectedDecimals must be a non-negative integer."),
+                new Error(
+                    `${prefix}.expectedDecimals must be a non-negative integer.`,
+                ),
                 "TokenAirdropValidator",
             );
         }

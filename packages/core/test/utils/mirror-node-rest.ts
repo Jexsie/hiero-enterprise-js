@@ -153,6 +153,41 @@ export async function queryAccountTokens(
     return data.tokens ?? [];
 }
 
+export interface MirrorPendingAirdrop {
+    amount: number;
+    receiver_id: string;
+    sender_id: string;
+    serial_number: number | null;
+    token_id: string;
+}
+
+/**
+ * Fetch airdrops a receiver has been sent but has not yet claimed.
+ *
+ * Backed by the Mirror Node `/api/v1/accounts/{id}/airdrops/pending`
+ * endpoint exposed by HIP-904.
+ */
+export async function queryPendingAirdrops(
+    receiverAccountId: string,
+): Promise<MirrorPendingAirdrop[]> {
+    const data = await getJson<{ airdrops?: MirrorPendingAirdrop[] }>(
+        `${getMirrorUrl()}/api/v1/accounts/${receiverAccountId}/airdrops/pending`,
+    );
+    return data.airdrops ?? [];
+}
+
+/**
+ * Fetch airdrops a sender has sent that are still unclaimed.
+ */
+export async function queryOutstandingAirdrops(
+    senderAccountId: string,
+): Promise<MirrorPendingAirdrop[]> {
+    const data = await getJson<{ airdrops?: MirrorPendingAirdrop[] }>(
+        `${getMirrorUrl()}/api/v1/accounts/${senderAccountId}/airdrops/outstanding`,
+    );
+    return data.airdrops ?? [];
+}
+
 /**
  * Fetch token info by ID. Used to verify token-update integration tests
  * — `name`, `symbol`, `memo`, `treasury_account_id`, and `auto_renew_account`
