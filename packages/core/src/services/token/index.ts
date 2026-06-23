@@ -15,6 +15,7 @@ export type {
     RevokeKycTokenOptions,
     PauseTokenOptions,
     UnpauseTokenOptions,
+    UpdateTokenFeeScheduleOptions,
 } from "./TokenService.js";
 export type {
     TokenCreateOperationOptions,
@@ -31,4 +32,5 @@ export type {
     TokenRevokeKycOperationOptions,
     TokenPauseOperationOptions,
     TokenUnpauseOperationOptions,
+    TokenFeeScheduleUpdateOperationOptions,
 } from "./operations/index.js";

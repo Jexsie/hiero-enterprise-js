@@ -56,6 +56,42 @@ export interface MirrorTokenInfo {
     total_supply?: string;
     deleted?: boolean;
     pause_status?: "NOT_APPLICABLE" | "PAUSED" | "UNPAUSED";
+    custom_fees?: MirrorCustomFeesResponse;
+}
+
+export interface MirrorCustomFeesResponse {
+    created_timestamp?: string;
+    fixed_fees?: MirrorFixedFeeResponse[];
+    fractional_fees?: MirrorFractionalFeeResponse[];
+    royalty_fees?: MirrorRoyaltyFeeResponse[];
+}
+
+export interface MirrorFixedFeeResponse {
+    amount: number;
+    collector_account_id: string;
+    all_collectors_are_exempt?: boolean;
+    denominating_token_id?: string | null;
+}
+
+export interface MirrorFractionalFeeResponse {
+    numerator: number;
+    denominator: number;
+    minimum?: number;
+    maximum?: number;
+    net_of_transfers?: boolean;
+    collector_account_id: string;
+    all_collectors_are_exempt?: boolean;
+}
+
+export interface MirrorRoyaltyFeeResponse {
+    numerator: number;
+    denominator: number;
+    fallback_fee?: {
+        amount: number;
+        denominating_token_id?: string | null;
+    };
+    collector_account_id: string;
+    all_collectors_are_exempt?: boolean;
 }
 
 async function getJson<T>(url: string): Promise<T> {

@@ -54,3 +54,7 @@ export {
     TokenUnpauseOperation,
     type TokenUnpauseOperationOptions,
 } from "./TokenUnpauseOperation.js";
+export {
+    TokenFeeScheduleUpdateOperation,
+    type TokenFeeScheduleUpdateOperationOptions,
+} from "./TokenFeeScheduleUpdateOperation.js";

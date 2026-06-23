@@ -21,6 +21,7 @@ import {
     TokenRevokeKycOperation,
     TokenPauseOperation,
     TokenUnpauseOperation,
+    TokenFeeScheduleUpdateOperation,
 } from "./operations/index.js";
 import type {
     TokenCreateOperationOptions,
@@ -37,6 +38,7 @@ import type {
     TokenRevokeKycOperationOptions,
     TokenPauseOperationOptions,
     TokenUnpauseOperationOptions,
+    TokenFeeScheduleUpdateOperationOptions,
 } from "./operations/index.js";
 
 /**
@@ -113,6 +115,10 @@ export type PauseTokenOptions = TokenPauseOperationOptions;
 /** Options for unpausing a previously paused token network-wide. */
 export type UnpauseTokenOptions = TokenUnpauseOperationOptions;
 
+/** Options for replacing a token's custom fee schedule. */
+export type UpdateTokenFeeScheduleOptions =
+    TokenFeeScheduleUpdateOperationOptions;
+
 /**
  * Service for managing native tokens on the Hiero network (HTS) — covers
  * both fungible tokens and non-fungible token (NFT) collections via a
@@ -133,6 +139,7 @@ export class TokenService {
     private readonly revokeKycOperation: TokenRevokeKycOperation;
     private readonly pauseOperation: TokenPauseOperation;
     private readonly unpauseOperation: TokenUnpauseOperation;
+    private readonly feeScheduleUpdateOperation: TokenFeeScheduleUpdateOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TokenCreateOperation(context);
@@ -149,6 +156,9 @@ export class TokenService {
         this.revokeKycOperation = new TokenRevokeKycOperation(context);
         this.pauseOperation = new TokenPauseOperation(context);
         this.unpauseOperation = new TokenUnpauseOperation(context);
+        this.feeScheduleUpdateOperation = new TokenFeeScheduleUpdateOperation(
+            context,
+        );
     }
 
     /**
@@ -637,6 +647,26 @@ export class TokenService {
      */
     async unpauseToken(options: UnpauseTokenOptions): Promise<void> {
         return await this.unpauseOperation.execute(options);
+    }
+
+    /**
+     * Replace a token's custom fee schedule.
+     *
+     * Replaces the token's existing custom fee schedule with the supplied
+     * list. Pass an empty `customFees` array to clear all custom fees.
+     * The token must have been created with a fee-schedule key, and that
+     * fee-schedule key must sign — supply it via `additionalSigners`.
+     *
+     * Note: `TokenFeeScheduleUpdate` is not whitelisted for scheduling on
+     * the network, so no scheduled variant is exposed.
+     *
+     * @param options.tokenId - Token whose fee schedule will be replaced
+     * @param options.customFees - Replacement fee schedule (empty array clears all fees)
+     */
+    async updateTokenFeeSchedule(
+        options: UpdateTokenFeeScheduleOptions,
+    ): Promise<void> {
+        return await this.feeScheduleUpdateOperation.execute(options);
     }
 
     private buildFungibleOperationOptions(

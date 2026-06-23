@@ -14,6 +14,9 @@ export {
     TopicId,
     Hbar,
     TransferTransaction,
+    CustomFixedFee,
+    CustomFractionalFee,
+    CustomRoyaltyFee,
 } from "@hiero-ledger/sdk";
 
 // Configuration
