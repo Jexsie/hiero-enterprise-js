@@ -16,6 +16,8 @@ export type {
     PauseTokenOptions,
     UnpauseTokenOptions,
     UpdateTokenFeeScheduleOptions,
+    AirdropFungibleTokenOptions,
+    AirdropFungibleToken,
 } from "./TokenService.js";
 export type {
     TokenCreateOperationOptions,
@@ -33,4 +35,6 @@ export type {
     TokenPauseOperationOptions,
     TokenUnpauseOperationOptions,
     TokenFeeScheduleUpdateOperationOptions,
+    TokenAirdropOperationOptions,
+    TokenAirdrop,
 } from "./operations/index.js";
