@@ -11,3 +11,4 @@ export { TokenUnfreezeValidator } from "./TokenUnfreezeValidator.js";
 export { TokenGrantKycValidator } from "./TokenGrantKycValidator.js";
 export { TokenRevokeKycValidator } from "./TokenRevokeKycValidator.js";
 export { TokenPauseValidator } from "./TokenPauseValidator.js";
+export { TokenUnpauseValidator } from "./TokenUnpauseValidator.js";

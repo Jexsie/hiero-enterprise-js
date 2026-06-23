@@ -50,3 +50,7 @@ export {
     TokenPauseOperation,
     type TokenPauseOperationOptions,
 } from "./TokenPauseOperation.js";
+export {
+    TokenUnpauseOperation,
+    type TokenUnpauseOperationOptions,
+} from "./TokenUnpauseOperation.js";
