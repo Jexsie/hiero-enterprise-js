@@ -18,6 +18,7 @@ import {
     TokenFreezeOperation,
     TokenUnfreezeOperation,
     TokenGrantKycOperation,
+    TokenRevokeKycOperation,
 } from "./operations/index.js";
 import type {
     TokenCreateOperationOptions,
@@ -31,6 +32,7 @@ import type {
     TokenFreezeOperationOptions,
     TokenUnfreezeOperationOptions,
     TokenGrantKycOperationOptions,
+    TokenRevokeKycOperationOptions,
 } from "./operations/index.js";
 
 /**
@@ -98,6 +100,9 @@ export type UnfreezeTokenOptions = TokenUnfreezeOperationOptions;
 /** Options for granting KYC approval on a token relationship for a specific account. */
 export type GrantKycTokenOptions = TokenGrantKycOperationOptions;
 
+/** Options for revoking KYC approval on a token relationship for a specific account. */
+export type RevokeKycTokenOptions = TokenRevokeKycOperationOptions;
+
 /**
  * Service for managing native tokens on the Hiero network (HTS) — covers
  * both fungible tokens and non-fungible token (NFT) collections via a
@@ -115,6 +120,7 @@ export class TokenService {
     private readonly freezeOperation: TokenFreezeOperation;
     private readonly unfreezeOperation: TokenUnfreezeOperation;
     private readonly grantKycOperation: TokenGrantKycOperation;
+    private readonly revokeKycOperation: TokenRevokeKycOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TokenCreateOperation(context);
@@ -128,6 +134,7 @@ export class TokenService {
         this.freezeOperation = new TokenFreezeOperation(context);
         this.unfreezeOperation = new TokenUnfreezeOperation(context);
         this.grantKycOperation = new TokenGrantKycOperation(context);
+        this.revokeKycOperation = new TokenRevokeKycOperation(context);
     }
 
     /**
@@ -563,6 +570,25 @@ export class TokenService {
      */
     async grantKycToken(options: GrantKycTokenOptions): Promise<void> {
         return await this.grantKycOperation.execute(options);
+    }
+
+    /**
+     * Revoke KYC approval on a token relationship for a specific account.
+     *
+     * Marks the target account as no longer KYC-approved for the given
+     * token, preventing further token transfers until KYC is re-granted.
+     * The token must have been created with a KYC key, and that KYC key
+     * must sign — supply it via `additionalSigners`. The target account
+     * must already be associated with the token.
+     *
+     * Note: `TokenRevokeKyc` is not whitelisted for scheduling on the
+     * network, so no scheduled variant is exposed.
+     *
+     * @param options.tokenId - Token whose relationship will have KYC revoked
+     * @param options.accountId - Account to revoke KYC approval from
+     */
+    async revokeKycToken(options: RevokeKycTokenOptions): Promise<void> {
+        return await this.revokeKycOperation.execute(options);
     }
 
     private buildFungibleOperationOptions(

@@ -42,3 +42,7 @@ export {
     TokenGrantKycOperation,
     type TokenGrantKycOperationOptions,
 } from "./TokenGrantKycOperation.js";
+export {
+    TokenRevokeKycOperation,
+    type TokenRevokeKycOperationOptions,
+} from "./TokenRevokeKycOperation.js";
