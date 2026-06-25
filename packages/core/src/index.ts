@@ -13,6 +13,8 @@ export {
     TokenId,
     TopicId,
     Hbar,
+    NftId,
+    PendingAirdropId,
     TransferTransaction,
     CustomFixedFee,
     CustomFractionalFee,

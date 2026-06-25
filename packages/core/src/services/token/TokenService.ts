@@ -24,6 +24,7 @@ import {
     TokenFeeScheduleUpdateOperation,
     TokenAirdropOperation,
     TokenAirdropNftOperation,
+    TokenClaimAirdropOperation,
 } from "./operations/index.js";
 import type {
     TokenCreateOperationOptions,
@@ -45,6 +46,7 @@ import type {
     TokenAirdrop,
     TokenAirdropNftOperationOptions,
     NftAirdrop,
+    TokenClaimAirdropOperationOptions,
 } from "./operations/index.js";
 
 /**
@@ -138,6 +140,12 @@ export type AirdropNftOptions = TokenAirdropNftOperationOptions;
 export type AirdropNft = NftAirdrop;
 
 /**
+ * Options for claiming one or more pending airdrops. A single claim
+ * transaction may mix fungible and NFT pending airdrop IDs.
+ */
+export type ClaimAirdropOptions = TokenClaimAirdropOperationOptions;
+
+/**
  * Service for managing native tokens on the Hiero network (HTS) — covers
  * both fungible tokens and non-fungible token (NFT) collections via a
  * single unified surface.
@@ -160,6 +168,7 @@ export class TokenService {
     private readonly feeScheduleUpdateOperation: TokenFeeScheduleUpdateOperation;
     private readonly airdropOperation: TokenAirdropOperation;
     private readonly airdropNftOperation: TokenAirdropNftOperation;
+    private readonly claimAirdropOperation: TokenClaimAirdropOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TokenCreateOperation(context);
@@ -181,6 +190,7 @@ export class TokenService {
         );
         this.airdropOperation = new TokenAirdropOperation(context);
         this.airdropNftOperation = new TokenAirdropNftOperation(context);
+        this.claimAirdropOperation = new TokenClaimAirdropOperation(context);
     }
 
     /**
@@ -749,6 +759,64 @@ export class TokenService {
      */
     async airdropNft(options: AirdropNftOptions): Promise<void> {
         return await this.airdropNftOperation.execute(options);
+    }
+
+    /**
+     * Claim one or more previously-created pending airdrops, atomically
+     * crediting the receiver(s).
+     *
+     * A pending airdrop is created whenever {@link TokenService.airdropFungibleToken}
+     * or {@link TokenService.airdropNft} cannot immediately credit the
+     * receiver — typically because the receiver is not associated to the
+     * token and has no free auto-association slots, or because the
+     * account requires explicit signatures for inbound transfers.
+     *
+     * A single claim transaction may mix fungible and NFT pending
+     * airdrops freely: `PendingAirdropId` encodes both kinds (`tokenId`
+     * for fungible, `nftId` for NFT) and the underlying transaction
+     * handles them uniformly.
+     *
+     * **Signing.** Each distinct receiver named in the pending airdrops
+     * must sign — supply their keys via `additionalSigners`. The
+     * operator pays the transaction fee.
+     *
+     * **Discovering pending airdrop IDs.** Construct them directly when
+     * the caller already knows `(senderId, receiverId, tokenId | nftId)`
+     * — e.g. immediately after issuing the airdrop. Otherwise, query the
+     * mirror node
+     * (`/api/v1/accounts/{id}/airdrops/pending`) or inspect account
+     * state to enumerate outstanding pending airdrops for a receiver.
+     *
+     * Note: `TokenClaimAirdrop` is not whitelisted for scheduling on the
+     * network, so no scheduled variant is exposed.
+     *
+     * @param options.pendingAirdropIds - One or more `PendingAirdropId`
+     *     entries (fungible and / or NFT) to claim atomically in a
+     *     single transaction.
+     *
+     * @example
+     * ```typescript
+     * import { PendingAirdropId, NftId, TokenId } from "@hiero-enterprise/core";
+     *
+     * await tokenService.claimAirdrop({
+     *   pendingAirdropIds: [
+     *     new PendingAirdropId({
+     *       senderId: "0.0.700",
+     *       receiverId: "0.0.800",
+     *       tokenId: "0.0.500",                                  // fungible
+     *     }),
+     *     new PendingAirdropId({
+     *       senderId: "0.0.700",
+     *       receiverId: "0.0.800",
+     *       nftId: new NftId(TokenId.fromString("0.0.600"), 1),   // NFT
+     *     }),
+     *   ],
+     *   additionalSigners: [receiverKey],
+     * });
+     * ```
+     */
+    async claimAirdrop(options: ClaimAirdropOptions): Promise<void> {
+        return await this.claimAirdropOperation.execute(options);
     }
 
     private buildFungibleOperationOptions(
