@@ -1,128 +1,118 @@
-import type { NftId, TokenId } from "@hiero-ledger/sdk";
-import {
-    AccountId,
-    TokenDissociateTransaction,
-    TokenRejectTransaction,
-} from "@hiero-ledger/sdk";
+import type { NftId, PrivateKey, TokenId } from "@hiero-ledger/sdk";
+import { AccountId, TokenRejectFlow } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
-import { TransactionExecutor } from "../../transaction/index.js";
-import type { TransactionOptions } from "../../transaction/index.js";
+import { normalizeError } from "../../../errors/index.js";
 import { TokenRejectValidator } from "../validation/index.js";
 
 /**
- * Low-level options for rejecting tokens from an owner account.
+ * Options for the SDK's `TokenRejectFlow` helper.
  *
- * Mirrors the surface of the SDK's `TokenRejectFlow`: a single owner
- * rejects one or more fungible tokens and / or NFT serials, returning
- * them to each token's treasury, then is dissociated from those same
- * tokens. At least one of `fungibleTokenIds` or `nftIds` must be
- * supplied; both may be supplied together.
+ * Rejects one or more fungible tokens and / or NFT serials owned by
+ * `ownerId`, returning them to each token's treasury, then dissociates
+ * the owner from those same tokens. At least one of `fungibleTokenIds`
+ * or `nftIds` must be supplied; both may be supplied together.
  *
- * Extends `TransactionOptions`, so `additionalSigners` (e.g. the
- * owner's private key), `transactionMemo`, `maxTransactionFee`, etc.
- * are honored on both inner transactions.
+ * The owner account's key must sign — pass it via `ownerKey` when the
+ * owner is not the operator. The operator pays the fees.
+ *
+ * Note: `TokenRejectFlow` is an opaque SDK helper that constructs its
+ * inner transactions internally and only stores a single signer.
+ * Standard `TransactionOptions` (memo, fee, validity, node IDs,
+ * additional signers, etc.) are not exposed by the flow and are
+ * intentionally omitted from this options interface — the method is
+ * named `rejectTokensFlow` to make that limitation explicit.
  */
-export interface TokenRejectOperationOptions extends TransactionOptions {
+export interface TokenRejectOperationOptions {
     ownerId: AccountId | string;
     fungibleTokenIds?: (TokenId | string)[];
     nftIds?: NftId[];
+    /**
+     * Owner's signing key. Required when the owner is not the
+     * operator; both inner transactions (reject + dissociate) are
+     * signed with this single key.
+     */
+    ownerKey?: PrivateKey;
 }
 
-/**
- * Two-step reject-and-dissociate operation.
- *
- * Submits a `TokenRejectTransaction` followed by a
- * `TokenDissociateTransaction` for the same set of tokens — the same
- * shape as the SDK's `TokenRejectFlow`, but each step is driven through
- * `TransactionExecutor` so it picks up base `TransactionOptions`
- * (memo / fees / signers) and emits its own before/after events.
- */
 export class TokenRejectOperation {
-    private readonly executor: TransactionExecutor;
     private readonly validator: TokenRejectValidator;
 
-    constructor(context: IHieroContext) {
-        this.executor = new TransactionExecutor(context);
+    constructor(private readonly context: IHieroContext) {
         this.validator = new TokenRejectValidator();
     }
 
+    /**
+     * Execute the reject-and-dissociate flow.
+     *
+     * Failures from either inner transaction (reject or dissociate)
+     * throw a normalized `HieroError`.
+     */
     async execute(options: TokenRejectOperationOptions): Promise<void> {
         this.validator.validate(options);
 
-        const rejectTx = this.buildRejectTransaction(options);
+        const flow = this.buildFlow(options);
 
-        await this.executor.run(
-            rejectTx,
-            options,
-            {
-                type: "TokenReject",
-                serviceName: "TokenService",
-                methodName: "rejectTokens",
-                timestamp: new Date(),
-            },
-            () => undefined,
-        );
+        const event = {
+            type: "TokenRejectFlow",
+            serviceName: "TokenService",
+            methodName: "rejectTokensFlow",
+            timestamp: new Date(),
+        };
 
-        const dissociateTx = this.buildDissociateTransaction(options);
+        await this.context.emitBeforeTransaction(event);
+        const start = Date.now();
 
-        await this.executor.run(
-            dissociateTx,
-            options,
-            {
-                type: "TokenDissociate",
-                serviceName: "TokenService",
-                methodName: "rejectTokens",
-                timestamp: new Date(),
-            },
-            () => undefined,
-        );
+        try {
+            const response = await flow.execute(this.context.client);
+            const transactionId = response.transactionId.toString();
+
+            // The flow checks the receipt of both inner transactions
+            // internally — getting here means both succeeded.
+            await this.context.emitAfterTransaction({
+                ...event,
+                transactionId,
+                status: "SUCCESS",
+                durationMs: Date.now() - start,
+            });
+        } catch (error) {
+            await this.context.emitAfterTransaction({
+                ...event,
+                error:
+                    error instanceof Error ? error : new Error(String(error)),
+                durationMs: Date.now() - start,
+            });
+            throw normalizeError(error, "TokenService.rejectTokensFlow");
+        }
     }
 
-    private buildRejectTransaction(
-        options: TokenRejectOperationOptions,
-    ): TokenRejectTransaction {
-        // TokenRejectTransaction.setOwnerId stores its argument as-is —
-        // convert strings up front so the protobuf body serializes.
+    private buildFlow(options: TokenRejectOperationOptions): TokenRejectFlow {
         const ownerId =
             typeof options.ownerId === "string"
                 ? AccountId.fromString(options.ownerId)
                 : options.ownerId;
 
-        const tx = new TokenRejectTransaction().setOwnerId(ownerId);
+        const flow = new TokenRejectFlow().setOwnerId(ownerId);
 
         if (
             options.fungibleTokenIds != null &&
             options.fungibleTokenIds.length > 0
         ) {
-            tx.setTokenIds(options.fungibleTokenIds as TokenId[]);
+            flow.setTokenIds(options.fungibleTokenIds as TokenId[]);
         }
 
         if (options.nftIds != null && options.nftIds.length > 0) {
-            tx.setNftIds(options.nftIds);
+            flow.setNftIds(options.nftIds);
         }
 
-        return tx;
-    }
+        // Freeze before signing so the owner's key (if provided) attaches
+        // to a stable transaction hash. The flow's internal execute()
+        // would otherwise try to sign an unfrozen transaction.
+        flow.freezeWith(this.context.client);
 
-    private buildDissociateTransaction(
-        options: TokenRejectOperationOptions,
-    ): TokenDissociateTransaction {
-        // Dissociation needs every distinct token id touched by the reject —
-        // the explicit fungible ids plus the parent token id of each NFT
-        // serial. Duplicates would trigger TOKEN_REFERENCE_REPEATED, so
-        // de-dupe by string id.
-        const tokenIds = new Map<string, TokenId | string>();
-
-        for (const tokenId of options.fungibleTokenIds ?? []) {
-            tokenIds.set(tokenId.toString(), tokenId);
+        if (options.ownerKey != null) {
+            flow.sign(options.ownerKey);
         }
 
-        for (const nftId of options.nftIds ?? []) {
-            tokenIds.set(nftId.tokenId.toString(), nftId.tokenId);
-        }
-
-        return new TokenDissociateTransaction()
-            .setAccountId(options.ownerId)
-            .setTokenIds(Array.from(tokenIds.values()) as TokenId[]);
+        return flow;
     }
 }

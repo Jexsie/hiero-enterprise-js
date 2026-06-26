@@ -70,10 +70,10 @@ describe("TokenService reject operations [Integration]", () => {
             String(transferAmount),
         );
 
-        await tokenService.rejectTokens({
+        await tokenService.rejectTokensFlow({
             ownerId: holder.accountId,
             fungibleTokenIds: [tokenId],
-            additionalSigners: [holder.key],
+            ownerKey: holder.key,
         });
 
         await waitForMirrorNodeRecord();
@@ -143,13 +143,13 @@ describe("TokenService reject operations [Integration]", () => {
         );
         expect(tokenBalanceFor(holderBefore, tokenId)).toBe("2");
 
-        await tokenService.rejectTokens({
+        await tokenService.rejectTokensFlow({
             ownerId: holder.accountId,
             nftIds: [
                 new NftId(TokenId.fromString(tokenId), 1),
                 new NftId(TokenId.fromString(tokenId), 2),
             ],
-            additionalSigners: [holder.key],
+            ownerKey: holder.key,
         });
 
         await waitForMirrorNodeRecord();
@@ -220,11 +220,11 @@ describe("TokenService reject operations [Integration]", () => {
 
         await waitForMirrorNodeRecord();
 
-        await tokenService.rejectTokens({
+        await tokenService.rejectTokensFlow({
             ownerId: holder.accountId,
             fungibleTokenIds: [fungibleTokenId],
             nftIds: [new NftId(TokenId.fromString(nftTokenId), 1)],
-            additionalSigners: [holder.key],
+            ownerKey: holder.key,
         });
 
         await waitForMirrorNodeRecord();
@@ -250,9 +250,9 @@ describe("TokenService reject operations [Integration]", () => {
 
     it("throws when neither fungibleTokenIds nor nftIds is supplied", async () => {
         await expect(
-            tokenService.rejectTokens({
+            tokenService.rejectTokensFlow({
                 ownerId: owner.accountId,
-                additionalSigners: [owner.key],
+                ownerKey: owner.key,
             }),
         ).rejects.toThrow(/at least one fungibleTokenId or nftId/i);
     });

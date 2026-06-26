@@ -170,11 +170,12 @@ export type ClaimAirdropOptions = TokenClaimAirdropOperationOptions;
 export type CancelAirdropOptions = TokenCancelAirdropOperationOptions;
 
 /**
- * Options for rejecting one or more fungible tokens and / or NFT serials
- * held by an owner account. Submits a `TokenRejectTransaction` followed by
- * a `TokenDissociateTransaction` for the same set of tokens, mirroring
- * the SDK's `TokenRejectFlow`. A single call may mix fungible tokens and
- * NFT serials freely.
+ * Options for {@link TokenService.rejectTokensFlow} — rejecting one or
+ * more fungible tokens and / or NFT serials held by an owner account,
+ * via the SDK's `TokenRejectFlow` (reject then dissociate). A single
+ * call may mix fungible tokens and NFT serials freely. The owner's key
+ * is passed via the dedicated `ownerKey` field (the flow only supports
+ * one signer).
  */
 export type RejectTokensOptions = TokenRejectOperationOptions;
 
@@ -980,38 +981,46 @@ export class TokenService {
     /**
      * Reject one or more fungible tokens and / or NFT serials held by an
      * owner account, returning them to each token's treasury and then
-     * dissociating the owner from those tokens.
+     * dissociating the owner from those tokens in a single flow.
      *
-     * Mirrors the SDK's `TokenRejectFlow`: submits a
+     * Backed by the SDK's `TokenRejectFlow`, which submits a
      * `TokenRejectTransaction` followed by a `TokenDissociateTransaction`
      * for the same set of tokens. A single call may mix fungible token
      * IDs and NFT serials freely — supply `fungibleTokenIds` for
      * fungibles, `nftIds` for NFTs, or both. At least one of the two
      * must be non-empty.
      *
-     * The owner account's key must sign — supply it via
-     * `additionalSigners` when the owner is not the operator. The operator
-     * pays the transaction fees. Both inner transactions receive the same
-     * `TransactionOptions` (memo / fees / signers).
+     * The owner account's key must sign — supply it via `ownerKey`
+     * when the owner is not the operator. The flow only stores a single
+     * signer, applied to both inner transactions. The operator pays the
+     * fees.
+     *
+     * The `Flow` suffix is intentional: `TokenRejectFlow` is an opaque
+     * SDK helper that constructs its inner transactions internally, so
+     * the usual `TransactionOptions` surface (memo, max fee, validity
+     * duration, node IDs, additional signers, etc.) is *not* exposed on
+     * this method. If you need that level of control, build a
+     * `TokenRejectTransaction` + `TokenDissociateTransaction` pair
+     * yourself.
      *
      * @param options.ownerId - Account holding the tokens / NFTs to reject
      * @param options.fungibleTokenIds - Fungible tokens to reject (optional)
      * @param options.nftIds - NFT serials to reject (optional)
-     * @param options.additionalSigners - Extra signers (typically the owner's key)
+     * @param options.ownerKey - Owner's signing key (required when the owner is not the operator)
      *
      * @example
      * ```typescript
      * import { NftId, TokenId } from "@hiero-enterprise/core";
      *
-     * await tokenService.rejectTokens({
+     * await tokenService.rejectTokensFlow({
      *   ownerId: myAccountId,
      *   fungibleTokenIds: [TokenId.fromString("0.0.1234")],
      *   nftIds: [new NftId(TokenId.fromString("0.0.9999"), 3)],
-     *   additionalSigners: [ownerKey],
+     *   ownerKey,
      * });
      * ```
      */
-    async rejectTokens(options: RejectTokensOptions): Promise<void> {
+    async rejectTokensFlow(options: RejectTokensOptions): Promise<void> {
         return await this.rejectOperation.execute(options);
     }
 

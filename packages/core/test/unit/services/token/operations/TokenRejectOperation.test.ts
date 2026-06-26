@@ -1,254 +1,202 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
     AccountId,
-    Hbar,
     NftId,
     PrivateKey,
-    TokenDissociateTransaction,
     TokenId,
-    TokenRejectTransaction,
+    TokenRejectFlow,
 } from "@hiero-ledger/sdk";
 import { TokenService } from "../../../../../src/services/token/index.js";
 import { createMockContext } from "../../../../utils/mock-context.js";
 import type { IHieroContext } from "../../../../../src/context/index.js";
 
-const mocks = await vi.hoisted(async () => {
-    const { buildMockTxBundle } =
-        await import("../../../../utils/sdk-mocks.js");
+interface MockFlow {
+    setOwnerId: ReturnType<typeof vi.fn>;
+    setTokenIds: ReturnType<typeof vi.fn>;
+    setNftIds: ReturnType<typeof vi.fn>;
+    freezeWith: ReturnType<typeof vi.fn>;
+    sign: ReturnType<typeof vi.fn>;
+    execute: ReturnType<typeof vi.fn>;
+}
 
-    return {
-        reject: buildMockTxBundle(["setOwnerId", "setTokenIds", "setNftIds"]),
-        dissociate: buildMockTxBundle(["setAccountId", "setTokenIds"]),
+const mocks = await vi.hoisted(async () => {
+    const { vi: viHoisted } = await import("vitest");
+
+    const response = {
+        transactionId: { toString: () => "0.0.123@1234567890.000000000" },
     };
+
+    const flow: MockFlow = {
+        setOwnerId: viHoisted.fn().mockReturnThis(),
+        setTokenIds: viHoisted.fn().mockReturnThis(),
+        setNftIds: viHoisted.fn().mockReturnThis(),
+        freezeWith: viHoisted.fn().mockReturnThis(),
+        sign: viHoisted.fn().mockReturnThis(),
+        execute: viHoisted.fn().mockResolvedValue(response),
+    };
+
+    return { flow, response };
 });
 
 vi.mock("@hiero-ledger/sdk", async (importOriginal) => {
     const actual = await importOriginal<Record<string, unknown>>();
     return {
         ...actual,
-        TokenRejectTransaction: vi.fn(function () {
-            return mocks.reject.tx;
-        }),
-        TokenDissociateTransaction: vi.fn(function () {
-            return mocks.dissociate.tx;
+        TokenRejectFlow: vi.fn(function () {
+            return mocks.flow;
         }),
     };
 });
 
-describe("TokenRejectOperation (via TokenService)", () => {
+describe("TokenRejectOperation (via TokenService.rejectTokensFlow)", () => {
     let context: IHieroContext;
     let service: TokenService;
 
-    beforeEach(async () => {
+    beforeEach(() => {
         vi.clearAllMocks();
-        const { reattachMockChain } =
-            await import("../../../../utils/sdk-mocks.js");
-        reattachMockChain(mocks.reject);
-        reattachMockChain(mocks.dissociate);
+        // Re-attach the fluent chain that clearAllMocks() wipes
+        mocks.flow.setOwnerId.mockReturnThis();
+        mocks.flow.setTokenIds.mockReturnThis();
+        mocks.flow.setNftIds.mockReturnThis();
+        mocks.flow.freezeWith.mockReturnThis();
+        mocks.flow.sign.mockReturnThis();
+        mocks.flow.execute.mockResolvedValue(mocks.response);
 
         context = createMockContext();
         service = new TokenService(context);
     });
 
-    it("submits reject then dissociate for fungible tokens", async () => {
+    it("rejects fungible tokens through TokenRejectFlow", async () => {
         const tokenId = TokenId.fromString("0.0.500");
 
-        await service.rejectTokens({
+        await service.rejectTokensFlow({
             ownerId: "0.0.700",
             fungibleTokenIds: [tokenId],
         });
 
-        expect(TokenRejectTransaction).toHaveBeenCalledTimes(1);
-        expect(TokenDissociateTransaction).toHaveBeenCalledTimes(1);
-
-        expect(mocks.reject.tx.setOwnerId).toHaveBeenCalledWith(
+        expect(TokenRejectFlow).toHaveBeenCalledTimes(1);
+        expect(mocks.flow.setOwnerId).toHaveBeenCalledWith(
             AccountId.fromString("0.0.700"),
         );
-        expect(mocks.reject.tx.setTokenIds).toHaveBeenCalledWith([tokenId]);
-        expect(mocks.reject.tx.setNftIds).not.toHaveBeenCalled();
-        expect(mocks.reject.tx.execute).toHaveBeenCalledWith(context.client);
-
-        expect(mocks.dissociate.tx.setAccountId).toHaveBeenCalledWith(
-            "0.0.700",
-        );
-        expect(mocks.dissociate.tx.setTokenIds).toHaveBeenCalledWith([tokenId]);
+        expect(mocks.flow.setTokenIds).toHaveBeenCalledWith([tokenId]);
+        expect(mocks.flow.setNftIds).not.toHaveBeenCalled();
+        expect(mocks.flow.freezeWith).toHaveBeenCalledWith(context.client);
+        expect(mocks.flow.execute).toHaveBeenCalledWith(context.client);
     });
 
-    it("submits reject then dissociate for NFT serials", async () => {
-        const tokenId = TokenId.fromString("0.0.9999");
-        const nftId = new NftId(tokenId, 3);
+    it("rejects NFT serials through TokenRejectFlow", async () => {
+        const nftId = new NftId(TokenId.fromString("0.0.9999"), 3);
 
-        await service.rejectTokens({
+        await service.rejectTokensFlow({
             ownerId: "0.0.700",
             nftIds: [nftId],
         });
 
-        expect(mocks.reject.tx.setNftIds).toHaveBeenCalledWith([nftId]);
-        expect(mocks.reject.tx.setTokenIds).not.toHaveBeenCalled();
-
-        // Dissociation gets the NFT's parent token id (de-duplicated)
-        expect(mocks.dissociate.tx.setTokenIds).toHaveBeenCalledTimes(1);
-        const dissocArgs = mocks.dissociate.tx.setTokenIds.mock.calls[0][0];
-        expect(dissocArgs.map((t: TokenId) => t.toString())).toEqual([
-            "0.0.9999",
-        ]);
+        expect(mocks.flow.setNftIds).toHaveBeenCalledWith([nftId]);
+        expect(mocks.flow.setTokenIds).not.toHaveBeenCalled();
     });
 
-    it("dissociates the union of fungible + NFT parent ids, de-duplicated", async () => {
+    it("rejects fungible tokens and NFT serials in a single flow", async () => {
         const fungibleId = TokenId.fromString("0.0.1234");
-        const nftCollectionId = TokenId.fromString("0.0.9999");
-        const serial1 = new NftId(nftCollectionId, 1);
-        const serial2 = new NftId(nftCollectionId, 2);
+        const nftId = new NftId(TokenId.fromString("0.0.9999"), 3);
 
-        await service.rejectTokens({
+        await service.rejectTokensFlow({
             ownerId: "0.0.700",
             fungibleTokenIds: [fungibleId],
-            nftIds: [serial1, serial2],
+            nftIds: [nftId],
         });
 
-        expect(mocks.reject.tx.setTokenIds).toHaveBeenCalledWith([fungibleId]);
-        expect(mocks.reject.tx.setNftIds).toHaveBeenCalledWith([
-            serial1,
-            serial2,
-        ]);
-
-        const dissocArgs = mocks.dissociate.tx.setTokenIds.mock.calls[0][0];
-        expect(dissocArgs.map((t: TokenId) => t.toString())).toEqual([
-            "0.0.1234",
-            "0.0.9999",
-        ]);
-    });
-
-    it("converts string ownerId to AccountId for the reject transaction", async () => {
-        await service.rejectTokens({
-            ownerId: "0.0.700",
-            fungibleTokenIds: ["0.0.500"],
-        });
-
-        expect(mocks.reject.tx.setOwnerId).toHaveBeenCalledWith(
-            AccountId.fromString("0.0.700"),
-        );
+        expect(mocks.flow.setTokenIds).toHaveBeenCalledWith([fungibleId]);
+        expect(mocks.flow.setNftIds).toHaveBeenCalledWith([nftId]);
     });
 
     it("accepts an AccountId instance for ownerId without conversion", async () => {
         const ownerId = AccountId.fromString("0.0.700");
 
-        await service.rejectTokens({
+        await service.rejectTokensFlow({
             ownerId,
             fungibleTokenIds: ["0.0.500"],
         });
 
-        expect(mocks.reject.tx.setOwnerId).toHaveBeenCalledWith(ownerId);
+        expect(mocks.flow.setOwnerId).toHaveBeenCalledWith(ownerId);
     });
 
-    it("applies additionalSigners to both inner transactions", async () => {
+    it("applies ownerKey via flow.sign() after freezing", async () => {
         const ownerKey = PrivateKey.generateED25519();
 
-        await service.rejectTokens({
+        await service.rejectTokensFlow({
             ownerId: "0.0.700",
             fungibleTokenIds: ["0.0.500"],
-            additionalSigners: [ownerKey],
+            ownerKey,
         });
 
-        expect(mocks.reject.tx.sign).toHaveBeenCalledWith(ownerKey);
-        expect(mocks.dissociate.tx.sign).toHaveBeenCalledWith(ownerKey);
+        // Freeze must come before sign so the signature attaches to a stable hash.
+        expect(mocks.flow.freezeWith).toHaveBeenCalledWith(context.client);
+        expect(mocks.flow.sign).toHaveBeenCalledWith(ownerKey);
+
+        const freezeOrder = mocks.flow.freezeWith.mock.invocationCallOrder[0];
+        const signOrder = mocks.flow.sign.mock.invocationCallOrder[0];
+        expect(freezeOrder).toBeLessThan(signOrder);
     });
 
-    it("applies base TransactionOptions (memo, fee) to both transactions", async () => {
-        const fee = new Hbar(2);
-
-        await service.rejectTokens({
-            ownerId: "0.0.700",
-            fungibleTokenIds: ["0.0.500"],
-            transactionMemo: "reject test",
-            maxTransactionFee: fee,
-        });
-
-        expect(mocks.reject.tx.setTransactionMemo).toHaveBeenCalledWith(
-            "reject test",
-        );
-        expect(mocks.reject.tx.setMaxTransactionFee).toHaveBeenCalledWith(fee);
-        expect(mocks.dissociate.tx.setTransactionMemo).toHaveBeenCalledWith(
-            "reject test",
-        );
-        expect(mocks.dissociate.tx.setMaxTransactionFee).toHaveBeenCalledWith(
-            fee,
-        );
-    });
-
-    it("freezes both inner transactions with the context client", async () => {
-        await service.rejectTokens({
+    it("does not call sign() when ownerKey is omitted", async () => {
+        await service.rejectTokensFlow({
             ownerId: "0.0.700",
             fungibleTokenIds: ["0.0.500"],
         });
 
-        expect(mocks.reject.tx.freezeWith).toHaveBeenCalledWith(context.client);
-        expect(mocks.dissociate.tx.freezeWith).toHaveBeenCalledWith(
-            context.client,
-        );
+        expect(mocks.flow.sign).not.toHaveBeenCalled();
     });
 
-    it("emits before/after events for both reject and dissociate", async () => {
+    it("emits before/after transaction events", async () => {
         const beforeSpy = vi.spyOn(context, "emitBeforeTransaction");
         const afterSpy = vi.spyOn(context, "emitAfterTransaction");
 
-        await service.rejectTokens({
+        await service.rejectTokensFlow({
             ownerId: "0.0.700",
             fungibleTokenIds: ["0.0.500"],
         });
 
-        expect(beforeSpy).toHaveBeenCalledTimes(2);
-        expect(beforeSpy).toHaveBeenNthCalledWith(
-            1,
+        expect(beforeSpy).toHaveBeenCalledWith(
             expect.objectContaining({
-                type: "TokenReject",
+                type: "TokenRejectFlow",
                 serviceName: "TokenService",
-                methodName: "rejectTokens",
+                methodName: "rejectTokensFlow",
             }),
         );
-        expect(beforeSpy).toHaveBeenNthCalledWith(
-            2,
+        expect(afterSpy).toHaveBeenCalledWith(
             expect.objectContaining({
-                type: "TokenDissociate",
-                serviceName: "TokenService",
-                methodName: "rejectTokens",
-            }),
-        );
-
-        expect(afterSpy).toHaveBeenCalledTimes(2);
-        expect(afterSpy).toHaveBeenNthCalledWith(
-            1,
-            expect.objectContaining({
-                type: "TokenReject",
+                type: "TokenRejectFlow",
                 status: "SUCCESS",
-            }),
-        );
-        expect(afterSpy).toHaveBeenNthCalledWith(
-            2,
-            expect.objectContaining({
-                type: "TokenDissociate",
-                status: "SUCCESS",
+                transactionId: "0.0.123@1234567890.000000000",
             }),
         );
     });
 
-    it("does not submit the dissociate when reject fails", async () => {
-        const failure = new Error("reject failed");
-        mocks.reject.tx.execute.mockRejectedValueOnce(failure);
+    it("emits the after-event with the error and rethrows when the flow fails", async () => {
+        const failure = new Error("network down");
+        mocks.flow.execute.mockRejectedValueOnce(failure);
+
+        const afterSpy = vi.spyOn(context, "emitAfterTransaction");
 
         await expect(
-            service.rejectTokens({
+            service.rejectTokensFlow({
                 ownerId: "0.0.700",
                 fungibleTokenIds: ["0.0.500"],
             }),
-        ).rejects.toThrow(/reject failed/);
+        ).rejects.toThrow(/network down/);
 
-        expect(mocks.dissociate.tx.execute).not.toHaveBeenCalled();
+        expect(afterSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: "TokenRejectFlow",
+                error: failure,
+            }),
+        );
     });
 
     it("throws when ownerId is missing", async () => {
         await expect(
-            service.rejectTokens({
+            service.rejectTokensFlow({
                 ownerId: undefined as unknown as string,
                 fungibleTokenIds: ["0.0.500"],
             }),
@@ -257,7 +205,7 @@ describe("TokenRejectOperation (via TokenService)", () => {
 
     it("throws when ownerId is empty", async () => {
         await expect(
-            service.rejectTokens({
+            service.rejectTokensFlow({
                 ownerId: "",
                 fungibleTokenIds: ["0.0.500"],
             }),
@@ -266,7 +214,7 @@ describe("TokenRejectOperation (via TokenService)", () => {
 
     it("throws when neither fungibleTokenIds nor nftIds is supplied", async () => {
         await expect(
-            service.rejectTokens({
+            service.rejectTokensFlow({
                 ownerId: "0.0.700",
             }),
         ).rejects.toThrow(/at least one fungibleTokenId or nftId/i);
@@ -274,7 +222,7 @@ describe("TokenRejectOperation (via TokenService)", () => {
 
     it("throws when both fungibleTokenIds and nftIds are empty arrays", async () => {
         await expect(
-            service.rejectTokens({
+            service.rejectTokensFlow({
                 ownerId: "0.0.700",
                 fungibleTokenIds: [],
                 nftIds: [],
@@ -284,7 +232,7 @@ describe("TokenRejectOperation (via TokenService)", () => {
 
     it("throws when fungibleTokenIds contains an empty string", async () => {
         await expect(
-            service.rejectTokens({
+            service.rejectTokensFlow({
                 ownerId: "0.0.700",
                 fungibleTokenIds: [""],
             }),
@@ -293,7 +241,7 @@ describe("TokenRejectOperation (via TokenService)", () => {
 
     it("throws when nftIds contains a null entry", async () => {
         await expect(
-            service.rejectTokens({
+            service.rejectTokensFlow({
                 ownerId: "0.0.700",
                 nftIds: [null as unknown as NftId],
             }),
