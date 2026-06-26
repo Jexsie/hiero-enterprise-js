@@ -140,62 +140,6 @@ async function updateMultipleNftSerials(
     console.log();
 }
 
-/**
- * Demonstrates scheduling an NFT metadata update.
- *
- * Returns a `scheduleId` instead of executing the update — the update is
- * not applied until enough required signers have signed the schedule (via
- * `ScheduleService`). Useful when the `metadataKey` is a multi-sig key
- * and the rotation needs to be co-signed off-line.
- */
-async function scheduleUpdateNftMetadata(
-    accountService: AccountService,
-    tokenService: TokenService,
-) {
-    console.log("=== Schedule Update NFT Metadata ===\n");
-
-    const treasuryKey = PrivateKey.generateED25519();
-    const treasury = await accountService.createAccount({
-        publicKey: treasuryKey.publicKey.toStringRaw(),
-        keyType: AccountType.ED25519,
-        initialBalance: 5,
-        memo: "scheduled update-nfts treasury",
-    });
-
-    const metadataKey = PrivateKey.generateED25519();
-
-    const tokenId = await tokenService.createNft({
-        tokenName: "Scheduled Update NFTs",
-        tokenSymbol: "SUN",
-        treasuryAccountId: treasury.accountId,
-        supplyKey: treasuryKey.publicKey,
-        metadataKey: metadataKey.publicKey,
-        additionalSigners: [treasuryKey],
-    });
-    console.log("Created NFT collection:", tokenId);
-
-    await tokenService.mintToken({
-        tokenId,
-        metadata: [Buffer.from("scheduled-orig")],
-        additionalSigners: [treasuryKey],
-    });
-    console.log("Minted serial 1 with original metadata");
-
-    const scheduled = await tokenService.scheduleUpdateNfts(
-        {
-            tokenId,
-            serialNumbers: [1],
-            metadata: Buffer.from("scheduled-rotated"),
-            additionalSigners: [metadataKey],
-        },
-        { scheduleMemo: "pending metadata rotation approval" },
-    );
-
-    console.log("Schedule ID:", scheduled.scheduleId);
-    console.log("Transaction ID:", scheduled.transactionId);
-    console.log();
-}
-
 async function main() {
     const context = new HieroContext(getED25519Config());
     const accountService = new AccountService(context);
@@ -204,7 +148,6 @@ async function main() {
     try {
         await updateNftMetadata(accountService, tokenService);
         await updateMultipleNftSerials(accountService, tokenService);
-        await scheduleUpdateNftMetadata(accountService, tokenService);
         console.log("All NFT metadata update scenarios complete.");
     } finally {
         context.client.close();

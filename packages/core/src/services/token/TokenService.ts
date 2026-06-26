@@ -635,24 +635,6 @@ export class TokenService {
     }
 
     /**
-     * Schedule an NFT metadata update for deferred multi-sig execution.
-     *
-     * @param options - See {@link TokenService.updateNfts} for field details
-     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
-     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
-     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
-     */
-    async scheduleUpdateNfts(
-        options: UpdateNftsOptions,
-        scheduleOptions?: ScheduleOptions,
-    ): Promise<ScheduledResult> {
-        return await this.updateNftsOperation.schedule(
-            options,
-            scheduleOptions,
-        );
-    }
-
-    /**
      * Delete an existing token.
      *
      * Marks the token as deleted on the network. The token must have an

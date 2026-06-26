@@ -2,11 +2,7 @@ import type { TokenId } from "@hiero-ledger/sdk";
 import { TokenUpdateNftsTransaction, Long } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
 import { TransactionExecutor } from "../../transaction/index.js";
-import type {
-    TransactionOptions,
-    ScheduleOptions,
-    ScheduledResult,
-} from "../../transaction/index.js";
+import type { TransactionOptions } from "../../transaction/index.js";
 import { TokenUpdateNftsValidator } from "../validation/index.js";
 
 /**
@@ -71,28 +67,6 @@ export class TokenUpdateNftsOperation {
                 timestamp: new Date(),
             },
             () => undefined,
-        );
-    }
-
-    /** Schedule a `TokenUpdateNftsTransaction` for deferred multi-sig execution. */
-    async schedule(
-        options: TokenUpdateNftsOperationOptions,
-        scheduleOptions?: ScheduleOptions,
-    ): Promise<ScheduledResult> {
-        this.validator.validate(options);
-
-        const tx = this.build(options);
-
-        return await this.executor.scheduleRun(
-            tx,
-            options,
-            {
-                type: "TokenUpdateNfts",
-                serviceName: "TokenService",
-                methodName: "updateNfts",
-                timestamp: new Date(),
-            },
-            scheduleOptions,
         );
     }
 

@@ -101,35 +101,4 @@ describe("TokenService updateNfts operations [Integration]", () => {
         expect(decodeMirrorMetadata(nft2.metadata)).toBe("orig-2");
         expect(decodeMirrorMetadata(nft3.metadata)).toBe("rotated");
     });
-
-    it("schedules an NFT metadata update and returns a scheduleId", async () => {
-        const metadataKey = PrivateKey.generateED25519();
-
-        const tokenId = await tokenService.createNft({
-            tokenName: "Schedule Update NFT",
-            tokenSymbol: "SUN",
-            treasuryAccountId: owner.accountId,
-            supplyKey: owner.key.publicKey,
-            metadataKey: metadataKey.publicKey,
-            additionalSigners: [owner.key],
-        });
-
-        await tokenService.mintToken({
-            tokenId,
-            metadata: [Buffer.from("scheduled-orig")],
-            additionalSigners: [owner.key],
-        });
-
-        const scheduled = await tokenService.scheduleUpdateNfts(
-            {
-                tokenId,
-                serialNumbers: [1],
-                metadata: Buffer.from("scheduled-v2"),
-            },
-            { scheduleMemo: "integration scheduled updateNfts" },
-        );
-
-        expect(scheduled.scheduleId).toMatch(/^0\.0\.\d+$/);
-        expect(scheduled.transactionId).toBeDefined();
-    });
 });
