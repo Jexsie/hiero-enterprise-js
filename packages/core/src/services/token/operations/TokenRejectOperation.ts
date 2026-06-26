@@ -1,5 +1,5 @@
-import type { NftId, PrivateKey, TokenId } from "@hiero-ledger/sdk";
-import { AccountId, TokenRejectFlow } from "@hiero-ledger/sdk";
+import type { NftId, PrivateKey } from "@hiero-ledger/sdk";
+import { AccountId, TokenId, TokenRejectFlow } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
 import { normalizeError } from "../../../errors/index.js";
 import { TokenRejectValidator } from "../validation/index.js";
@@ -97,7 +97,10 @@ export class TokenRejectOperation {
             options.fungibleTokenIds != null &&
             options.fungibleTokenIds.length > 0
         ) {
-            flow.setTokenIds(options.fungibleTokenIds as TokenId[]);
+            const tokenIds = options.fungibleTokenIds.map((id) =>
+                typeof id === "string" ? TokenId.fromString(id) : id,
+            );
+            flow.setTokenIds(tokenIds);
         }
 
         if (options.nftIds != null && options.nftIds.length > 0) {

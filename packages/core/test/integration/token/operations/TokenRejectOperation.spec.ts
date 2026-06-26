@@ -96,41 +96,55 @@ describe("TokenService reject operations [Integration]", () => {
     it("rejects NFT serials, returning them to the treasury and dissociating the holder", async () => {
         const holder = await createTestAccount(accountService, 2);
 
-        const tokenId = await tokenService.createNft({
-            tokenName: "Reject NFT Integration",
-            tokenSymbol: "RNI",
+        // HIP-904 requires every TokenReference in a single TokenReject
+        // to have a unique token ID, so we mint TWO collections and
+        // transfer one serial of each to the holder. Rejecting both in
+        // one flow also exercises the dissociate step for two tokens.
+        const tokenIdA = await tokenService.createNft({
+            tokenName: "Reject NFT A",
+            tokenSymbol: "RNA",
+            treasuryAccountId: owner.accountId,
+            supplyKey: owner.key.publicKey,
+            additionalSigners: [owner.key],
+        });
+
+        const tokenIdB = await tokenService.createNft({
+            tokenName: "Reject NFT B",
+            tokenSymbol: "RNB",
             treasuryAccountId: owner.accountId,
             supplyKey: owner.key.publicKey,
             additionalSigners: [owner.key],
         });
 
         await tokenService.mintToken({
-            tokenId,
-            metadata: [
-                Buffer.from("reject-nft-1"),
-                Buffer.from("reject-nft-2"),
-                Buffer.from("reject-nft-3"),
-            ],
+            tokenId: tokenIdA,
+            metadata: [Buffer.from("a-1")],
+            additionalSigners: [owner.key],
+        });
+        await tokenService.mintToken({
+            tokenId: tokenIdB,
+            metadata: [Buffer.from("b-1")],
             additionalSigners: [owner.key],
         });
 
-        await tokenService.associateToken({
-            accountId: holder.accountId,
-            tokenId,
-            additionalSigners: [holder.key],
-        });
+        for (const tokenId of [tokenIdA, tokenIdB]) {
+            await tokenService.associateToken({
+                accountId: holder.accountId,
+                tokenId,
+                additionalSigners: [holder.key],
+            });
+        }
 
-        // Transfer serials 1 and 2 to the holder; serial 3 stays with treasury.
         await accountService.transferNft(
-            tokenId,
+            tokenIdA,
             1,
             holder.accountId,
             owner.accountId,
             { additionalSigners: [owner.key] },
         );
         await accountService.transferNft(
-            tokenId,
-            2,
+            tokenIdB,
+            1,
             holder.accountId,
             owner.accountId,
             { additionalSigners: [owner.key] },
@@ -141,29 +155,35 @@ describe("TokenService reject operations [Integration]", () => {
         const holderBefore = await accountService.getAccountBalance(
             holder.accountId,
         );
-        expect(tokenBalanceFor(holderBefore, tokenId)).toBe("2");
+        expect(tokenBalanceFor(holderBefore, tokenIdA)).toBe("1");
+        expect(tokenBalanceFor(holderBefore, tokenIdB)).toBe("1");
 
         await tokenService.rejectTokensFlow({
             ownerId: holder.accountId,
             nftIds: [
-                new NftId(TokenId.fromString(tokenId), 1),
-                new NftId(TokenId.fromString(tokenId), 2),
+                new NftId(TokenId.fromString(tokenIdA), 1),
+                new NftId(TokenId.fromString(tokenIdB), 1),
             ],
             ownerKey: holder.key,
         });
 
         await waitForMirrorNodeRecord();
 
-        // Holder is dissociated from the collection; treasury holds all 3 again.
+        // Holder is dissociated from both collections; each treasury
+        // holds its only serial again.
         const holderTokens = await queryAccountTokens(holder.accountId);
         expect(
-            holderTokens.find((t) => t.token_id === tokenId),
+            holderTokens.find((t) => t.token_id === tokenIdA),
+        ).toBeUndefined();
+        expect(
+            holderTokens.find((t) => t.token_id === tokenIdB),
         ).toBeUndefined();
 
         const treasuryBalance = await accountService.getAccountBalance(
             owner.accountId,
         );
-        expect(tokenBalanceFor(treasuryBalance, tokenId)).toBe("3");
+        expect(tokenBalanceFor(treasuryBalance, tokenIdA)).toBe("1");
+        expect(tokenBalanceFor(treasuryBalance, tokenIdB)).toBe("1");
     });
 
     it("rejects fungible tokens and NFT serials in a single call", async () => {
