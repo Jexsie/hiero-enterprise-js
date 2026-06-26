@@ -15,3 +15,4 @@ export { TokenUnpauseValidator } from "./TokenUnpauseValidator.js";
 export { TokenFeeScheduleUpdateValidator } from "./TokenFeeScheduleUpdateValidator.js";
 export { TokenAirdropValidator } from "./TokenAirdropValidator.js";
 export { TokenAirdropNftValidator } from "./TokenAirdropNftValidator.js";
+export { TokenClaimAirdropValidator } from "./TokenClaimAirdropValidator.js";
