@@ -25,6 +25,7 @@ import {
     TokenAirdropOperation,
     TokenAirdropNftOperation,
     TokenClaimAirdropOperation,
+    TokenCancelAirdropOperation,
 } from "./operations/index.js";
 import type {
     TokenCreateOperationOptions,
@@ -47,6 +48,7 @@ import type {
     TokenAirdropNftOperationOptions,
     NftAirdrop,
     TokenClaimAirdropOperationOptions,
+    TokenCancelAirdropOperationOptions,
 } from "./operations/index.js";
 
 /**
@@ -146,6 +148,13 @@ export type AirdropNft = NftAirdrop;
 export type ClaimAirdropOptions = TokenClaimAirdropOperationOptions;
 
 /**
+ * Options for cancelling one or more pending airdrops issued by the
+ * sender. A single cancel transaction may mix fungible and NFT pending
+ * airdrop IDs.
+ */
+export type CancelAirdropOptions = TokenCancelAirdropOperationOptions;
+
+/**
  * Service for managing native tokens on the Hiero network (HTS) — covers
  * both fungible tokens and non-fungible token (NFT) collections via a
  * single unified surface.
@@ -169,6 +178,7 @@ export class TokenService {
     private readonly airdropOperation: TokenAirdropOperation;
     private readonly airdropNftOperation: TokenAirdropNftOperation;
     private readonly claimAirdropOperation: TokenClaimAirdropOperation;
+    private readonly cancelAirdropOperation: TokenCancelAirdropOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TokenCreateOperation(context);
@@ -191,6 +201,7 @@ export class TokenService {
         this.airdropOperation = new TokenAirdropOperation(context);
         this.airdropNftOperation = new TokenAirdropNftOperation(context);
         this.claimAirdropOperation = new TokenClaimAirdropOperation(context);
+        this.cancelAirdropOperation = new TokenCancelAirdropOperation(context);
     }
 
     /**
@@ -817,6 +828,68 @@ export class TokenService {
      */
     async claimAirdrop(options: ClaimAirdropOptions): Promise<void> {
         return await this.claimAirdropOperation.execute(options);
+    }
+
+    /**
+     * Cancel one or more previously-issued pending airdrops, returning
+     * the sender's escrowed assets to its available balance.
+     *
+     * A pending airdrop is created whenever {@link TokenService.airdropFungibleToken}
+     * or {@link TokenService.airdropNft} cannot immediately credit the
+     * receiver — typically because the receiver is not associated to the
+     * token and has no free auto-association slots, or because the
+     * account requires explicit signatures for inbound transfers. The
+     * sender retains the right to reclaim those pending entries by
+     * cancelling them.
+     *
+     * A single cancel transaction may mix fungible and NFT pending
+     * airdrops freely: `PendingAirdropId` encodes both kinds (`tokenId`
+     * for fungible, `nftId` for NFT) and the underlying transaction
+     * handles them uniformly.
+     *
+     * **Signing.** Each distinct sender named in the pending airdrops
+     * must sign — supply their keys via `additionalSigners`. The
+     * operator pays the transaction fee. (Contrast with
+     * {@link TokenService.claimAirdrop}, which requires the receivers'
+     * signatures.)
+     *
+     * **Discovering pending airdrop IDs.** Construct them directly when
+     * the sender already knows `(senderId, receiverId, tokenId | nftId)`
+     * — e.g. immediately after issuing the airdrop. Otherwise, query the
+     * mirror node
+     * (`/api/v1/accounts/{id}/airdrops/outstanding`) to enumerate the
+     * sender's outstanding pending airdrops.
+     *
+     * Note: `TokenCancelAirdrop` is not whitelisted for scheduling on the
+     * network, so no scheduled variant is exposed.
+     *
+     * @param options.pendingAirdropIds - One or more `PendingAirdropId`
+     *     entries (fungible and / or NFT) to cancel atomically in a
+     *     single transaction.
+     *
+     * @example
+     * ```typescript
+     * import { PendingAirdropId, NftId, TokenId } from "@hiero-enterprise/core";
+     *
+     * await tokenService.cancelAirdrop({
+     *   pendingAirdropIds: [
+     *     new PendingAirdropId({
+     *       senderId: "0.0.700",
+     *       receiverId: "0.0.800",
+     *       tokenId: "0.0.500",                                  // fungible
+     *     }),
+     *     new PendingAirdropId({
+     *       senderId: "0.0.700",
+     *       receiverId: "0.0.800",
+     *       nftId: new NftId(TokenId.fromString("0.0.600"), 1),   // NFT
+     *     }),
+     *   ],
+     *   additionalSigners: [senderKey],
+     * });
+     * ```
+     */
+    async cancelAirdrop(options: CancelAirdropOptions): Promise<void> {
+        return await this.cancelAirdropOperation.execute(options);
     }
 
     private buildFungibleOperationOptions(
