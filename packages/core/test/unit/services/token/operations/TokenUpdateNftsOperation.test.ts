@@ -141,26 +141,4 @@ describe("TokenUpdateNftsOperation (via TokenService)", () => {
 
         expect(TokenUpdateNftsTransaction).not.toHaveBeenCalled();
     });
-
-    it("scheduleUpdateNfts wraps the transaction and returns a scheduled result", async () => {
-        const result = await service.scheduleUpdateNfts(
-            {
-                tokenId: "0.0.500",
-                serialNumbers: [1, 2],
-                metadata: new Uint8Array([4, 2]),
-            },
-            { scheduleMemo: "rotate nft metadata" },
-        );
-
-        const tx = vi.mocked(TokenUpdateNftsTransaction).mock.results[0].value;
-
-        expect(tx.setTokenId).toHaveBeenCalledWith("0.0.500");
-        expect(tx.setMetadata).toHaveBeenCalledWith(new Uint8Array([4, 2]));
-        expect(tx.schedule).toHaveBeenCalled();
-        expect(mocks.scheduleTx.setScheduleMemo).toHaveBeenCalledWith(
-            "rotate nft metadata",
-        );
-        expect(result.scheduleId).toBe("0.0.777");
-        expect(result.transactionId).toBe("0.0.123@1234567890.000000000");
-    });
 });

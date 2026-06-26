@@ -18,3 +18,4 @@ export { TokenAirdropValidator } from "./TokenAirdropValidator.js";
 export { TokenAirdropNftValidator } from "./TokenAirdropNftValidator.js";
 export { TokenClaimAirdropValidator } from "./TokenClaimAirdropValidator.js";
 export { TokenCancelAirdropValidator } from "./TokenCancelAirdropValidator.js";
+export { TokenRejectValidator } from "./TokenRejectValidator.js";
