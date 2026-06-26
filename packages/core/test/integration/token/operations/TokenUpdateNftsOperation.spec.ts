@@ -125,7 +125,6 @@ describe("TokenService updateNfts operations [Integration]", () => {
                 tokenId,
                 serialNumbers: [1],
                 metadata: Buffer.from("scheduled-v2"),
-                additionalSigners: [metadataKey],
             },
             { scheduleMemo: "integration scheduled updateNfts" },
         );
