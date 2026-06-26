@@ -46,3 +46,4 @@ export type {
     TokenClaimAirdropOperationOptions,
     TokenCancelAirdropOperationOptions,
 } from "./operations/index.js";
+export type { TokenInfoResult, TokenNftInfoResult } from "./queries/index.js";
