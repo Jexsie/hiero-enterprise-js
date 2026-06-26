@@ -27,6 +27,10 @@ export {
     type TokenUpdateOperationOptions,
 } from "./TokenUpdateOperation.js";
 export {
+    TokenUpdateNftsOperation,
+    type TokenUpdateNftsOperationOptions,
+} from "./TokenUpdateNftsOperation.js";
+export {
     TokenDeleteOperation,
     type TokenDeleteOperationOptions,
 } from "./TokenDeleteOperation.js";
