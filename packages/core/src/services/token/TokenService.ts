@@ -18,6 +18,7 @@ import {
     TokenAssociateOperation,
     TokenDissociateOperation,
     TokenUpdateOperation,
+    TokenUpdateNftsOperation,
     TokenDeleteOperation,
     TokenFreezeOperation,
     TokenUnfreezeOperation,
@@ -39,6 +40,7 @@ import type {
     TokenAssociateOperationOptions,
     TokenDissociateOperationOptions,
     TokenUpdateOperationOptions,
+    TokenUpdateNftsOperationOptions,
     TokenDeleteOperationOptions,
     TokenFreezeOperationOptions,
     TokenUnfreezeOperationOptions,
@@ -108,6 +110,13 @@ export type DissociateTokenOptions = TokenDissociateOperationOptions;
 /** Options for updating an existing token's mutable properties. */
 export type UpdateTokenOptions = TokenUpdateOperationOptions;
 
+/**
+ * Options for updating the metadata bytes of one or more specific NFT
+ * serials within a collection. The same `metadata` value is applied to
+ * every listed serial.
+ */
+export type UpdateNftsOptions = TokenUpdateNftsOperationOptions;
+
 /** Options for deleting an existing token. */
 export type DeleteTokenOptions = TokenDeleteOperationOptions;
 
@@ -171,6 +180,7 @@ export class TokenService {
     private readonly associateOperation: TokenAssociateOperation;
     private readonly dissociateOperation: TokenDissociateOperation;
     private readonly updateOperation: TokenUpdateOperation;
+    private readonly updateNftsOperation: TokenUpdateNftsOperation;
     private readonly deleteOperation: TokenDeleteOperation;
     private readonly freezeOperation: TokenFreezeOperation;
     private readonly unfreezeOperation: TokenUnfreezeOperation;
@@ -194,6 +204,7 @@ export class TokenService {
         this.associateOperation = new TokenAssociateOperation(context);
         this.dissociateOperation = new TokenDissociateOperation(context);
         this.updateOperation = new TokenUpdateOperation(context);
+        this.updateNftsOperation = new TokenUpdateNftsOperation(context);
         this.deleteOperation = new TokenDeleteOperation(context);
         this.freezeOperation = new TokenFreezeOperation(context);
         this.unfreezeOperation = new TokenUnfreezeOperation(context);
@@ -572,6 +583,59 @@ export class TokenService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.updateOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Update the metadata bytes of one or more specific NFT serials
+     * within a collection. The same `metadata` value is applied to every
+     * serial listed in `options.serialNumbers`.
+     *
+     * The collection must have a `metadataKey` set, and that key must
+     * sign the transaction — supply it via `additionalSigners` (or
+     * `externalSigners` for HSM/KMS keys). If the collection has no
+     * `metadataKey`, rotate one in first via {@link TokenService.updateToken}.
+     *
+     * Updating an NFT's metadata does not affect its ownership, serial
+     * number, or transfer history — only the on-chain metadata bytes
+     * change. To update collection-level metadata instead (the parent
+     * token's `metadata` field), use {@link TokenService.updateToken}.
+     *
+     * The Hedera network limits NFT metadata to 100 bytes per serial.
+     *
+     * @param options.tokenId - The NFT collection holding the serials to update
+     * @param options.serialNumbers - The serials within the collection to update (must be non-empty)
+     * @param options.metadata - The new metadata bytes to apply to every listed serial
+     *
+     * @example
+     * ```typescript
+     * await tokenService.updateNfts({
+     *   tokenId: "0.0.12345",
+     *   serialNumbers: [1, 2, 3],
+     *   metadata: new TextEncoder().encode("ipfs://QmNewMetadataCid"),
+     *   additionalSigners: [metadataKey],
+     * });
+     * ```
+     */
+    async updateNfts(options: UpdateNftsOptions): Promise<void> {
+        return await this.updateNftsOperation.execute(options);
+    }
+
+    /**
+     * Schedule an NFT metadata update for deferred multi-sig execution.
+     *
+     * @param options - See {@link TokenService.updateNfts} for field details
+     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
+     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
+     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
+     */
+    async scheduleUpdateNfts(
+        options: UpdateNftsOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return await this.updateNftsOperation.schedule(
+            options,
+            scheduleOptions,
+        );
     }
 
     /**

@@ -33,6 +33,8 @@ export interface MirrorNftRecord {
     token_id?: string;
     serial_number?: number;
     account_id?: string;
+    /** Base64-encoded metadata bytes (Mirror Node REST format). */
+    metadata?: string;
 }
 
 export interface MirrorAccountToken {

@@ -5,6 +5,7 @@ export { TokenWipeValidator } from "./TokenWipeValidator.js";
 export { TokenAssociateValidator } from "./TokenAssociateValidator.js";
 export { TokenDissociateValidator } from "./TokenDissociateValidator.js";
 export { TokenUpdateValidator } from "./TokenUpdateValidator.js";
+export { TokenUpdateNftsValidator } from "./TokenUpdateNftsValidator.js";
 export { TokenDeleteValidator } from "./TokenDeleteValidator.js";
 export { TokenFreezeValidator } from "./TokenFreezeValidator.js";
 export { TokenUnfreezeValidator } from "./TokenUnfreezeValidator.js";
