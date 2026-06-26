@@ -3,9 +3,13 @@ import {
     TokenSupplyType,
     type Key,
     type Long,
+    type NftId,
+    type TokenId,
 } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../context/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
+import { TokenInfoQuery, TokenNftInfoQuery } from "./queries/index.js";
+import type { TokenInfoResult, TokenNftInfoResult } from "./queries/index.js";
 import {
     TokenCreateOperation,
     TokenMintOperation,
@@ -189,6 +193,8 @@ export class TokenService {
     private readonly airdropNftOperation: TokenAirdropNftOperation;
     private readonly claimAirdropOperation: TokenClaimAirdropOperation;
     private readonly cancelAirdropOperation: TokenCancelAirdropOperation;
+    private readonly tokenInfoQuery: TokenInfoQuery;
+    private readonly tokenNftInfoQuery: TokenNftInfoQuery;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TokenCreateOperation(context);
@@ -213,6 +219,8 @@ export class TokenService {
         this.airdropNftOperation = new TokenAirdropNftOperation(context);
         this.claimAirdropOperation = new TokenClaimAirdropOperation(context);
         this.cancelAirdropOperation = new TokenCancelAirdropOperation(context);
+        this.tokenInfoQuery = new TokenInfoQuery(context);
+        this.tokenNftInfoQuery = new TokenNftInfoQuery(context);
     }
 
     /**
@@ -954,6 +962,60 @@ export class TokenService {
      */
     async cancelAirdrop(options: CancelAirdropOptions): Promise<void> {
         return await this.cancelAirdropOperation.execute(options);
+    }
+
+    /**
+     * Fetch a token's full definition (the token-class metadata): name,
+     * symbol, decimals, total supply, treasury, keys, custom fees, pause
+     * state, deletion state, etc.
+     *
+     * Works for **both** fungible tokens and NFT collections — the
+     * returned `tokenType` distinguishes the two. For per-serial NFT
+     * information (owner, metadata, approved spender), use
+     * {@link TokenService.getNftInfo} instead.
+     *
+     * @param tokenId - The token entity ID (e.g., `"0.0.12345"`)
+     * @returns A plain-object snapshot of the token definition. IDs and
+     *          large numeric fields are stringified for ergonomics;
+     *          keys are returned as raw SDK `Key` instances
+     *
+     * @example
+     * ```typescript
+     * const info = await tokenService.getTokenInfo("0.0.12345");
+     * console.log(info.name, info.symbol, info.totalSupply);
+     * if (info.tokenType === TokenType.NonFungibleUnique) {
+     *   // ... per-collection logic
+     * }
+     * ```
+     */
+    async getTokenInfo(tokenId: string | TokenId): Promise<TokenInfoResult> {
+        return await this.tokenInfoQuery.execute(tokenId);
+    }
+
+    /**
+     * Fetch information about a single NFT serial — its current owner,
+     * mint timestamp, metadata bytes, and any approved spender.
+     *
+     * Only applicable to tokens of type `NonFungibleUnique`. For the
+     * collection-level metadata (name, symbol, supply key, etc.) use
+     * {@link TokenService.getTokenInfo} instead.
+     *
+     * @param nftId - The NFT serial, either as an `NftId` instance or a
+     *   `"<tokenId>/<serial>"` / `"<tokenId>@<serial>"` string
+     * @returns A plain-object snapshot of the serial. IDs are
+     *          stringified, `creationTime` is an ISO-8601 string, and
+     *          `metadata` is the raw bytes the NFT was minted with
+     *
+     * @example
+     * ```typescript
+     * const nft = await tokenService.getNftInfo(
+     *   new NftId(TokenId.fromString("0.0.12345"), 7),
+     * );
+     * console.log(nft.accountId, nft.serial, nft.metadata);
+     * ```
+     */
+    async getNftInfo(nftId: string | NftId): Promise<TokenNftInfoResult> {
+        return await this.tokenNftInfoQuery.execute(nftId);
     }
 
     private buildFungibleOperationOptions(
