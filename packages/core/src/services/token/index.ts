@@ -21,6 +21,7 @@ export type {
     AirdropNftOptions,
     AirdropNft,
     ClaimAirdropOptions,
+    CancelAirdropOptions,
 } from "./TokenService.js";
 export type {
     TokenCreateOperationOptions,
@@ -43,4 +44,5 @@ export type {
     TokenAirdropNftOperationOptions,
     NftAirdrop,
     TokenClaimAirdropOperationOptions,
+    TokenCancelAirdropOperationOptions,
 } from "./operations/index.js";

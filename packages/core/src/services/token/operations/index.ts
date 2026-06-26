@@ -72,3 +72,7 @@ export {
     TokenClaimAirdropOperation,
     type TokenClaimAirdropOperationOptions,
 } from "./TokenClaimAirdropOperation.js";
+export {
+    TokenCancelAirdropOperation,
+    type TokenCancelAirdropOperationOptions,
+} from "./TokenCancelAirdropOperation.js";
