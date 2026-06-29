@@ -19,6 +19,8 @@ export {
     CustomFixedFee,
     CustomFractionalFee,
     CustomRoyaltyFee,
+    ContractId,
+    ContractFunctionParameters,
 } from "@hiero-ledger/sdk";
 
 // Configuration

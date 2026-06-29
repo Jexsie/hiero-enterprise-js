@@ -1,7 +1,13 @@
 import type { IHieroContext } from "../../context/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
-import { ContractCreateOperation } from "./operations/index.js";
-import type { ContractCreateOperationOptions } from "./operations/index.js";
+import {
+    ContractCreateOperation,
+    ContractExecuteOperation,
+} from "./operations/index.js";
+import type {
+    ContractCreateOperationOptions,
+    ContractExecuteOperationOptions,
+} from "./operations/index.js";
 
 /**
  * Options for deploying a smart contract via `ContractCreateTransaction`.
@@ -14,6 +20,20 @@ import type { ContractCreateOperationOptions } from "./operations/index.js";
  *   `ContractCreateFlow`-backed operation instead.
  */
 export type CreateContractOptions = ContractCreateOperationOptions;
+
+/**
+ * Options for invoking a state-mutating contract function via
+ * `ContractExecuteTransaction`.
+ *
+ * Pass exactly one call-target form:
+ * - `functionName` (with optional ABI-typed `functionParameters`) — common path;
+ *   the SDK encodes the call data.
+ * - `rawFunctionParameters` — pre-encoded ABI bytes for advanced callers.
+ *
+ * For read-only state queries, use `ContractCallQuery` instead (cheaper —
+ * no consensus round-trip, no gas charged on success).
+ */
+export type ExecuteContractOptions = ContractExecuteOperationOptions;
 
 /**
  * Service for managing smart contracts on the Hiero network (HSCS — the
@@ -34,9 +54,11 @@ export type CreateContractOptions = ContractCreateOperationOptions;
  */
 export class ContractService {
     private readonly createOperation: ContractCreateOperation;
+    private readonly executeOperation: ContractExecuteOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new ContractCreateOperation(context);
+        this.executeOperation = new ContractExecuteOperation(context);
     }
 
     /**
@@ -90,5 +112,59 @@ export class ContractService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.createOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Invoke a state-mutating function on a deployed smart contract.
+     *
+     * Resolves once the consensus node returns a successful receipt for
+     * the call. Returns nothing — the contract ID is already known to the
+     * caller, and per-call status / timing is delivered through the
+     * `before` / `after` listener events on the surrounding `HieroContext`.
+     *
+     * The call's return bytes, gas used, and logs live on the transaction
+     * record (a separate paid query). Fetch the record directly via the
+     * SDK if your caller needs them.
+     *
+     * For read-only state queries that don't mutate the ledger, prefer a
+     * `ContractCallQuery` — no consensus round-trip, no gas charged on
+     * success.
+     *
+     * @param options.contractId - Contract to invoke
+     * @param options.gas - Gas limit for the call (required)
+     * @param options.functionName - Function name to call; SDK encodes parameters
+     * @param options.functionParameters - ABI-typed parameters (paired with `functionName`)
+     * @param options.rawFunctionParameters - Pre-encoded ABI bytes (mutex with `functionName`)
+     * @param options.payableAmount - HBAR forwarded with the call (for `payable` functions)
+     *
+     * @example
+     * ```typescript
+     * await contractService.executeContract({
+     *     contractId: "0.0.12345",
+     *     gas: 100_000,
+     *     functionName: "set",
+     *     functionParameters: new ContractFunctionParameters().addUint256(42),
+     * });
+     * ```
+     */
+    async executeContract(options: ExecuteContractOptions): Promise<void> {
+        await this.executeOperation.execute(options);
+    }
+
+    /**
+     * Schedule a contract execution for deferred multi-sig execution.
+     * Returns a `scheduleId` — other parties can then sign through
+     * `ScheduleService` before the call executes automatically.
+     *
+     * @param options - Same fields as `executeContract`
+     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
+     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
+     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
+     */
+    async scheduleExecuteContract(
+        options: ExecuteContractOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return await this.executeOperation.schedule(options, scheduleOptions);
     }
 }
