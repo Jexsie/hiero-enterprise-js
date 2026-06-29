@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, vi } from "vitest";
 import { TopicCreateTransaction } from "@hiero-ledger/sdk";
 import { setupIntegrationTestEnv } from "../../utils/env.js";
 import { TransactionExecutor } from "../../../src/services/transaction/index.js";
-import type { HieroContext } from "../../../src/context/hiero-context.js";
+import type { HieroContext } from "../../../src/context/index.js";
 
 describe("TransactionExecutor [Integration]", () => {
     let context: HieroContext;

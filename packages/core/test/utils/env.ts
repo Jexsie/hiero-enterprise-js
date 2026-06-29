@@ -1,4 +1,4 @@
-import { HieroContext } from "../../src/context/hiero-context.js";
+import { HieroContext } from "../../src/context/index.js";
 
 export const IntegrationTracker = {
     lastTransactionId: "" as string | undefined,

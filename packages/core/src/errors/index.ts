@@ -1,2 +1,2 @@
-export { HieroError, HieroErrorCodes, normalizeError } from "./hiero-error.js";
-export type { HieroErrorCode } from "./hiero-error.js";
+export { HieroError, HieroErrorCodes, normalizeError } from "./HieroError.js";
+export type { HieroErrorCode } from "./HieroError.js";

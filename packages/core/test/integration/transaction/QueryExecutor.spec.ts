@@ -14,7 +14,7 @@ import {
 import { QueryExecutor } from "../../../src/services/transaction/index.js";
 import { AccountService } from "../../../src/services/index.js";
 import { HieroError } from "../../../src/errors/index.js";
-import type { HieroContext } from "../../../src/context/hiero-context.js";
+import type { HieroContext } from "../../../src/context/index.js";
 
 describe("QueryExecutor [Integration]", () => {
     let context: HieroContext;
