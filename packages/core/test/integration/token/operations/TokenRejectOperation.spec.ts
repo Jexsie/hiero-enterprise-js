@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { NftId, TokenId } from "@hiero-ledger/sdk";
 import { setupIntegrationTestEnv } from "../../../utils/env.js";
-import { waitForMirrorNodeRecord } from "../../../utils/mirror-node.js";
+import {
+    waitForMirrorNodeRecord,
+    waitForAccountTokensAbsent,
+} from "../../../utils/mirror-node.js";
 import { queryAccountTokens } from "../../../utils/mirror-node-rest.js";
 import {
     createTestAccount,
@@ -76,7 +79,12 @@ describe("TokenService reject operations [Integration]", () => {
             ownerKey: holder.key,
         });
 
+        // TokenRejectFlow submits TWO inner transactions (reject + dissociate)
+        // but only the first one's ID flows into IntegrationTracker. Wait for
+        // the dissociate's effect directly so the assertion isn't racing the
+        // mirror node.
         await waitForMirrorNodeRecord();
+        await waitForAccountTokensAbsent(holder.accountId, [tokenId]);
 
         // Post-reject: holder is dissociated from the token (no relationship)
         // and the treasury supply has been restored in full.
@@ -168,6 +176,10 @@ describe("TokenService reject operations [Integration]", () => {
         });
 
         await waitForMirrorNodeRecord();
+        await waitForAccountTokensAbsent(holder.accountId, [
+            tokenIdA,
+            tokenIdB,
+        ]);
 
         // Holder is dissociated from both collections; each treasury
         // holds its only serial again.
@@ -248,6 +260,10 @@ describe("TokenService reject operations [Integration]", () => {
         });
 
         await waitForMirrorNodeRecord();
+        await waitForAccountTokensAbsent(holder.accountId, [
+            fungibleTokenId,
+            nftTokenId,
+        ]);
 
         // Both relationships are gone after the dissociation step of the flow.
         const holderTokens = await queryAccountTokens(holder.accountId);
