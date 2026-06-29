@@ -99,28 +99,22 @@ export class ContractExecuteValidator {
         const value = options.payableAmount;
         if (value == null) return;
 
-        if (typeof value === "number" && value < 0) {
-            throw normalizeError(
-                new Error("payableAmount must not be negative."),
-                "ContractExecuteValidator",
-            );
+        let isNegative: boolean;
+        if (typeof value === "number") {
+            isNegative = value < 0;
+        } else if (typeof value === "bigint") {
+            isNegative = value < 0n;
+        } else if (typeof value === "string") {
+            isNegative = parseFloat(value) < 0;
+        } else if (Long.isLong(value)) {
+            isNegative = value.isNegative();
+        } else if (value instanceof Hbar) {
+            isNegative = value.isNegative();
+        } else {
+            isNegative = value.isNegative();
         }
 
-        if (typeof value === "bigint" && value < 0n) {
-            throw normalizeError(
-                new Error("payableAmount must not be negative."),
-                "ContractExecuteValidator",
-            );
-        }
-
-        if (Long.isLong(value) && (value as Long).isNegative()) {
-            throw normalizeError(
-                new Error("payableAmount must not be negative."),
-                "ContractExecuteValidator",
-            );
-        }
-
-        if (value instanceof Hbar && value.isNegative()) {
+        if (isNegative) {
             throw normalizeError(
                 new Error("payableAmount must not be negative."),
                 "ContractExecuteValidator",

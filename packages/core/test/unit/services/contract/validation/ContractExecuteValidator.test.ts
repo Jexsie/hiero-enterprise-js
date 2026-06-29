@@ -1,3 +1,4 @@
+import BigNumber from "bignumber.js";
 import { describe, it, expect } from "vitest";
 import { Long, Hbar } from "@hiero-ledger/sdk";
 import { ContractExecuteValidator } from "../../../../../src/services/contract/validation/index.js";
@@ -183,6 +184,51 @@ describe("ContractExecuteValidator", () => {
                     payableAmount: new Hbar(1),
                 }),
             ).not.toThrow();
+        });
+
+        it("accepts a non-negative string payableAmount", () => {
+            expect(() =>
+                validator.validate({
+                    ...baseOptions,
+                    payableAmount: "1.5",
+                }),
+            ).not.toThrow();
+        });
+
+        it("throws when payableAmount is a negative string", () => {
+            expect(() =>
+                validator.validate({
+                    ...baseOptions,
+                    payableAmount: "-1",
+                }),
+            ).toThrow(/payableAmount must not be negative/);
+        });
+
+        it("throws when payableAmount is a negative decimal string", () => {
+            expect(() =>
+                validator.validate({
+                    ...baseOptions,
+                    payableAmount: "  -0.5 ",
+                }),
+            ).toThrow(/payableAmount must not be negative/);
+        });
+
+        it("accepts a non-negative BigNumber payableAmount", () => {
+            expect(() =>
+                validator.validate({
+                    ...baseOptions,
+                    payableAmount: new BigNumber(0),
+                }),
+            ).not.toThrow();
+        });
+
+        it("throws when payableAmount is a negative BigNumber", () => {
+            expect(() =>
+                validator.validate({
+                    ...baseOptions,
+                    payableAmount: new BigNumber(-1),
+                }),
+            ).toThrow(/payableAmount must not be negative/);
         });
     });
 });
