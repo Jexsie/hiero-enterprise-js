@@ -164,7 +164,7 @@ Clients handle write operations through the Hiero SDK — transactions that go o
 | `AccountService` | Create, update, delete, approve allowances, check balances |
 | `FileService` | Store and retrieve file content on-chain |
 | `TokenService` | Create, mint, burn, and transfer fungible tokens and nfts |
-| `SmartContractService` | Deploy and call EVM-compatible smart contracts |
+| `ContractService` | Deploy and call EVM-compatible smart contracts |
 | `TopicService` | Create topics, manage keys, submit messages |
 
 ## Mirror Node Queries

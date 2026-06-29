@@ -1,4 +1,5 @@
 import { IntegrationTracker } from "./env.js";
+import { queryAccountTokens } from "./mirror-node-rest.js";
 
 const LOCAL_MIRROR_URL = process.env.HIERO_MIRROR_NODE_URL;
 
@@ -48,5 +49,36 @@ export async function waitForMirrorNodeRecord(
         `[Integration Test Timeout] Transaction ${transactionId} never appeared on the Solo Mirror Node after ${
             (maxRetries * delayMs) / 1000
         } seconds.`,
+    );
+}
+
+/**
+ * Polls the Mirror Node until every listed token relationship has been
+ * removed from `accountId`. Use this after multi-transaction SDK flows
+ * (e.g. `TokenRejectFlow`) where only the *first* inner transaction's ID
+ * is exposed to `waitForMirrorNodeRecord` — the second (dissociate) may
+ * still be propagating when the first one becomes queryable, leaving the
+ * relationship row visible with `balance: 0`.
+ */
+export async function waitForAccountTokensAbsent(
+    accountId: string,
+    tokenIds: string[],
+    maxRetries = 30,
+    delayMs = 2000,
+): Promise<void> {
+    for (let i = 0; i < maxRetries; i++) {
+        const relationships = await queryAccountTokens(accountId);
+        const stillPresent = tokenIds.filter((id) =>
+            relationships.some((t) => t.token_id === id),
+        );
+        if (stillPresent.length === 0) return;
+
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+
+    throw new Error(
+        `[Integration Test Timeout] Account ${accountId} still has token relationships [${tokenIds.join(
+            ", ",
+        )}] after ${(maxRetries * delayMs) / 1000} seconds.`,
     );
 }

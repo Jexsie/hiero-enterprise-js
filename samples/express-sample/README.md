@@ -53,6 +53,6 @@ app.use(hieroMiddleware());
 
 This single line injects all Hiero services into every request at `req.hiero`, giving you access to:
 
-- **Services**: `accountService`, `fileService`, `tokenService`, `smartContractService`, `topicService`
+- **Services**: `accountService`, `fileService`, `tokenService`, `contractService`, `topicService`
 - **Repositories**: `accountRepository`, `nftRepository`, `tokenRepository`, `topicRepository`, `transactionRepository`, `networkRepository`
 - **Infra**: `context`
