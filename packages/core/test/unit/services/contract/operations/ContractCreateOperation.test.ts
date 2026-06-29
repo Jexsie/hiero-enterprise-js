@@ -128,6 +128,19 @@ describe("ContractCreateOperation (via ContractService)", () => {
             expect(tx.setMaxAutomaticTokenAssociations).toHaveBeenCalledWith(5);
         });
 
+        it("forwards stakedAccountId when supplied (mutually exclusive with stakedNodeId)", async () => {
+            await service.createContract({
+                bytecodeFileId: "0.0.555",
+                gas: 100_000,
+                stakedAccountId: "0.0.321",
+            });
+
+            const tx = vi.mocked(ContractCreateTransaction).mock.results[0]
+                .value;
+            expect(tx.setStakedAccountId).toHaveBeenCalledWith("0.0.321");
+            expect(tx.setStakedNodeId).not.toHaveBeenCalled();
+        });
+
         it("does not call optional setters when fields are omitted", async () => {
             await service.createContract({
                 bytecodeFileId: "0.0.555",
