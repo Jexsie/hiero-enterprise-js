@@ -8,7 +8,7 @@ import type {
     TransactionListener,
     TransactionEvent,
 } from "../listeners/index.js";
-import type { IHieroContext } from "./hiero-context.interface.js";
+import type { IHieroContext } from "./HieroContext.interface.js";
 
 /**
  * Parse a private key string based on the specified key type.

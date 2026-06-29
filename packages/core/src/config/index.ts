@@ -2,5 +2,5 @@ export {
     resolveConfigFromEnv,
     resolveMirrorNodeUrl,
     assertEnvConfigValid,
-} from "./hiero-config.js";
-export type { HieroConfig } from "./hiero-config.js";
+} from "./HieroConfig.js";
+export type { HieroConfig } from "./HieroConfig.js";

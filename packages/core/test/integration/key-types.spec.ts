@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { PrivateKey } from "@hiero-ledger/sdk";
-import { HieroContext } from "../../src/context/hiero-context.js";
+import { HieroContext } from "../../src/context/index.js";
 import { OperatorKeyType } from "../../src/types/index.js";
 
 /**

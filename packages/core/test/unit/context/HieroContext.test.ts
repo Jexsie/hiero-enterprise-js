@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { HieroContext } from "../../../src/context/hiero-context.js";
+import { HieroContext } from "../../../src/context/index.js";
 import { OperatorKeyType } from "../../../src/types/index.js";
 import type { Transaction } from "@hiero-ledger/sdk";
 import { Client, PrivateKey } from "@hiero-ledger/sdk";
