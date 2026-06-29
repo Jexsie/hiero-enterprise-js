@@ -23,10 +23,12 @@ describe("ContractCreateOperation", () => {
         fileService = new FileService(ctx);
         contractService = new ContractService(ctx);
 
-        // Upload bytecode bytes to a Hiero File so subsequent contract creates
-        // can reference it by FileId — exercises the file-based deploy path.
+        // Upload the bytecode hex string as UTF-8 bytes — Hiero's file-based
+        // contract deploy expects the file contents to be the hex-encoded
+        // bytecode (the network decodes it server-side). Uploading raw decoded
+        // bytes triggers ERROR_DECODING_BYTESTRING at ContractCreate time.
         bytecodeFileId = await fileService.createFile(
-            Buffer.from(MINIMAL_BYTECODE_HEX, "hex"),
+            Buffer.from(MINIMAL_BYTECODE_HEX, "utf8"),
         );
     });
 
