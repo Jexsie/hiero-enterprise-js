@@ -1,0 +1,103 @@
+import { describe, it, expect, beforeAll } from "vitest";
+import { ContractFunctionParameters, Hbar } from "@hiero-ledger/sdk";
+import { setupIntegrationTestEnv } from "../../../utils/env.js";
+import { ContractService } from "../../../../src/services/index.js";
+
+/**
+ * SimpleStorage — solc 0.8.20 (optimized, 200 runs) output of:
+ *
+ * ```
+ * pragma solidity ^0.8.20;
+ * contract SimpleStorage {
+ *     uint256 private storedValue;
+ *     event ValueSet(uint256 value);
+ *     function set(uint256 x) public { storedValue = x; emit ValueSet(x); }
+ *     function get() public view returns (uint256) { return storedValue; }
+ *     function deposit() public payable {}
+ * }
+ * ```
+ *
+ * Function selectors:
+ * - `set(uint256)`  → `0x60fe47b1`
+ * - `get()`         → `0x6d4ce63c`
+ * - `deposit()`     → `0xd0e30db0`
+ */
+const SIMPLE_STORAGE_BYTECODE_HEX =
+    "608060405234801561000f575f80fd5b5060f48061001c5f395ff3fe608060405260043610602f575f3560e01c806360fe47b11460335780636d4ce63c14604f578063d0e30db014604d575b5f80fd5b348015603d575f80fd5b50604d604936600460a8565b606e565b005b3480156059575f80fd5b505f5460405190815260200160405180910390f35b5f8190556040518181527f012c78e2b84325878b1bd9d250d772cfe5bda7722d795f45036fa5e1e6e303fc9060200160405180910390a150565b5f6020828403121560b7575f80fd5b503591905056fea264697066735822122009540154e6be64adb0401ec95d58627b313e4e6d7f71ea91e91644a51371a05b64736f6c63430008140033";
+
+describe("ContractExecuteOperation", () => {
+    let contractService: ContractService;
+    let contractId: string;
+
+    beforeAll(async () => {
+        const ctx = setupIntegrationTestEnv();
+        contractService = new ContractService(ctx);
+
+        // Deploy the SimpleStorage contract using HIP-435 inline bytecode so
+        // we don't depend on FileService for the execute tests.
+        contractId = await contractService.createContract({
+            bytecode: Buffer.from(SIMPLE_STORAGE_BYTECODE_HEX, "hex"),
+            gas: 200_000,
+            contractMemo: "execute-operation integration target",
+        });
+    });
+
+    it("invokes a contract function via setFunction with ABI-typed parameters", async () => {
+        await expect(
+            contractService.executeContract({
+                contractId,
+                gas: 100_000,
+                functionName: "set",
+                functionParameters: new ContractFunctionParameters().addUint256(
+                    42,
+                ),
+            }),
+        ).resolves.toBeUndefined();
+    });
+
+    it("invokes a contract function via pre-encoded raw function parameters", async () => {
+        // selector("set(uint256)") || uint256(7) — bytes the SDK would have
+        // built for us if we'd used `functionName` + `functionParameters`.
+        const rawCallData = Buffer.from(
+            "60fe47b1" +
+                "0000000000000000000000000000000000000000000000000000000000000007",
+            "hex",
+        );
+
+        await expect(
+            contractService.executeContract({
+                contractId,
+                gas: 100_000,
+                rawFunctionParameters: new Uint8Array(rawCallData),
+            }),
+        ).resolves.toBeUndefined();
+    });
+
+    it("forwards HBAR via payableAmount when calling a payable function", async () => {
+        await expect(
+            contractService.executeContract({
+                contractId,
+                gas: 100_000,
+                functionName: "deposit",
+                payableAmount: new Hbar(1),
+            }),
+        ).resolves.toBeUndefined();
+    });
+
+    it("schedules a contract execution and returns a scheduleId", async () => {
+        const scheduled = await contractService.scheduleExecuteContract(
+            {
+                contractId,
+                gas: 100_000,
+                functionName: "set",
+                functionParameters: new ContractFunctionParameters().addUint256(
+                    99,
+                ),
+            },
+            { scheduleMemo: "integration scheduled contract execute" },
+        );
+
+        expect(scheduled.scheduleId).toMatch(/^0\.0\.\d+$/);
+        expect(scheduled.transactionId).toBeDefined();
+    });
+});
