@@ -1,0 +1,94 @@
+import type { IHieroContext } from "../../context/index.js";
+import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
+import { ContractCreateOperation } from "./operations/index.js";
+import type { ContractCreateOperationOptions } from "./operations/index.js";
+
+/**
+ * Options for deploying a smart contract via `ContractCreateTransaction`.
+ *
+ * Pass exactly one bytecode source:
+ * - `bytecodeFileId` — references bytecode previously uploaded via
+ *   `FileService.createFile`. Works for any contract size.
+ * - `bytecode` — embeds raw bytecode directly in the transaction (HIP-435).
+ *   Limited to ~6KB; for larger contracts without a pre-uploaded file use a
+ *   `ContractCreateFlow`-backed operation instead.
+ */
+export type CreateContractOptions = ContractCreateOperationOptions;
+
+/**
+ * Service for managing smart contracts on the Hiero network (HSCS — the
+ * Smart Contract Service).
+ *
+ * Wraps the underlying `ContractCreateTransaction` /
+ * `ContractExecuteTransaction` / `ContractCallQuery` / `ContractUpdateTransaction`
+ * / `ContractDeleteTransaction` / `ContractInfoQuery` / `ContractBytecodeQuery`
+ * SDK surface with validated, observability-aware operations. Listeners
+ * registered on the surrounding `HieroContext` see `before` / `after` events
+ * for every contract transaction submitted here.
+ *
+ * Operations are organised internally into per-transaction classes under
+ * `services/contract/operations/` (write) and `services/contract/queries/`
+ * (read); validators live alongside them in `services/contract/validation/`.
+ * This facade routes typed option objects to the right operation class so
+ * callers never have to think about the SDK transaction class hierarchy.
+ */
+export class ContractService {
+    private readonly createOperation: ContractCreateOperation;
+
+    constructor(private readonly context: IHieroContext) {
+        this.createOperation = new ContractCreateOperation(context);
+    }
+
+    /**
+     * Deploy a new smart contract.
+     *
+     * Exactly one of `bytecodeFileId` or `bytecode` must be supplied. See
+     * `CreateContractOptions` for the trade-offs between the two paths.
+     *
+     * @param options.bytecodeFileId - FileId of previously uploaded bytecode
+     * @param options.bytecode - Raw bytecode bytes embedded in-transaction (HIP-435, ~6KB max)
+     * @param options.gas - Gas limit for the constructor call (required)
+     * @param options.initialBalance - Funds transferred into the contract on creation
+     * @param options.adminKey - Admin key required to later update / delete the contract
+     * @param options.constructorParameters - Parameters passed to the contract's constructor
+     * @param options.contractMemo - Memo stored on the contract entity (max 100 bytes)
+     * @param options.autoRenewPeriod - Auto-renew period for the contract account
+     * @param options.autoRenewAccountId - Account charged for auto-renewal fees
+     * @param options.stakedAccountId - Account this contract stakes to (mutex with `stakedNodeId`)
+     * @param options.stakedNodeId - Node this contract stakes to (mutex with `stakedAccountId`)
+     * @param options.declineStakingReward - Decline staking reward distribution
+     * @param options.maxAutomaticTokenAssociations - Allow auto-associating up to N tokens (HIP-23 / HIP-904)
+     * @returns The contract ID of the deployed contract (e.g., `"0.0.12345"`)
+     *
+     * @example
+     * ```typescript
+     * const fileId = await fileService.createFile(bytecode);
+     * const contractId = await contractService.createContract({
+     *     bytecodeFileId: fileId,
+     *     gas: 150_000,
+     *     adminKey: adminKey.publicKey,
+     *     additionalSigners: [adminKey],
+     * });
+     * ```
+     */
+    async createContract(options: CreateContractOptions): Promise<string> {
+        return await this.createOperation.execute(options);
+    }
+
+    /**
+     * Schedule a contract creation for deferred multi-sig execution.
+     * Returns a `scheduleId` — other parties can then sign through
+     * `ScheduleService` before the contract creation executes automatically.
+     *
+     * @param options - Same fields as `createContract`
+     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
+     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
+     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
+     */
+    async scheduleCreateContract(
+        options: CreateContractOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return await this.createOperation.schedule(options, scheduleOptions);
+    }
+}

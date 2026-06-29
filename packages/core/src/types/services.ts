@@ -3,7 +3,7 @@ import type { AccountService } from "../services/account/index.js";
 import type { TokenService } from "../services/token/index.js";
 import type { ScheduleService } from "../services/schedule/index.js";
 import type { FileService } from "../services/file-service.js";
-import type { SmartContractService } from "../services/smart-contract-service.js";
+import type { ContractService } from "../services/contract/index.js";
 import type { TopicService } from "../services/topic-service.js";
 import type { AccountRepository } from "../repositories/account-repository.js";
 import type { NftRepository } from "../repositories/nft-repository.js";
@@ -22,7 +22,7 @@ export interface HieroServices {
     scheduleService: ScheduleService;
     fileService: FileService;
     tokenService: TokenService;
-    smartContractService: SmartContractService;
+    contractService: ContractService;
     topicService: TopicService;
     accountRepository: AccountRepository;
     nftRepository: NftRepository;
