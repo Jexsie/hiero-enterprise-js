@@ -29,7 +29,7 @@ describe("QueryExecutor [Integration]", () => {
         // Pre-create one funded account for the "payerAccountId override"
         // test — needs enough balance to fund the payment transaction.
         funded = await createTestAccount(accountService, 5);
-    }, 120_000);
+    });
 
     describe("run() — free queries", () => {
         it("executes NetworkVersionInfoQuery and returns the version payload", async () => {
@@ -47,7 +47,7 @@ describe("QueryExecutor [Integration]", () => {
             expect(result.servicesVersion).toBeDefined();
             expect(typeof result.servicesVersion.major).toBe("number");
             expect(result.protobufVersion).toBeDefined();
-        }, 60_000);
+        });
 
         it("emits before and after lifecycle events with SUCCESS status", async () => {
             const before = vi.fn();
@@ -82,7 +82,7 @@ describe("QueryExecutor [Integration]", () => {
                     durationMs: expect.any(Number),
                 }),
             );
-        }, 60_000);
+        });
     });
 
     describe("run() — paid queries", () => {
@@ -101,7 +101,7 @@ describe("QueryExecutor [Integration]", () => {
             );
 
             expect(info.accountId.toString()).toBe(operatorId);
-        }, 60_000);
+        });
 
         it("honours a numeric maxQueryPayment cap (coerced to Hbar)", async () => {
             const info = await executor.run(
@@ -118,7 +118,7 @@ describe("QueryExecutor [Integration]", () => {
             );
 
             expect(info.accountId).toBeDefined();
-        }, 60_000);
+        });
 
         it("honours an explicit Hbar queryPayment override", async () => {
             const info = await executor.run(
@@ -135,7 +135,7 @@ describe("QueryExecutor [Integration]", () => {
             );
 
             expect(info.accountId).toBeDefined();
-        }, 60_000);
+        });
 
         it("routes the payment transaction through a custom payerAccountId", async () => {
             const info = await executor.run(
@@ -150,7 +150,7 @@ describe("QueryExecutor [Integration]", () => {
             );
 
             expect(info.accountId.toString()).toBe(funded.accountId);
-        }, 60_000);
+        });
     });
 
     describe("run() — error handling", () => {
@@ -187,6 +187,6 @@ describe("QueryExecutor [Integration]", () => {
                     durationMs: expect.any(Number),
                 }),
             );
-        }, 60_000);
+        });
     });
 });

@@ -3,7 +3,7 @@ import {
     HieroError,
     HieroErrorCodes,
     normalizeError,
-} from "../../../src/errors/hiero-error.js";
+} from "../../../src/errors/index.js";
 
 describe("HieroError", () => {
     it("creates an error with default values", () => {

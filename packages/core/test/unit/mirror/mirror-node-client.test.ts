@@ -1,9 +1,6 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { MirrorNodeClient } from "../../../src/mirror/mirror-node-client.js";
-import {
-    HieroError,
-    HieroErrorCodes,
-} from "../../../src/errors/hiero-error.js";
+import { HieroError, HieroErrorCodes } from "../../../src/errors/index.js";
 
 describe("MirrorNodeClient", () => {
     let client: MirrorNodeClient;

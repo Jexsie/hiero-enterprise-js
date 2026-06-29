@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     resolveConfigFromEnv,
     resolveMirrorNodeUrl,
-} from "../../../src/config/hiero-config.js";
+} from "../../../src/config/index.js";
 import { OperatorKeyType } from "../../../src/types/index.js";
 
 describe("resolveMirrorNodeUrl", () => {

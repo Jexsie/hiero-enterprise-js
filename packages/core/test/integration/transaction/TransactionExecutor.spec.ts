@@ -32,7 +32,7 @@ describe("TransactionExecutor [Integration]", () => {
             );
 
             expect(topicId).toMatch(/^0\.0\.\d+$/);
-        }, 60_000);
+        });
 
         it("emits before and after lifecycle events with SUCCESS status", async () => {
             const before = vi.fn();
@@ -73,7 +73,7 @@ describe("TransactionExecutor [Integration]", () => {
                     durationMs: expect.any(Number),
                 }),
             );
-        }, 60_000);
+        });
     });
 
     describe("scheduleRun()", () => {
@@ -96,6 +96,6 @@ describe("TransactionExecutor [Integration]", () => {
 
             expect(result.scheduleId).toMatch(/^0\.0\.\d+$/);
             expect(result.transactionId).toMatch(/^0\.0\.\d+@/);
-        }, 60_000);
+        });
     });
 });
