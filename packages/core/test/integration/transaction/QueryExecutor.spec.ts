@@ -3,8 +3,6 @@ import {
     AccountInfoQuery,
     Hbar,
     NetworkVersionInfoQuery,
-    TransactionId,
-    TransactionReceiptQuery,
 } from "@hiero-ledger/sdk";
 import { setupIntegrationTestEnv } from "../../utils/env.js";
 import {
@@ -158,23 +156,21 @@ describe("QueryExecutor [Integration]", () => {
             const after = vi.fn();
             context.addTransactionListener({ onAfterTransaction: after });
 
-            // Receipt for a transaction ID that never existed —
-            // the network responds with RECEIPT_NOT_FOUND / INVALID_TRANSACTION_ID.
-            const bogusTxId = TransactionId.generate(
-                context.operatorAccountId!,
-            );
-            const query = new TransactionReceiptQuery().setTransactionId(
-                bogusTxId,
-            );
+            // `AccountInfoQuery` fails fast on a nonexistent account with
+            // `INVALID_ACCOUNT_ID` — unlike `TransactionReceiptQuery`, which
+            // polls the network looking for a receipt and only surfaces an
+            // error after exhausting its retry budget (longer than the test
+            // timeout).
+            const query = new AccountInfoQuery().setAccountId("0.0.99999999");
 
             await expect(
                 executor.run(
                     query,
                     {},
                     {
-                        type: "TransactionReceiptQuery",
+                        type: "AccountInfoQuery",
                         serviceName: "IntegrationTest",
-                        methodName: "getTransactionReceipt",
+                        methodName: "getAccountInfo",
                         timestamp: new Date(),
                     },
                 ),
@@ -182,7 +178,7 @@ describe("QueryExecutor [Integration]", () => {
 
             expect(after).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    type: "TransactionReceiptQuery",
+                    type: "AccountInfoQuery",
                     error: expect.any(Error),
                     durationMs: expect.any(Number),
                 }),

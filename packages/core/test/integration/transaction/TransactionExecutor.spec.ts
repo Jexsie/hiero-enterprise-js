@@ -1,16 +1,30 @@
 import { describe, it, expect, beforeAll, vi } from "vitest";
-import { TopicCreateTransaction } from "@hiero-ledger/sdk";
+import {
+    Hbar,
+    TopicCreateTransaction,
+    TransferTransaction,
+} from "@hiero-ledger/sdk";
 import { setupIntegrationTestEnv } from "../../utils/env.js";
+import { AccountService } from "../../../src/services/index.js";
+import {
+    createTestAccount,
+    type TestAccount,
+} from "../../utils/integration-fixtures.js";
 import { TransactionExecutor } from "../../../src/services/transaction/index.js";
 import type { HieroContext } from "../../../src/context/index.js";
 
 describe("TransactionExecutor [Integration]", () => {
     let context: HieroContext;
     let executor: TransactionExecutor;
+    let accountService: AccountService;
+    let scheduleReceiver: TestAccount;
 
-    beforeAll(() => {
+    beforeAll(async () => {
         context = setupIntegrationTestEnv();
         executor = new TransactionExecutor(context);
+        accountService = new AccountService(context);
+        // A bare account that will receive the scheduled HBAR transfer.
+        scheduleReceiver = await createTestAccount(accountService, 0);
     });
 
     describe("run()", () => {
@@ -78,9 +92,10 @@ describe("TransactionExecutor [Integration]", () => {
 
     describe("scheduleRun()", () => {
         it("wraps a transaction in a schedule and returns the schedule ID", async () => {
-            const inner = new TopicCreateTransaction().setTopicMemo(
-                "executor schedule",
-            );
+            // `TransferTransaction` is in the network's scheduled-transaction whitelist
+            const inner = new TransferTransaction()
+                .addHbarTransfer(context.operatorAccountId!, new Hbar(-1))
+                .addHbarTransfer(scheduleReceiver.accountId, new Hbar(1));
 
             const result = await executor.scheduleRun(
                 inner,
@@ -88,7 +103,7 @@ describe("TransactionExecutor [Integration]", () => {
                 {
                     type: "ScheduleCreateTransaction",
                     serviceName: "IntegrationTest",
-                    methodName: "scheduleCreateTopic",
+                    methodName: "scheduleTransferHbar",
                     timestamp: new Date(),
                 },
                 { scheduleMemo: "executor integration schedule" },
