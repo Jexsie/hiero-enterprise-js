@@ -189,6 +189,40 @@ describe("NetworkService [facade contract]", () => {
             );
         });
 
+        it("forwards includeDuplicates when set", async () => {
+            await service.getTransactionRecord({
+                transactionId: "0.0.123@1700000000.000000000",
+                includeDuplicates: true,
+            });
+
+            expect(mocks.recordQuery.setIncludeDuplicates).toHaveBeenCalledWith(
+                true,
+            );
+        });
+
+        it("does not forward record-specific flags when omitted", async () => {
+            await service.getTransactionRecord({
+                transactionId: "0.0.123@1700000000.000000000",
+            });
+
+            expect(mocks.recordQuery.setIncludeChildren).not.toHaveBeenCalled();
+            expect(
+                mocks.recordQuery.setIncludeDuplicates,
+            ).not.toHaveBeenCalled();
+        });
+
+        it("accepts a TransactionId instance without re-parsing", async () => {
+            const txId = TransactionId.fromString(
+                "0.0.456@1700000001.000000000",
+            );
+
+            await service.getTransactionRecord({ transactionId: txId });
+
+            expect(mocks.recordQuery.setTransactionId).toHaveBeenCalledWith(
+                txId,
+            );
+        });
+
         it("emits lifecycle events with the record query type metadata", async () => {
             const beforeSpy = vi.spyOn(context, "emitBeforeTransaction");
 
