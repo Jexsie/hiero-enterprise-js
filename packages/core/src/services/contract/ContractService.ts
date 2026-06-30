@@ -14,6 +14,17 @@ import type {
     ContractUpdateOperationOptions,
     ContractDeleteOperationOptions,
 } from "./operations/index.js";
+import {
+    ContractCallQuery,
+    ContractInfoQuery,
+    ContractBytecodeQuery,
+} from "./queries/index.js";
+import type { ContractCallQueryOptions } from "./queries/index.js";
+import type {
+    ContractId,
+    ContractInfo,
+    ContractFunctionResult,
+} from "@hiero-ledger/sdk";
 
 /**
  * Options for deploying a smart contract via `ContractCreateTransaction`.
@@ -81,6 +92,14 @@ export type UpdateContractOptions = ContractUpdateOperationOptions;
 export type DeleteContractOptions = ContractDeleteOperationOptions;
 
 /**
+ * Options for invoking a view / pure contract function locally via
+ * `ContractCallQuery` — read-only, no consensus, no gas charged on
+ * success. Use this to read on-chain state cheaply; use
+ * `executeContract` to mutate state.
+ */
+export type CallContractOptions = ContractCallQueryOptions;
+
+/**
  * Service for managing smart contracts on the Hiero network (HSCS — the
  * Smart Contract Service).
  *
@@ -103,6 +122,9 @@ export class ContractService {
     private readonly executeOperation: ContractExecuteOperation;
     private readonly updateOperation: ContractUpdateOperation;
     private readonly deleteOperation: ContractDeleteOperation;
+    private readonly callQuery: ContractCallQuery;
+    private readonly infoQuery: ContractInfoQuery;
+    private readonly bytecodeQuery: ContractBytecodeQuery;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new ContractCreateOperation(context);
@@ -110,6 +132,9 @@ export class ContractService {
         this.executeOperation = new ContractExecuteOperation(context);
         this.updateOperation = new ContractUpdateOperation(context);
         this.deleteOperation = new ContractDeleteOperation(context);
+        this.callQuery = new ContractCallQuery(context);
+        this.infoQuery = new ContractInfoQuery(context);
+        this.bytecodeQuery = new ContractBytecodeQuery(context);
     }
 
     /**
@@ -374,5 +399,73 @@ export class ContractService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.deleteOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Invoke a view / pure contract function locally via
+     * `ContractCallQuery`. The call executes on the queried node only —
+     * no consensus round-trip and no gas is charged on success, so this
+     * is the cheap path for reading on-chain state.
+     *
+     * Returns the SDK's `ContractFunctionResult` so callers can use the
+     * typed decoders (`getUint256(0)`, `getString(0)`, `getAddress(0)`,
+     * …) directly on the response.
+     *
+     * Exactly one call-target form must be supplied via
+     * `CallContractOptions`: either `functionName` (with optional
+     * `functionParameters`) or pre-encoded `rawFunctionParameters`.
+     *
+     * @param options.contractId - Contract to invoke
+     * @param options.gas - Gas limit for the local call (required)
+     * @param options.functionName - Function name to call; SDK encodes parameters
+     * @param options.functionParameters - ABI-typed parameters (paired with `functionName`)
+     * @param options.rawFunctionParameters - Pre-encoded ABI bytes (mutex with `functionName`)
+     * @param options.senderAccountId - Account treated as `msg.sender` inside the call
+     * @param options.maxResultSize - Cap on returned result bytes
+     * @param options.queryPayment - Fixed query payment
+     * @param options.maxQueryPayment - Cap on the SDK's estimated query payment
+     *
+     * @example
+     * ```typescript
+     * const result = await contractService.callContract({
+     *     contractId: "0.0.12345",
+     *     gas: 50_000,
+     *     functionName: "get",
+     * });
+     * const value = result.getUint256(0);
+     * ```
+     */
+    async callContract(
+        options: CallContractOptions,
+    ): Promise<ContractFunctionResult> {
+        return await this.callQuery.execute(options);
+    }
+
+    /**
+     * Fetch the on-chain `ContractInfo` for a deployed contract.
+     *
+     * Returns the SDK's `ContractInfo` directly: admin key, memo,
+     * balance, expiration, auto-renew configuration, staking metadata,
+     * token relationships, and `isDeleted` flag.
+     *
+     * @param contractId - Contract whose info to fetch
+     */
+    async getContractInfo(
+        contractId: string | ContractId,
+    ): Promise<ContractInfo> {
+        return await this.infoQuery.execute(contractId);
+    }
+
+    /**
+     * Fetch the deployed runtime bytecode for a contract as raw bytes
+     * (not hex-encoded). Useful for proxy detection, implementation
+     * comparison, or off-chain verification against a known source build.
+     *
+     * @param contractId - Contract whose bytecode to fetch
+     */
+    async getContractBytecode(
+        contractId: string | ContractId,
+    ): Promise<Uint8Array> {
+        return await this.bytecodeQuery.execute(contractId);
     }
 }

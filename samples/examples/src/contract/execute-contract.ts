@@ -1,6 +1,6 @@
 /**
  * Execute Contract — invoke a state-mutating function on a deployed Hiero
- * smart contract (HSCS).
+ * smart contract (HSCS), and read back state via the contract queries.
  *
  * Demonstrates every call-target form exposed by ContractService:
  *
@@ -12,6 +12,11 @@
  *   function alongside the call
  * - `scheduleExecuteContract` — defer the call behind a scheduled
  *   transaction so additional parties can sign before it executes
+ * - `callContract` — local read-only view/pure call; returns the SDK's
+ *   `ContractFunctionResult` with typed decoders
+ * - `getContractInfo` — fetch on-chain `ContractInfo` (memo, admin key,
+ *   balance, expiry, staking, …)
+ * - `getContractBytecode` — fetch the deployed runtime bytecode
  *
  * `executeContract` returns nothing: the contract ID is already known to
  * the caller, and per-call status / timing is delivered through the
@@ -20,8 +25,9 @@
  * record (a separate paid query) — fetch the record directly via the SDK
  * if your caller needs them.
  *
- * For read-only state queries that don't mutate the ledger, prefer a
- * `ContractCallQuery` — no consensus round-trip, no gas charged on success.
+ * For read-only state queries that don't mutate the ledger, prefer
+ * `callContract` over `executeContract` — no consensus round-trip, no
+ * gas charged on success.
  *
  * Run: pnpm tsx src/contract/execute-contract.ts
  */
@@ -151,6 +157,78 @@ async function executePayableCall(
 }
 
 /**
+ * Demonstrates the read-only view path: `callContract` executes the
+ * `get()` view function locally on the queried node. No consensus
+ * round-trip, no gas charged on success — the cheap path for reading
+ * on-chain state.
+ *
+ * Returns the SDK's `ContractFunctionResult` so you can use the typed
+ * decoders (`getUint256(0)`, `getString(0)`, `getAddress(0)`, …)
+ * directly on the response.
+ */
+async function callViewFunction(
+    contractService: ContractService,
+    contractId: string,
+) {
+    console.log("=== Call view function via ContractCallQuery ===\n");
+
+    const result = await contractService.callContract({
+        contractId,
+        gas: 50_000,
+        functionName: "get",
+    });
+
+    console.log("storedValue =", result.getUint256(0).toString());
+    console.log();
+}
+
+/**
+ * Demonstrates `getContractInfo` — returns the SDK's `ContractInfo` with
+ * memo, admin key, balance, expiry, auto-renew config, staking metadata,
+ * token relationships, and the `isDeleted` flag.
+ */
+async function fetchContractInfo(
+    contractService: ContractService,
+    contractId: string,
+) {
+    console.log("=== Fetch contract info ===\n");
+
+    const info = await contractService.getContractInfo(contractId);
+
+    console.log("contractId   :", info.contractId.toString());
+    console.log("memo         :", info.contractMemo);
+    console.log("balance      :", info.balance.toString());
+    console.log("isDeleted    :", info.isDeleted);
+    console.log(
+        "adminKey     :",
+        info.adminKey == null ? "(immutable)" : "set",
+    );
+    console.log();
+}
+
+/**
+ * Demonstrates `getContractBytecode` — returns the deployed runtime
+ * bytecode as raw bytes (not hex-encoded). Useful for proxy detection,
+ * implementation comparison, or off-chain verification against a known
+ * source build.
+ */
+async function fetchContractBytecode(
+    contractService: ContractService,
+    contractId: string,
+) {
+    console.log("=== Fetch contract bytecode ===\n");
+
+    const bytecode = await contractService.getContractBytecode(contractId);
+
+    console.log("bytecode bytes :", bytecode.length);
+    console.log(
+        "first 16 bytes :",
+        Buffer.from(bytecode.subarray(0, 16)).toString("hex"),
+    );
+    console.log();
+}
+
+/**
  * Demonstrates scheduling a contract call.
  *
  * Returns a `scheduleId` immediately — the inner call is NOT executed
@@ -190,6 +268,9 @@ async function main() {
         await executeWithTypedParameters(contractService, contractId);
         await executeWithRawBytes(contractService, contractId);
         await executePayableCall(contractService, contractId);
+        await callViewFunction(contractService, contractId);
+        await fetchContractInfo(contractService, contractId);
+        await fetchContractBytecode(contractService, contractId);
         await scheduleExecuteCall(contractService, contractId);
         console.log("All contract execute scenarios complete.");
     } finally {

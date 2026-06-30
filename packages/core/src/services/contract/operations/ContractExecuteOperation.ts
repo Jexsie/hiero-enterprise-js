@@ -128,8 +128,8 @@ export class ContractExecuteOperation {
 
         if (options.functionName != null && options.functionName !== "") {
             tx.setFunction(options.functionName, options.functionParameters);
-        } else if (options.rawFunctionParameters != null) {
-            tx.setFunctionParameters(options.rawFunctionParameters);
+        } else {
+            tx.setFunctionParameters(options.rawFunctionParameters!);
         }
 
         if (options.payableAmount != null) {
