@@ -3,6 +3,10 @@ export {
     type ContractCreateOperationOptions,
 } from "./ContractCreateOperation.js";
 export {
+    ContractCreateFlowOperation,
+    type ContractCreateFlowOperationOptions,
+} from "./ContractCreateFlowOperation.js";
+export {
     ContractExecuteOperation,
     type ContractExecuteOperationOptions,
 } from "./ContractExecuteOperation.js";

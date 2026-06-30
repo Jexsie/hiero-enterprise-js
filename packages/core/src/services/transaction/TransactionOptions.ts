@@ -107,3 +107,25 @@ export interface TransactionOptions {
      */
     legacySignatures?: LegacySignature[];
 }
+
+/**
+ * Options for SDK convenience flow objects (e.g., `ContractCreateFlow`).
+ *
+ * Flows orchestrate multiple inner transactions internally, so they don't
+ * surface per-transaction settings like `maxTransactionFee`,
+ * `transactionMemo`, or `transactionValidDuration`. Only signing
+ * primitives carry over.
+ */
+export interface FlowOptions {
+    /**
+     * Additional private keys that must co-sign every inner transaction
+     * produced by the flow (e.g., the contract's admin key).
+     */
+    additionalSigners?: PrivateKey[];
+
+    /**
+     * External signers (HSM / KMS / wallet) applied to every inner
+     * transaction produced by the flow.
+     */
+    externalSigners?: ExternalSigner[];
+}

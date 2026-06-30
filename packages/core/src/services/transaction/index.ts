@@ -2,6 +2,7 @@ export { TransactionExecutor } from "./TransactionExecutor.js";
 export { QueryExecutor } from "./QueryExecutor.js";
 export type {
     TransactionOptions,
+    FlowOptions,
     ExternalSigner,
     LegacySignature,
 } from "./TransactionOptions.js";

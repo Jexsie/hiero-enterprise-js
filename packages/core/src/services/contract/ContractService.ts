@@ -2,12 +2,14 @@ import type { IHieroContext } from "../../context/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
 import {
     ContractCreateOperation,
+    ContractCreateFlowOperation,
     ContractExecuteOperation,
     ContractUpdateOperation,
     ContractDeleteOperation,
 } from "./operations/index.js";
 import type {
     ContractCreateOperationOptions,
+    ContractCreateFlowOperationOptions,
     ContractExecuteOperationOptions,
     ContractUpdateOperationOptions,
     ContractDeleteOperationOptions,
@@ -24,6 +26,19 @@ import type {
  *   `ContractCreateFlow`-backed operation instead.
  */
 export type CreateContractOptions = ContractCreateOperationOptions;
+
+/**
+ * Options for deploying a contract via `ContractCreateFlow` — the SDK
+ * convenience that handles bytecode upload (file create + append),
+ * deploy, and cleanup (file delete) in one call.
+ *
+ * Use this when you don't already have the bytecode uploaded as a file
+ * and it is too large to embed inline (~6KB / HIP-435). For smaller
+ * bytecode prefer `createContract` with `bytecode`; for pre-uploaded
+ * bytecode prefer `createContract` with `bytecodeFileId` — both of
+ * those paths support scheduling, this one does not.
+ */
+export type CreateContractFlowOptions = ContractCreateFlowOperationOptions;
 
 /**
  * Options for invoking a state-mutating contract function via
@@ -84,12 +99,14 @@ export type DeleteContractOptions = ContractDeleteOperationOptions;
  */
 export class ContractService {
     private readonly createOperation: ContractCreateOperation;
+    private readonly createFlowOperation: ContractCreateFlowOperation;
     private readonly executeOperation: ContractExecuteOperation;
     private readonly updateOperation: ContractUpdateOperation;
     private readonly deleteOperation: ContractDeleteOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new ContractCreateOperation(context);
+        this.createFlowOperation = new ContractCreateFlowOperation(context);
         this.executeOperation = new ContractExecuteOperation(context);
         this.updateOperation = new ContractUpdateOperation(context);
         this.deleteOperation = new ContractDeleteOperation(context);
@@ -146,6 +163,54 @@ export class ContractService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.createOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Deploy a smart contract via `ContractCreateFlow` — the SDK
+     * convenience that uploads the bytecode (via `FileCreate` +
+     * `FileAppend`), deploys the contract, and cleans up the bytecode
+     * file in a single call.
+     *
+     * Use this when the bytecode is too large to embed inline (~6KB
+     * HIP-435 limit) and you don't already have it uploaded as a file.
+     * For smaller bytecode or pre-uploaded files, prefer `createContract`
+     * — both of those paths support scheduling, this one does not.
+     *
+     * Flows do not accept the regular `TransactionOptions` (max fee,
+     * memo, validity duration, node pinning) because each inner
+     * transaction is built internally. Only `additionalSigners` /
+     * `externalSigners` carry over — the flow forwards them to every
+     * inner transaction.
+     *
+     * @param options.bytecode - Raw bytecode (Uint8Array or hex string), required
+     * @param options.gas - Gas limit for the constructor call (required)
+     * @param options.maxChunks - Optional cap on `FileAppend` chunks
+     * @param options.adminKey - Admin key required to later update / delete the contract
+     * @param options.constructorParameters - Parameters passed to the contract's constructor
+     * @param options.contractMemo - Memo stored on the contract entity (max 100 bytes)
+     * @param options.initialBalance - Funds transferred into the contract on creation
+     * @param options.autoRenewPeriod - Auto-renew period for the contract account
+     * @param options.autoRenewAccountId - Account charged for auto-renewal fees
+     * @param options.stakedAccountId - Account this contract stakes to (mutex with `stakedNodeId`)
+     * @param options.stakedNodeId - Node this contract stakes to (mutex with `stakedAccountId`)
+     * @param options.declineStakingReward - Decline staking reward distribution
+     * @param options.maxAutomaticTokenAssociations - Allow auto-associating up to N tokens (HIP-23)
+     * @returns The contract ID of the deployed contract (e.g., `"0.0.12345"`)
+     *
+     * @example
+     * ```typescript
+     * const contractId = await contractService.createContractFlow({
+     *     bytecode: largeBytecodeBuffer,
+     *     gas: 200_000,
+     *     adminKey: adminKey.publicKey,
+     *     additionalSigners: [adminKey],
+     * });
+     * ```
+     */
+    async createContractFlow(
+        options: CreateContractFlowOptions,
+    ): Promise<string> {
+        return await this.createFlowOperation.execute(options);
     }
 
     /**
