@@ -4,11 +4,13 @@ import {
     ContractCreateOperation,
     ContractExecuteOperation,
     ContractUpdateOperation,
+    ContractDeleteOperation,
 } from "./operations/index.js";
 import type {
     ContractCreateOperationOptions,
     ContractExecuteOperationOptions,
     ContractUpdateOperationOptions,
+    ContractDeleteOperationOptions,
 } from "./operations/index.js";
 
 /**
@@ -49,6 +51,21 @@ export type ExecuteContractOptions = ContractExecuteOperationOptions;
 export type UpdateContractOptions = ContractUpdateOperationOptions;
 
 /**
+ * Options for permanently deleting a contract via
+ * `ContractDeleteTransaction`.
+ *
+ * The contract's `adminKey` must sign the transaction — pass it via
+ * `additionalSigners`. Contracts deployed without an admin key are
+ * immutable and cannot be deleted (network returns
+ * `MODIFYING_IMMUTABLE_CONTRACT`).
+ *
+ * Exactly one of `transferAccountId` or `transferContractId` must be
+ * provided — the network needs a destination for the contract's
+ * remaining HBAR balance.
+ */
+export type DeleteContractOptions = ContractDeleteOperationOptions;
+
+/**
  * Service for managing smart contracts on the Hiero network (HSCS — the
  * Smart Contract Service).
  *
@@ -69,11 +86,13 @@ export class ContractService {
     private readonly createOperation: ContractCreateOperation;
     private readonly executeOperation: ContractExecuteOperation;
     private readonly updateOperation: ContractUpdateOperation;
+    private readonly deleteOperation: ContractDeleteOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new ContractCreateOperation(context);
         this.executeOperation = new ContractExecuteOperation(context);
         this.updateOperation = new ContractUpdateOperation(context);
+        this.deleteOperation = new ContractDeleteOperation(context);
     }
 
     /**
@@ -235,5 +254,60 @@ export class ContractService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.updateOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Permanently delete a contract and transfer its remaining HBAR balance
+     * to a designated account or contract.
+     *
+     * The contract's `adminKey` must sign the transaction — pass it via
+     * `additionalSigners`. Contracts deployed without an admin key are
+     * immutable and cannot be deleted (network returns
+     * `MODIFYING_IMMUTABLE_CONTRACT`).
+     *
+     * Exactly one of `transferAccountId` or `transferContractId` is
+     * required. If the target account has `receiverSignatureRequired`
+     * set, that account's key must also be passed via `additionalSigners`.
+     *
+     * After a successful delete every subsequent invocation of the contract
+     * executes `0x0` (per EVM equivalence). The contract entity itself
+     * remains in state until pruned by the network.
+     *
+     * Resolves once the consensus node returns a successful receipt;
+     * per-delete status / timing is delivered through the `before` /
+     * `after` listener events on the surrounding `HieroContext`.
+     *
+     * @param options.contractId - Contract to delete (required)
+     * @param options.transferAccountId - Account that receives the remaining HBAR (mutex with `transferContractId`)
+     * @param options.transferContractId - Contract that receives the remaining HBAR (mutex with `transferAccountId`)
+     *
+     * @example
+     * ```typescript
+     * await contractService.deleteContract({
+     *     contractId: "0.0.12345",
+     *     transferAccountId: "0.0.2",
+     *     additionalSigners: [adminKey],
+     * });
+     * ```
+     */
+    async deleteContract(options: DeleteContractOptions): Promise<void> {
+        await this.deleteOperation.execute(options);
+    }
+
+    /**
+     * Schedule a contract deletion for deferred multi-sig execution.
+     * Returns a `scheduleId` — other parties can then sign through
+     * `ScheduleService` before the delete executes automatically.
+     *
+     * @param options - Same fields as `deleteContract`
+     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
+     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
+     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
+     */
+    async scheduleDeleteContract(
+        options: DeleteContractOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return await this.deleteOperation.schedule(options, scheduleOptions);
     }
 }
