@@ -1,7 +1,13 @@
 import type { IHieroContext } from "../../context/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
-import { TopicCreateOperation } from "./operations/index.js";
-import type { TopicCreateOperationOptions } from "./operations/index.js";
+import {
+    TopicCreateOperation,
+    TopicUpdateOperation,
+} from "./operations/index.js";
+import type {
+    TopicCreateOperationOptions,
+    TopicUpdateOperationOptions,
+} from "./operations/index.js";
 
 /**
  * Options for creating a topic via `TopicCreateTransaction`.
@@ -14,6 +20,17 @@ import type { TopicCreateOperationOptions } from "./operations/index.js";
  * topic.
  */
 export type CreateTopicOptions = TopicCreateOperationOptions;
+
+/**
+ * Options for updating a topic via `TopicUpdateTransaction`.
+ *
+ * Every optional field follows a three-state convention:
+ *
+ *  - **omitted (undefined)** — leave the field unchanged
+ *  - **`null`**               — clear the field on the network
+ *  - **a value**              — replace the existing value
+ */
+export type UpdateTopicOptions = TopicUpdateOperationOptions;
 
 /**
  * Service for managing topics on the Hiero Consensus Service (HCS).
@@ -31,9 +48,11 @@ export type CreateTopicOptions = TopicCreateOperationOptions;
  */
 export class TopicService {
     private readonly createOperation: TopicCreateOperation;
+    private readonly updateOperation: TopicUpdateOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TopicCreateOperation(context);
+        this.updateOperation = new TopicUpdateOperation(context);
     }
 
     /**
@@ -93,5 +112,30 @@ export class TopicService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.createOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Update an existing topic.
+     *
+     * If there is no adminKey, the only authorized update (available to anyone) is to extend the expirationTime.
+     * Otherwise transaction must be signed by the adminKey.
+     *
+     * If an adminKey is updated, the transaction must be signed by the pre-update adminKey and post-update adminKey.
+     *
+     * If a new autoRenewAccount is specified (not just being removed), that account must also sign the transaction.
+     *
+     * @param options.topicId - Topic to update (required)
+     * @param options.topicMemo - New memo (max 100 bytes), or `null` to clear
+     * @param options.adminKey - Replace admin key, or `null` to make immutable
+     * @param options.submitKey - Replace submit key, or `null` to make public
+     * @param options.autoRenewAccountId - New auto-renew account, or `null` to clear
+     * @param options.autoRenewPeriod - New auto-renew period in seconds (not clearable)
+     * @param options.feeScheduleKey - Replace fee-schedule key (HIP-991), or `null`
+     * @param options.feeExemptKeys - Replace fee-exempt keys (HIP-991), or `null`
+     * @param options.customFees - Replace custom fees (HIP-991), or `null`
+     * @param options.expirationTime - Extend the topic's expiration (not clearable)
+     */
+    async updateTopic(options: UpdateTopicOptions): Promise<void> {
+        return await this.updateOperation.execute(options);
     }
 }
