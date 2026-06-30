@@ -3,10 +3,12 @@ import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
 import {
     TopicCreateOperation,
     TopicUpdateOperation,
+    TopicDeleteOperation,
 } from "./operations/index.js";
 import type {
     TopicCreateOperationOptions,
     TopicUpdateOperationOptions,
+    TopicDeleteOperationOptions,
 } from "./operations/index.js";
 
 /**
@@ -33,6 +35,15 @@ export type CreateTopicOptions = TopicCreateOperationOptions;
 export type UpdateTopicOptions = TopicUpdateOperationOptions;
 
 /**
+ * Options for deleting a topic via `TopicDeleteTransaction`.
+ *
+ * Deletion is permanent — no further transactions or queries on the
+ * topic will succeed. The topic's `adminKey` must sign; topics created
+ * without an `adminKey` cannot be deleted.
+ */
+export type DeleteTopicOptions = TopicDeleteOperationOptions;
+
+/**
  * Service for managing topics on the Hiero Consensus Service (HCS).
  *
  * Wraps the underlying `TopicCreate*` / `TopicUpdate*` / `TopicDelete*` /
@@ -49,10 +60,12 @@ export type UpdateTopicOptions = TopicUpdateOperationOptions;
 export class TopicService {
     private readonly createOperation: TopicCreateOperation;
     private readonly updateOperation: TopicUpdateOperation;
+    private readonly deleteOperation: TopicDeleteOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TopicCreateOperation(context);
         this.updateOperation = new TopicUpdateOperation(context);
+        this.deleteOperation = new TopicDeleteOperation(context);
     }
 
     /**
@@ -137,5 +150,23 @@ export class TopicService {
      */
     async updateTopic(options: UpdateTopicOptions): Promise<void> {
         return await this.updateOperation.execute(options);
+    }
+
+    /**
+     * Delete a topic.
+     *
+     * No more transactions or queries on the topic will succeed.
+     *
+     * If an adminKey is set, this transaction must be signed by that key.
+     * If there is no adminKey, this transaction will fail with
+     * `UNAUTHORIZED`.
+     *
+     * `TopicDelete` is not whitelisted for scheduling on the network, so
+     * no `scheduleDeleteTopic` variant is exposed.
+     *
+     * @param options.topicId - Topic to delete (required)
+     */
+    async deleteTopic(options: DeleteTopicOptions): Promise<void> {
+        return await this.deleteOperation.execute(options);
     }
 }
