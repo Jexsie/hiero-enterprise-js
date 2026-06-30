@@ -6,11 +6,20 @@ import type {
     Timestamp,
     TopicId,
 } from "@hiero-ledger/sdk";
-import { TopicUpdateTransaction } from "@hiero-ledger/sdk";
+import { TopicUpdateTransaction, KeyList } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
 import { TransactionExecutor } from "../../transaction/index.js";
 import type { TransactionOptions } from "../../transaction/index.js";
 import { TopicUpdateValidator } from "../validation/index.js";
+
+/**
+ * Canonical Hedera sentinel for clearing the auto-renew account on a
+ * topic — `AccountID(0, 0, 0)`. The Java SDK uses the same value; the
+ * JS SDK's `clearAutoRenewAccountId()` is buggy (sets the local field
+ * to `null`, which protobuf drops as "absent" / no-op), so we route
+ * around it via `setAutoRenewAccountId("0.0.0")`.
+ */
+const SENTINEL_CLEAR_AUTO_RENEW_ACCOUNT = "0.0.0";
 
 /**
  * Low-level options for the `TopicUpdate` SDK transaction.
@@ -107,8 +116,26 @@ export class TopicUpdateOperation {
     /**
      * Construct the `TopicUpdateTransaction` from the caller-provided
      * options. Only setters for fields that were actually provided are
-     * invoked. `null` triggers the corresponding `clearX()` setter, a
-     * value triggers `setX()`, and `undefined` leaves the field alone.
+     * invoked. A value triggers `setX(value)`, `undefined` leaves the
+     * field alone, and `null` writes the canonical Hedera clear sentinel
+     * for that field.
+     *
+     * **Why we route around `tx.clearX()` for most fields:** the JS SDK
+     * (`@hiero-ledger/sdk` v2.85.0) implements `clearAdminKey`,
+     * `clearSubmitKey`, `clearFeeScheduleKey`, `clearAutoRenewAccountId`
+     * and `clearTopicMemo` by setting the local field to `null` — and
+     * the protobuf serializer then drops the field entirely. The
+     * consensus node interprets an absent field as "leave unchanged",
+     * so those `clearX()` calls are silently no-ops on the network.
+     *
+     * The HAPI / Java-SDK contract is instead to clear via sentinel
+     * values:
+     *  - `Key`-typed fields → an empty `KeyList`
+     *  - `topicMemo`        → an empty string (`StringValue { value: "" }`)
+     *  - `autoRenewAccountId` → `AccountID(0, 0, 0)`
+     *
+     * `clearFeeExemptKeys()` and `clearCustomFees()` already use the
+     * correct sentinel (empty list), so we keep them.
      */
     private build(
         options: TopicUpdateOperationOptions,
@@ -116,42 +143,48 @@ export class TopicUpdateOperation {
         const tx = new TopicUpdateTransaction().setTopicId(options.topicId);
 
         if (options.topicMemo === null) {
-            tx.clearTopicMemo();
+            // SDK `clearTopicMemo()` is a no-op on the network — use the
+            // empty-string sentinel that the consensus node honours.
+            tx.setTopicMemo("");
         } else if (options.topicMemo !== undefined) {
             tx.setTopicMemo(options.topicMemo);
         }
 
         if (options.adminKey === null) {
-            tx.clearAdminKey();
+            tx.setAdminKey(new KeyList());
         } else if (options.adminKey !== undefined) {
             tx.setAdminKey(options.adminKey);
         }
 
         if (options.submitKey === null) {
-            tx.clearSubmitKey();
+            tx.setSubmitKey(new KeyList());
         } else if (options.submitKey !== undefined) {
             tx.setSubmitKey(options.submitKey);
         }
 
         if (options.feeScheduleKey === null) {
-            tx.clearFeeScheduleKey();
+            tx.setFeeScheduleKey(new KeyList());
         } else if (options.feeScheduleKey !== undefined) {
             tx.setFeeScheduleKey(options.feeScheduleKey);
         }
 
         if (options.feeExemptKeys === null) {
+            // `clearFeeExemptKeys()` correctly emits an empty list — the
+            // canonical sentinel for clearing this field.
             tx.clearFeeExemptKeys();
         } else if (options.feeExemptKeys !== undefined) {
             tx.setFeeExemptKeys(options.feeExemptKeys);
         }
 
         if (options.autoRenewAccountId === null) {
-            tx.clearAutoRenewAccountId();
+            tx.setAutoRenewAccountId(SENTINEL_CLEAR_AUTO_RENEW_ACCOUNT);
         } else if (options.autoRenewAccountId !== undefined) {
             tx.setAutoRenewAccountId(options.autoRenewAccountId);
         }
 
         if (options.customFees === null) {
+            // `clearCustomFees()` correctly emits an empty list — the
+            // canonical sentinel for clearing this field.
             tx.clearCustomFees();
         } else if (options.customFees !== undefined) {
             tx.setCustomFees(options.customFees);

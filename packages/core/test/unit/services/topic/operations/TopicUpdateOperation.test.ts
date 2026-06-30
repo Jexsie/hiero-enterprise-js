@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { TopicUpdateTransaction, PrivateKey } from "@hiero-ledger/sdk";
+import { TopicUpdateTransaction, PrivateKey, KeyList } from "@hiero-ledger/sdk";
 import { TopicService } from "../../../../../src/services/topic/index.js";
 import { createMockContext } from "../../../../utils/mock-context.js";
 import { reattachMockChain } from "../../../../utils/sdk-mocks.js";
@@ -112,51 +112,65 @@ describe("TopicUpdateOperation (via TopicService)", () => {
             expect(tx.setExpirationTime).toHaveBeenCalledWith(expirationTime);
         });
 
-        it("invokes clearTopicMemo when topicMemo is null", async () => {
+        it("writes the empty-string memo sentinel when topicMemo is null", async () => {
+            // The JS SDK's `clearTopicMemo()` is buggy (no-op on the
+            // network), so the operation routes `null` through
+            // `setTopicMemo("")` — the canonical Hedera clear sentinel.
             await service.updateTopic({
                 topicId: "0.0.12345",
                 topicMemo: null,
             });
 
             const tx = vi.mocked(TopicUpdateTransaction).mock.results[0].value;
-            expect(tx.clearTopicMemo).toHaveBeenCalled();
-            expect(tx.setTopicMemo).not.toHaveBeenCalled();
+            expect(tx.setTopicMemo).toHaveBeenCalledWith("");
+            expect(tx.clearTopicMemo).not.toHaveBeenCalled();
         });
 
-        it("invokes clearAdminKey when adminKey is null", async () => {
+        it("writes an empty KeyList when adminKey is null", async () => {
             await service.updateTopic({
                 topicId: "0.0.12345",
                 adminKey: null,
             });
 
             const tx = vi.mocked(TopicUpdateTransaction).mock.results[0].value;
-            expect(tx.clearAdminKey).toHaveBeenCalled();
-            expect(tx.setAdminKey).not.toHaveBeenCalled();
+            expect(tx.setAdminKey).toHaveBeenCalledTimes(1);
+            const arg = vi.mocked(tx.setAdminKey).mock.calls[0][0];
+            expect(arg).toBeInstanceOf(KeyList);
+            expect((arg as KeyList).toArray()).toHaveLength(0);
+            expect(tx.clearAdminKey).not.toHaveBeenCalled();
         });
 
-        it("invokes clearSubmitKey when submitKey is null", async () => {
+        it("writes an empty KeyList when submitKey is null", async () => {
             await service.updateTopic({
                 topicId: "0.0.12345",
                 submitKey: null,
             });
 
             const tx = vi.mocked(TopicUpdateTransaction).mock.results[0].value;
-            expect(tx.clearSubmitKey).toHaveBeenCalled();
-            expect(tx.setSubmitKey).not.toHaveBeenCalled();
+            expect(tx.setSubmitKey).toHaveBeenCalledTimes(1);
+            const arg = vi.mocked(tx.setSubmitKey).mock.calls[0][0];
+            expect(arg).toBeInstanceOf(KeyList);
+            expect((arg as KeyList).toArray()).toHaveLength(0);
+            expect(tx.clearSubmitKey).not.toHaveBeenCalled();
         });
 
-        it("invokes clearFeeScheduleKey when feeScheduleKey is null", async () => {
+        it("writes an empty KeyList when feeScheduleKey is null", async () => {
             await service.updateTopic({
                 topicId: "0.0.12345",
                 feeScheduleKey: null,
             });
 
             const tx = vi.mocked(TopicUpdateTransaction).mock.results[0].value;
-            expect(tx.clearFeeScheduleKey).toHaveBeenCalled();
-            expect(tx.setFeeScheduleKey).not.toHaveBeenCalled();
+            expect(tx.setFeeScheduleKey).toHaveBeenCalledTimes(1);
+            const arg = vi.mocked(tx.setFeeScheduleKey).mock.calls[0][0];
+            expect(arg).toBeInstanceOf(KeyList);
+            expect((arg as KeyList).toArray()).toHaveLength(0);
+            expect(tx.clearFeeScheduleKey).not.toHaveBeenCalled();
         });
 
         it("invokes clearFeeExemptKeys when feeExemptKeys is null", async () => {
+            // `clearFeeExemptKeys()` correctly emits the empty-list
+            // sentinel — no need to route around it.
             await service.updateTopic({
                 topicId: "0.0.12345",
                 feeExemptKeys: null,
@@ -167,18 +181,20 @@ describe("TopicUpdateOperation (via TopicService)", () => {
             expect(tx.setFeeExemptKeys).not.toHaveBeenCalled();
         });
 
-        it("invokes clearAutoRenewAccountId when autoRenewAccountId is null", async () => {
+        it("writes the 0.0.0 sentinel when autoRenewAccountId is null", async () => {
             await service.updateTopic({
                 topicId: "0.0.12345",
                 autoRenewAccountId: null,
             });
 
             const tx = vi.mocked(TopicUpdateTransaction).mock.results[0].value;
-            expect(tx.clearAutoRenewAccountId).toHaveBeenCalled();
-            expect(tx.setAutoRenewAccountId).not.toHaveBeenCalled();
+            expect(tx.setAutoRenewAccountId).toHaveBeenCalledWith("0.0.0");
+            expect(tx.clearAutoRenewAccountId).not.toHaveBeenCalled();
         });
 
         it("invokes clearCustomFees when customFees is null", async () => {
+            // `clearCustomFees()` correctly emits the empty-list
+            // sentinel — no need to route around it.
             await service.updateTopic({
                 topicId: "0.0.12345",
                 customFees: null,
@@ -189,7 +205,9 @@ describe("TopicUpdateOperation (via TopicService)", () => {
             expect(tx.setCustomFees).not.toHaveBeenCalled();
         });
 
-        it("forwards an empty-string memo (not the same as clearing)", async () => {
+        it("forwards an empty-string memo verbatim (same network effect as null)", async () => {
+            // `""` and `null` both reach the network as the clear
+            // sentinel; callers may use either.
             await service.updateTopic({
                 topicId: "0.0.12345",
                 topicMemo: "",
