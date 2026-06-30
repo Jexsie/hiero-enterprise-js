@@ -211,6 +211,25 @@ describe("ContractCreateFlowOperation (via ContractService)", () => {
             );
         });
 
+        it("wraps a non-Error rejection in an Error on the after-event", async () => {
+            mocks.flow.execute.mockRejectedValueOnce("oops");
+
+            const afterSpy = vi.spyOn(context, "emitAfterTransaction");
+
+            await expect(
+                service.createContractFlow({
+                    bytecode: new Uint8Array([0x60]),
+                    gas: 150_000,
+                }),
+            ).rejects.toThrow();
+
+            expect(afterSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    error: expect.objectContaining({ message: "oops" }),
+                }),
+            );
+        });
+
         it("propagates validator errors before touching the SDK", async () => {
             await expect(
                 service.createContractFlow({

@@ -67,6 +67,24 @@ describe("ContractCreateFlowValidator", () => {
                 validator.validate({ ...baseOptions, gas: -1 }),
             ).toThrow(/gas must be greater than zero/);
         });
+
+        it("accepts a positive Long gas value", () => {
+            expect(() =>
+                validator.validate({
+                    ...baseOptions,
+                    gas: Long.fromNumber(150_000),
+                }),
+            ).not.toThrow();
+        });
+
+        it("throws when gas is a non-positive Long", () => {
+            expect(() =>
+                validator.validate({
+                    ...baseOptions,
+                    gas: Long.fromNumber(0),
+                }),
+            ).toThrow(/gas must be greater than zero/);
+        });
     });
 
     describe("initialBalance", () => {

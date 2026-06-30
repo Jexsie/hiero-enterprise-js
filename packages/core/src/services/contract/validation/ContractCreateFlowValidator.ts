@@ -61,9 +61,7 @@ export class ContractCreateFlowValidator {
         const isPositive =
             typeof options.gas === "number"
                 ? options.gas > 0
-                : Long.isLong(options.gas)
-                  ? (options.gas as Long).greaterThan(0)
-                  : true;
+                : options.gas.greaterThan(0);
 
         if (!isPositive) {
             throw normalizeError(
