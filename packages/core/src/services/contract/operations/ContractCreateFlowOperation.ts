@@ -50,7 +50,7 @@ export interface ContractCreateFlowOperationOptions extends FlowOptions {
      */
     maxChunks?: number;
     /** Funds transferred into the new contract account on creation. */
-    initialBalance?: number | string | Long | BigNumber | Hbar;
+    initialBalance?: number | bigint | string | Long | BigNumber | Hbar;
     /**
      * Admin key. Required to later update or delete the contract — without
      * it the contract is immutable.

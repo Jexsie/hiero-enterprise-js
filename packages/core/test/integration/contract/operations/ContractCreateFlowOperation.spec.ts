@@ -53,7 +53,7 @@ describe("ContractCreateFlowOperation", () => {
 
     it("deploys a contract end-to-end via the flow (file upload + create + cleanup)", async () => {
         const contractId = await contractService.createContractFlow({
-            bytecode: Buffer.from(MINIMAL_BYTECODE_HEX, "hex"),
+            bytecode: MINIMAL_BYTECODE_HEX,
             gas: 150_000,
             contractMemo: "deployed via flow",
         });
@@ -74,7 +74,7 @@ describe("ContractCreateFlowOperation", () => {
         const adminKey = PrivateKey.generateED25519();
 
         const contractId = await contractService.createContractFlow({
-            bytecode: Buffer.from(MINIMAL_BYTECODE_HEX, "hex"),
+            bytecode: MINIMAL_BYTECODE_HEX,
             gas: 150_000,
             adminKey: adminKey.publicKey,
             contractMemo: "mutable flow contract",
