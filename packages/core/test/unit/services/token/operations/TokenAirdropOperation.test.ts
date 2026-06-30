@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Long, PrivateKey, TokenAirdropTransaction } from "@hiero-ledger/sdk";
+import type { Long } from "@hiero-ledger/sdk";
+import { PrivateKey, TokenAirdropTransaction } from "@hiero-ledger/sdk";
 import { TokenService } from "../../../../../src/services/token/index.js";
 import { createMockContext } from "../../../../utils/mock-context.js";
 import { reattachMockChain } from "../../../../utils/sdk-mocks.js";

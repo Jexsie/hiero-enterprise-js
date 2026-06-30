@@ -125,16 +125,22 @@ app.post("/api/topics", async (req, res) => {
 });
 
 /** Submit a message to a topic */
-// TODO(topic-service-migration): re-enable when TopicMessageSubmitOperation lands.
-// app.post("/api/topics/:id/messages", async (req, res) => {
-//     try {
-//         const { message } = req.body as { message: string };
-//         await req.hiero.topicService.submitMessage(req.params.id, message);
-//         res.status(202).json({ status: "submitted" });
-//     } catch (error) {
-//         res.status(500).json({ error: String(error) });
-//     }
-// });
+app.post("/api/topics/:id/messages", async (req, res) => {
+    try {
+        const { message } = req.body as { message: string };
+        const result = await req.hiero.topicService.submitMessage({
+            topicId: req.params.id,
+            message,
+        });
+        res.status(202).json({
+            status: "submitted",
+            sequenceNumber: result.sequenceNumber.toString(),
+            transactionId: result.transactionId,
+        });
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
+});
 
 // ─── Network Routes ───────────────────────────────────────────
 

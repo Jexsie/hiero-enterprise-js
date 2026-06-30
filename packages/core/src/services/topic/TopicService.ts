@@ -4,11 +4,14 @@ import {
     TopicCreateOperation,
     TopicUpdateOperation,
     TopicDeleteOperation,
+    TopicMessageSubmitOperation,
 } from "./operations/index.js";
 import type {
     TopicCreateOperationOptions,
     TopicUpdateOperationOptions,
     TopicDeleteOperationOptions,
+    TopicMessageSubmitOperationOptions,
+    TopicMessageSubmitResult,
 } from "./operations/index.js";
 
 /**
@@ -44,6 +47,23 @@ export type UpdateTopicOptions = TopicUpdateOperationOptions;
 export type DeleteTopicOptions = TopicDeleteOperationOptions;
 
 /**
+ * Options for submitting a message to a topic via
+ * `TopicMessageSubmitTransaction`.
+ *
+ * If the topic has a `submitKey`, that key MUST sign — pass it via
+ * `additionalSigners`. Messages larger than the chunk size are
+ * automatically split into multiple chunks by the SDK; the returned
+ * receipt corresponds to the first chunk.
+ */
+export type SubmitMessageOptions = TopicMessageSubmitOperationOptions;
+
+/**
+ * Receipt-derived result returned by `submitMessage` — sequence number,
+ * running hash, and transaction ID of the first (or only) chunk.
+ */
+export type SubmitMessageResult = TopicMessageSubmitResult;
+
+/**
  * Service for managing topics on the Hiero Consensus Service (HCS).
  *
  * Wraps the underlying `TopicCreate*` / `TopicUpdate*` / `TopicDelete*` /
@@ -61,11 +81,13 @@ export class TopicService {
     private readonly createOperation: TopicCreateOperation;
     private readonly updateOperation: TopicUpdateOperation;
     private readonly deleteOperation: TopicDeleteOperation;
+    private readonly submitOperation: TopicMessageSubmitOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TopicCreateOperation(context);
         this.updateOperation = new TopicUpdateOperation(context);
         this.deleteOperation = new TopicDeleteOperation(context);
+        this.submitOperation = new TopicMessageSubmitOperation(context);
     }
 
     /**
@@ -168,5 +190,36 @@ export class TopicService {
      */
     async deleteTopic(options: DeleteTopicOptions): Promise<void> {
         return await this.deleteOperation.execute(options);
+    }
+
+    /**
+     * Submit a message to a topic.
+     *
+     * Valid and authorized messages on valid topics will be ordered by
+     * the consensus service, gossipped to the mirror nodes, and made
+     * available to the requesting all subscribers on this topic through
+     * a subscription response. Messages can be at most 1024 bytes per
+     * chunk; larger messages are automatically split and submitted in
+     * multiple chunks by the SDK (controllable via `maxChunks` /
+     * `chunkSize`).
+     *
+     * If the topic has a `submitKey` then that key MUST sign this
+     * transaction — pass it via `additionalSigners`.
+     *
+     * For HIP-991 topics with `customFees`, the submitter pays unless
+     * their key is on `feeExemptKeys`. Use `customFeeLimits` to cap the
+     * maximum fee you're willing to pay.
+     *
+     * @param options.topicId - Topic to submit to (required)
+     * @param options.message - Message payload, UTF-8 string or raw bytes (required, non-empty)
+     * @param options.maxChunks - Max chunks for auto-splitting (SDK default 20)
+     * @param options.chunkSize - Bytes per chunk (SDK default 1024)
+     * @param options.customFeeLimits - HIP-991 fee caps the submitter accepts
+     * @returns Sequence number, running hash, and transaction ID from the (first chunk's) receipt
+     */
+    async submitMessage(
+        options: SubmitMessageOptions,
+    ): Promise<SubmitMessageResult> {
+        return await this.submitOperation.execute(options);
     }
 }

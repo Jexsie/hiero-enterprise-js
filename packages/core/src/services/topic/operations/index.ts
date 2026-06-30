@@ -10,3 +10,8 @@ export {
     TopicDeleteOperation,
     type TopicDeleteOperationOptions,
 } from "./TopicDeleteOperation.js";
+export {
+    TopicMessageSubmitOperation,
+    type TopicMessageSubmitOperationOptions,
+    type TopicMessageSubmitResult,
+} from "./TopicMessageSubmitOperation.js";
