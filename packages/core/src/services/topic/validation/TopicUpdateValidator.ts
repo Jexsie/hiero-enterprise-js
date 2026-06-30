@@ -9,7 +9,7 @@ const MAX_TOPIC_MEMO_BYTES = 100;
  * Separated from the operation so validation logic is independently
  * testable without requiring network interaction.
  *
- * Enforces:
+ * **What this validator enforces:**
  *  - `topicId` is present and non-empty.
  *  - A non-cleared `topicMemo` fits the network's 100-byte limit.
  *  - Non-clearable fields (`autoRenewPeriod`, `expirationTime`) reject
@@ -17,11 +17,26 @@ const MAX_TOPIC_MEMO_BYTES = 100;
  *    JavaScript callers and `any`-typed data can still slip a `null`
  *    through — without this check the SDK would silently ignore the
  *    field and the caller's intent would be lost.
+ *  - The transaction changes at least one field — calling
+ *    `updateTopic` with only `topicId` would burn network fees on a
+ *    no-op, which is almost always a programmer mistake.
  *
- * Cross-field signing rules (admin-key rotation, autoRenew account
- * changes) are not validated here because they depend on the topic's
- * current network state — the network rejects them with
- * `INVALID_SIGNATURE` if the right `additionalSigners` weren't supplied.
+ * **Signing rules we do _not_ enforce locally** (network-enforced via
+ * `INVALID_SIGNATURE`):
+ *  - If the topic has no `adminKey`, the only authorized update is to
+ *    extend `expirationTime`. Every other change is rejected.
+ *  - Otherwise the transaction must be signed by the existing
+ *    `adminKey` — supply it via `additionalSigners` (or `externalSigners`)
+ *    if the operator is not already that key.
+ *  - Rotating the `adminKey` (replacing it with a new value, not
+ *    clearing it) requires signatures from BOTH the pre-update and
+ *    post-update admin keys.
+ *  - Switching to a new `autoRenewAccountId` (not just clearing it)
+ *    requires that account's signature.
+ *
+ * These rules depend on the topic's current network state and on the
+ * operator's identity, neither of which the validator can see — so we
+ * leave them to the network and document them on every entry point.
  */
 export class TopicUpdateValidator {
     /**
@@ -34,6 +49,7 @@ export class TopicUpdateValidator {
         this.validateTopicId(options);
         this.validateMemo(options);
         this.validateNonClearableFields(options);
+        this.validateAtLeastOneChange(options);
     }
 
     private validateTopicId(options: TopicUpdateOperationOptions): void {
@@ -100,6 +116,38 @@ export class TopicUpdateValidator {
             throw normalizeError(
                 new Error(
                     "expirationTime cannot be null — this field has no clear operation. Omit it to leave unchanged.",
+                ),
+                "TopicUpdateValidator",
+            );
+        }
+    }
+
+    /**
+     * Reject calls that wouldn't change anything on the network.
+     *
+     * A `TopicUpdate` with only `topicId` and no other field still
+     * costs network fees but mutates nothing — it's almost always a
+     * programmer bug (a field name typo, a missed conditional). Fail
+     * loudly instead of silently burning HBAR.
+     */
+    private validateAtLeastOneChange(
+        options: TopicUpdateOperationOptions,
+    ): void {
+        const hasChange =
+            options.topicMemo !== undefined ||
+            options.adminKey !== undefined ||
+            options.submitKey !== undefined ||
+            options.feeScheduleKey !== undefined ||
+            options.feeExemptKeys !== undefined ||
+            options.autoRenewAccountId !== undefined ||
+            options.autoRenewPeriod !== undefined ||
+            options.customFees !== undefined ||
+            options.expirationTime !== undefined;
+
+        if (!hasChange) {
+            throw normalizeError(
+                new Error(
+                    "updateTopic requires at least one field to change. Pass one of: topicMemo, adminKey, submitKey, feeScheduleKey, feeExemptKeys, autoRenewAccountId, autoRenewPeriod, customFees, expirationTime.",
                 ),
                 "TopicUpdateValidator",
             );

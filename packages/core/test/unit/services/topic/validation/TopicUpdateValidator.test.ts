@@ -5,8 +5,12 @@ import type { TopicUpdateOperationOptions } from "../../../../../src/services/to
 describe("TopicUpdateValidator", () => {
     const validator = new TopicUpdateValidator();
 
+    // Every test below validates a single rule; we attach a benign
+    // change (`topicMemo`) so the cross-cutting "at least one change"
+    // rule is satisfied unless the test deliberately overrides it.
     const baseOptions: TopicUpdateOperationOptions = {
         topicId: "0.0.12345",
+        topicMemo: "a valid memo",
     };
 
     describe("topicId", () => {
@@ -115,6 +119,32 @@ describe("TopicUpdateValidator", () => {
             expect(() =>
                 validator.validate({
                     ...baseOptions,
+                    expirationTime: new Date(Date.now() + 86400 * 1000),
+                }),
+            ).not.toThrow();
+        });
+    });
+
+    describe("at-least-one-change", () => {
+        it("rejects a call with only topicId", () => {
+            expect(() => validator.validate({ topicId: "0.0.12345" })).toThrow(
+                /updateTopic requires at least one field to change/,
+            );
+        });
+
+        it("accepts a single clearable field set to its clear sentinel", () => {
+            expect(() =>
+                validator.validate({
+                    topicId: "0.0.12345",
+                    submitKey: null,
+                }),
+            ).not.toThrow();
+        });
+
+        it("accepts a single non-clearable field set to a value", () => {
+            expect(() =>
+                validator.validate({
+                    topicId: "0.0.12345",
                     expirationTime: new Date(Date.now() + 86400 * 1000),
                 }),
             ).not.toThrow();

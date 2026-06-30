@@ -51,17 +51,20 @@ describe("TopicUpdateOperation (via TopicService)", () => {
     });
 
     describe("updateTopic", () => {
-        it("submits a TopicUpdateTransaction with only the topic ID when no other fields are set", async () => {
-            const result = await service.updateTopic({ topicId: "0.0.12345" });
+        it("submits a TopicUpdateTransaction touching only the changed field", async () => {
+            const result = await service.updateTopic({
+                topicId: "0.0.12345",
+                topicMemo: "renamed feed",
+            });
 
             expect(result).toBeUndefined();
 
             const tx = vi.mocked(TopicUpdateTransaction).mock.results[0].value;
             expect(tx.setTopicId).toHaveBeenCalledWith("0.0.12345");
+            expect(tx.setTopicMemo).toHaveBeenCalledWith("renamed feed");
             expect(tx.execute).toHaveBeenCalledWith(context.client);
 
-            // No optional setters touched.
-            expect(tx.setTopicMemo).not.toHaveBeenCalled();
+            // No other optional setters touched.
             expect(tx.clearTopicMemo).not.toHaveBeenCalled();
             expect(tx.setAdminKey).not.toHaveBeenCalled();
             expect(tx.clearAdminKey).not.toHaveBeenCalled();
@@ -77,6 +80,16 @@ describe("TopicUpdateOperation (via TopicService)", () => {
             expect(tx.setCustomFees).not.toHaveBeenCalled();
             expect(tx.clearCustomFees).not.toHaveBeenCalled();
             expect(tx.setExpirationTime).not.toHaveBeenCalled();
+        });
+
+        it("rejects a no-op update (only topicId, no other field) before touching the SDK", async () => {
+            await expect(
+                service.updateTopic({ topicId: "0.0.12345" }),
+            ).rejects.toThrow(
+                /updateTopic requires at least one field to change/,
+            );
+
+            expect(vi.mocked(TopicUpdateTransaction)).not.toHaveBeenCalled();
         });
 
         it("forwards every optional setter when fields are provided", async () => {
@@ -221,6 +234,7 @@ describe("TopicUpdateOperation (via TopicService)", () => {
         it("applies base TransactionOptions to the transaction", async () => {
             await service.updateTopic({
                 topicId: "0.0.12345",
+                topicMemo: "renamed",
                 transactionMemo: "base memo",
                 transactionValidDuration: 90,
                 regenerateTransactionId: false,

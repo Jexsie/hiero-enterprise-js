@@ -117,36 +117,12 @@ export class TopicService {
     /**
      * Update an existing topic.
      *
-     * Every field except `topicId` is optional. Optional fields fall
-     * into two groups:
+     * If there is no adminKey, the only authorized update (available to anyone) is to extend the expirationTime.
+     * Otherwise transaction must be signed by the adminKey.
      *
-     * **Clearable fields** — three-state semantics:
-     *  - omitted (`undefined`) → leave unchanged
-     *  - `null`                → clear on the network
-     *  - value                 → replace existing value
+     * If an adminKey is updated, the transaction must be signed by the pre-update adminKey and post-update adminKey.
      *
-     * Clearable: `topicMemo`, `adminKey`, `submitKey`,
-     * `autoRenewAccountId`, `feeScheduleKey`, `feeExemptKeys`,
-     * `customFees`.
-     *
-     * **Non-clearable fields** — two-state semantics:
-     *  - omitted (`undefined`) → leave unchanged
-     *  - value                 → replace existing value
-     *
-     * Non-clearable: `autoRenewPeriod`, `expirationTime`.
-     *
-     * Signing rules (enforced by the network):
-     *
-     *  - A topic without an `adminKey` is mutable only via
-     *    `expirationTime` extension. Every other change requires the
-     *    existing admin key to sign — pass it via `additionalSigners`.
-     *  - Rotating the `adminKey` requires signatures from BOTH the old
-     *    and the new admin keys.
-     *  - Switching to a new `autoRenewAccountId` (not just clearing it)
-     *    requires that account's signature as well.
-     *
-     * `TopicUpdate` is **not whitelisted for scheduling** on the
-     * network, so no `scheduleUpdateTopic` variant is exposed.
+     * If a new autoRenewAccount is specified (not just being removed), that account must also sign the transaction.
      *
      * @param options.topicId - Topic to update (required)
      * @param options.topicMemo - New memo (max 100 bytes), or `null` to clear
@@ -158,31 +134,6 @@ export class TopicService {
      * @param options.feeExemptKeys - Replace fee-exempt keys (HIP-991), or `null`
      * @param options.customFees - Replace custom fees (HIP-991), or `null`
      * @param options.expirationTime - Extend the topic's expiration (not clearable)
-     *
-     * @example
-     * ```typescript
-     * // Rename a topic
-     * await topicService.updateTopic({
-     *     topicId: "0.0.12345",
-     *     topicMemo: "renamed feed",
-     *     additionalSigners: [adminKey],
-     * });
-     *
-     * // Make a previously-private topic public by clearing the submit key
-     * await topicService.updateTopic({
-     *     topicId: "0.0.12345",
-     *     submitKey: null,
-     *     additionalSigners: [adminKey],
-     * });
-     *
-     * // Rotate the admin key — BOTH old and new keys must sign
-     * const newAdmin = PrivateKey.generateED25519();
-     * await topicService.updateTopic({
-     *     topicId: "0.0.12345",
-     *     adminKey: newAdmin.publicKey,
-     *     additionalSigners: [oldAdmin, newAdmin],
-     * });
-     * ```
      */
     async updateTopic(options: UpdateTopicOptions): Promise<void> {
         return await this.updateOperation.execute(options);

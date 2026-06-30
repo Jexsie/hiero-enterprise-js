@@ -41,14 +41,23 @@ const SENTINEL_CLEAR_AUTO_RENEW_ACCOUNT = "0.0.0";
  * on these fields (in JS callers without TypeScript guard rails) so the
  * caller's intent isn't silently dropped.
  *
- * Signing rules (enforced by the network, not this validator):
+ * At least one optional field must be provided alongside `topicId` —
+ * a no-op update is rejected by the validator before any network call.
  *
- *  - A topic without an `adminKey` is mutable only via `expirationTime`
- *    extension. Every other field requires the existing admin key.
- *  - Rotating the `adminKey` requires signatures from BOTH the old and
- *    the new admin keys — pass both via `additionalSigners`.
- *  - Switching to a new `autoRenewAccountId` requires that account's
- *    signature too.
+ * **Signing rules (enforced by the network, not this validator):**
+ *
+ *  - If the topic has no `adminKey`, the only authorized update is to
+ *    **extend `expirationTime`**. Every other change is rejected — this
+ *    extension is the one update anyone can submit without an admin
+ *    signature.
+ *  - Otherwise the transaction must be signed by the topic's existing
+ *    `adminKey`. Supply it via `additionalSigners` (or `externalSigners`)
+ *    if the operator client isn't already that key.
+ *  - Rotating the `adminKey` (replacing it with a new value, not
+ *    clearing it) requires signatures from BOTH the **pre-update** and
+ *    **post-update** admin keys — pass both via `additionalSigners`.
+ *  - Switching to a new `autoRenewAccountId` (not just clearing it)
+ *    requires that account's signature too.
  *
  * `TopicUpdate` is **not whitelisted for scheduling** on the network,
  * so no `schedule()` variant is exposed.
@@ -113,30 +122,6 @@ export class TopicUpdateOperation {
         );
     }
 
-    /**
-     * Construct the `TopicUpdateTransaction` from the caller-provided
-     * options. Only setters for fields that were actually provided are
-     * invoked. A value triggers `setX(value)`, `undefined` leaves the
-     * field alone, and `null` writes the canonical Hedera clear sentinel
-     * for that field.
-     *
-     * **Why we route around `tx.clearX()` for most fields:** the JS SDK
-     * (`@hiero-ledger/sdk` v2.85.0) implements `clearAdminKey`,
-     * `clearSubmitKey`, `clearFeeScheduleKey`, `clearAutoRenewAccountId`
-     * and `clearTopicMemo` by setting the local field to `null` — and
-     * the protobuf serializer then drops the field entirely. The
-     * consensus node interprets an absent field as "leave unchanged",
-     * so those `clearX()` calls are silently no-ops on the network.
-     *
-     * The HAPI / Java-SDK contract is instead to clear via sentinel
-     * values:
-     *  - `Key`-typed fields → an empty `KeyList`
-     *  - `topicMemo`        → an empty string (`StringValue { value: "" }`)
-     *  - `autoRenewAccountId` → `AccountID(0, 0, 0)`
-     *
-     * `clearFeeExemptKeys()` and `clearCustomFees()` already use the
-     * correct sentinel (empty list), so we keep them.
-     */
     private build(
         options: TopicUpdateOperationOptions,
     ): TopicUpdateTransaction {
