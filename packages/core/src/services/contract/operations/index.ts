@@ -10,3 +10,7 @@ export {
     ContractUpdateOperation,
     type ContractUpdateOperationOptions,
 } from "./ContractUpdateOperation.js";
+export {
+    ContractDeleteOperation,
+    type ContractDeleteOperationOptions,
+} from "./ContractDeleteOperation.js";
