@@ -52,6 +52,47 @@ export async function waitForMirrorNodeRecord(
     );
 }
 
+export async function waitForMirrorEntity<T>(
+    fetcher: () => Promise<T>,
+    options: {
+        predicate?: (value: T) => boolean;
+        maxRetries?: number;
+        delayMs?: number;
+        description?: string;
+    } = {},
+): Promise<T> {
+    const {
+        predicate,
+        maxRetries = 10,
+        delayMs = 1000,
+        description = "Mirror Node entity",
+    } = options;
+
+    let lastValue: T | undefined;
+    let lastError: unknown;
+
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            lastValue = await fetcher();
+            lastError = undefined;
+            if (!predicate || predicate(lastValue)) return lastValue;
+        } catch (error) {
+            lastError = error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+
+    const seconds = (maxRetries * delayMs) / 1000;
+    if (lastError !== undefined) {
+        throw new Error(
+            `[Integration Test Timeout] ${description} was not available on the Mirror Node after ${seconds}s; last error: ${String(lastError)}`,
+        );
+    }
+    throw new Error(
+        `[Integration Test Timeout] ${description} predicate did not become true after ${seconds}s; last value: ${JSON.stringify(lastValue)}`,
+    );
+}
+
 /**
  * Polls the Mirror Node until every listed token relationship has been
  * removed from `accountId`. Use this after multi-transaction SDK flows

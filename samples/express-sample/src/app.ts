@@ -115,7 +115,9 @@ app.get("/api/topics/:id/messages", async (req, res) => {
 app.post("/api/topics", async (req, res) => {
     try {
         const { memo } = req.body as { memo?: string };
-        const topicId = await req.hiero.topicService.createTopic({ memo });
+        const topicId = await req.hiero.topicService.createTopic({
+            topicMemo: memo,
+        });
         res.status(201).json({ topicId });
     } catch (error) {
         res.status(500).json({ error: String(error) });
@@ -123,15 +125,16 @@ app.post("/api/topics", async (req, res) => {
 });
 
 /** Submit a message to a topic */
-app.post("/api/topics/:id/messages", async (req, res) => {
-    try {
-        const { message } = req.body as { message: string };
-        await req.hiero.topicService.submitMessage(req.params.id, message);
-        res.status(202).json({ status: "submitted" });
-    } catch (error) {
-        res.status(500).json({ error: String(error) });
-    }
-});
+// TODO(topic-service-migration): re-enable when TopicMessageSubmitOperation lands.
+// app.post("/api/topics/:id/messages", async (req, res) => {
+//     try {
+//         const { message } = req.body as { message: string };
+//         await req.hiero.topicService.submitMessage(req.params.id, message);
+//         res.status(202).json({ status: "submitted" });
+//     } catch (error) {
+//         res.status(500).json({ error: String(error) });
+//     }
+// });
 
 // ─── Network Routes ───────────────────────────────────────────
 
