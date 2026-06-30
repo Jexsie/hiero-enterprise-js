@@ -82,18 +82,21 @@ app.post<{ Body: { memo?: string } }>("/api/topics", async (request, reply) => {
 });
 
 /** Submit a message to a topic */
-// TODO(topic-service-migration): re-enable when TopicMessageSubmitOperation lands.
-// app.post<{ Params: { id: string }; Body: { message: string } }>(
-//     "/api/topics/:id/messages",
-//     async (request, reply) => {
-//         await app.hiero.topicService.submitMessage(
-//             request.params.id,
-//             request.body.message,
-//         );
-//         reply.code(202);
-//         return { status: "submitted" };
-//     },
-// );
+app.post<{ Params: { id: string }; Body: { message: string } }>(
+    "/api/topics/:id/messages",
+    async (request, reply) => {
+        const result = await app.hiero.topicService.submitMessage({
+            topicId: request.params.id,
+            message: request.body.message,
+        });
+        reply.code(202);
+        return {
+            status: "submitted",
+            sequenceNumber: result.sequenceNumber.toString(),
+            transactionId: result.transactionId,
+        };
+    },
+);
 
 // ─── Network Routes ───────────────────────────────────────────
 

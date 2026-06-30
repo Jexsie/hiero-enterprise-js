@@ -76,6 +76,8 @@ export interface MockReceipt {
     contractId: { toString(): string };
     tokenId: { toString(): string };
     totalSupply: { toString(): string } | null;
+    topicSequenceNumber: { toString(): string; toNumber(): number };
+    topicRunningHash: Uint8Array;
 }
 
 export interface MockTransactionResponse {
@@ -128,6 +130,8 @@ export function buildMockReceipt(
         contractId: { toString: () => "0.0.666" },
         tokenId: { toString: () => "0.0.500" },
         totalSupply: { toString: () => "1000" },
+        topicSequenceNumber: { toString: () => "1", toNumber: () => 1 },
+        topicRunningHash: new Uint8Array([1, 2, 3, 4]),
         ...overrides,
     };
 }

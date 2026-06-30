@@ -125,15 +125,21 @@ class TopicController {
         return { topicId };
     }
 
-    // TODO(topic-service-migration): re-enable when TopicMessageSubmitOperation lands.
-    // @Post(":id/messages")
-    // async submitMessage(
-    //     @Param("id") id: string,
-    //     @Body() body: { message: string },
-    // ) {
-    //     await this.topicService.submitMessage(id, body.message);
-    //     return { status: "submitted" };
-    // }
+    @Post(":id/messages")
+    async submitMessage(
+        @Param("id") id: string,
+        @Body() body: { message: string },
+    ) {
+        const result = await this.topicService.submitMessage({
+            topicId: id,
+            message: body.message,
+        });
+        return {
+            status: "submitted",
+            sequenceNumber: result.sequenceNumber.toString(),
+            transactionId: result.transactionId,
+        };
+    }
 }
 
 @Controller("api/network")
