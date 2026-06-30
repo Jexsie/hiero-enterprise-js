@@ -96,6 +96,25 @@ export interface MirrorRoyaltyFeeResponse {
     all_collectors_are_exempt?: boolean;
 }
 
+export interface MirrorContractInfo {
+    contract_id: string;
+    memo?: string;
+    auto_renew_account?: string | null;
+    auto_renew_period?: number | null;
+    expiration_timestamp?: string | null;
+    file_id?: string | null;
+    evm_address?: string | null;
+    max_automatic_token_associations?: number | null;
+    decline_reward?: boolean | null;
+    staked_account_id?: string | null;
+    staked_node_id?: number | null;
+    deleted?: boolean;
+    admin_key?: {
+        _type: string;
+        key: string;
+    } | null;
+}
+
 async function getJson<T>(url: string): Promise<T> {
     const res = await fetch(url);
     if (!res.ok) {
@@ -165,5 +184,19 @@ export async function queryTokenInfo(
 ): Promise<MirrorTokenInfo> {
     return getJson<MirrorTokenInfo>(
         `${getMirrorUrl()}/api/v1/tokens/${tokenId}`,
+    );
+}
+
+/**
+ * Fetch contract info by ID. Used to verify contract-update integration tests
+ * — `memo`, `auto_renew_account`, `auto_renew_period`, `expiration_timestamp`,
+ * `max_automatic_token_associations`, `decline_reward`, and staking targets are
+ * all observable via the Mirror Node after the consensus node propagates.
+ */
+export async function queryContractInfo(
+    contractId: string,
+): Promise<MirrorContractInfo> {
+    return getJson<MirrorContractInfo>(
+        `${getMirrorUrl()}/api/v1/contracts/${contractId}`,
     );
 }

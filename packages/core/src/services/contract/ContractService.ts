@@ -3,10 +3,12 @@ import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
 import {
     ContractCreateOperation,
     ContractExecuteOperation,
+    ContractUpdateOperation,
 } from "./operations/index.js";
 import type {
     ContractCreateOperationOptions,
     ContractExecuteOperationOptions,
+    ContractUpdateOperationOptions,
 } from "./operations/index.js";
 
 /**
@@ -36,6 +38,17 @@ export type CreateContractOptions = ContractCreateOperationOptions;
 export type ExecuteContractOptions = ContractExecuteOperationOptions;
 
 /**
+ * Options for mutating fields on an already-deployed contract via
+ * `ContractUpdateTransaction`.
+ *
+ * Only fields that are explicitly set are sent to the network; omitted
+ * fields are left unchanged. Updating any field requires the contract's
+ * current `adminKey` to sign — pass it via `additionalSigners`. Contracts
+ * deployed without an admin key are immutable.
+ */
+export type UpdateContractOptions = ContractUpdateOperationOptions;
+
+/**
  * Service for managing smart contracts on the Hiero network (HSCS — the
  * Smart Contract Service).
  *
@@ -55,10 +68,12 @@ export type ExecuteContractOptions = ContractExecuteOperationOptions;
 export class ContractService {
     private readonly createOperation: ContractCreateOperation;
     private readonly executeOperation: ContractExecuteOperation;
+    private readonly updateOperation: ContractUpdateOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new ContractCreateOperation(context);
         this.executeOperation = new ContractExecuteOperation(context);
+        this.updateOperation = new ContractUpdateOperation(context);
     }
 
     /**
@@ -166,5 +181,59 @@ export class ContractService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.executeOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Update mutable fields on an already-deployed contract.
+     *
+     * Only fields that are explicitly set are sent to the network; omitted
+     * fields are left unchanged. The contract's current `adminKey` must
+     * sign the transaction — pass it via `additionalSigners`. Contracts
+     * deployed without an admin key are immutable and cannot be updated.
+     *
+     * Resolves once the consensus node returns a successful receipt;
+     * per-update status / timing is delivered through the `before` /
+     * `after` listener events on the surrounding `HieroContext`.
+     *
+     * @param options.contractId - Contract to update (required)
+     * @param options.adminKey - Replace the current admin key
+     * @param options.contractMemo - New contract memo (max 100 bytes)
+     * @param options.autoRenewPeriod - New auto-renew period in seconds
+     * @param options.autoRenewAccountId - Replace the auto-renew payer account
+     * @param options.expirationTime - Extend the contract's expiration
+     * @param options.bytecodeFileId - Replace the bytecode pointer (advanced)
+     * @param options.stakedAccountId - Switch staking target (mutex with `stakedNodeId`)
+     * @param options.stakedNodeId - Switch staking target (mutex with `stakedAccountId`)
+     * @param options.declineStakingReward - Toggle staking-reward decline
+     * @param options.maxAutomaticTokenAssociations - Update the auto-association limit (HIP-23 / HIP-904)
+     *
+     * @example
+     * ```typescript
+     * await contractService.updateContract({
+     *     contractId: "0.0.12345",
+     *     contractMemo: "renamed",
+     *     additionalSigners: [adminKey],
+     * });
+     * ```
+     */
+    async updateContract(options: UpdateContractOptions): Promise<void> {
+        await this.updateOperation.execute(options);
+    }
+
+    /**
+     * Schedule a contract update for deferred multi-sig execution.
+     * Returns a `scheduleId` — other parties can then sign through
+     * `ScheduleService` before the update executes automatically.
+     *
+     * @param options - Same fields as `updateContract`
+     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
+     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
+     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
+     */
+    async scheduleUpdateContract(
+        options: UpdateContractOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return await this.updateOperation.schedule(options, scheduleOptions);
     }
 }
