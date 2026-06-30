@@ -76,4 +76,48 @@ describe("TopicUpdateValidator", () => {
             ).toThrow(/topicMemo exceeds 100 bytes/);
         });
     });
+
+    describe("non-clearable fields", () => {
+        // TypeScript blocks `null` on these fields at compile time, so
+        // we deliberately cast through `unknown` to simulate a JS caller
+        // (or `any`-typed data) slipping past the type guard.
+        function withRawNull(
+            field: "autoRenewPeriod" | "expirationTime",
+        ): TopicUpdateOperationOptions {
+            return {
+                ...baseOptions,
+                [field]: null,
+            } as unknown as TopicUpdateOperationOptions;
+        }
+
+        it("rejects null on autoRenewPeriod (no clearAutoRenewPeriod SDK method)", () => {
+            expect(() =>
+                validator.validate(withRawNull("autoRenewPeriod")),
+            ).toThrow(/autoRenewPeriod cannot be null .* no clear operation/);
+        });
+
+        it("rejects null on expirationTime (no clearExpirationTime SDK method)", () => {
+            expect(() =>
+                validator.validate(withRawNull("expirationTime")),
+            ).toThrow(/expirationTime cannot be null .* no clear operation/);
+        });
+
+        it("accepts a numeric autoRenewPeriod", () => {
+            expect(() =>
+                validator.validate({
+                    ...baseOptions,
+                    autoRenewPeriod: 7_776_000,
+                }),
+            ).not.toThrow();
+        });
+
+        it("accepts a Date expirationTime", () => {
+            expect(() =>
+                validator.validate({
+                    ...baseOptions,
+                    expirationTime: new Date(Date.now() + 86400 * 1000),
+                }),
+            ).not.toThrow();
+        });
+    });
 });

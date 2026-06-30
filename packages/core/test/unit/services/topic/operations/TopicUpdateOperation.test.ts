@@ -238,37 +238,4 @@ describe("TopicUpdateOperation (via TopicService)", () => {
             expect(vi.mocked(TopicUpdateTransaction)).not.toHaveBeenCalled();
         });
     });
-
-    describe("scheduleUpdateTopic", () => {
-        it("schedules a topic update and returns the scheduleId", async () => {
-            const result = await service.scheduleUpdateTopic({
-                topicId: "0.0.12345",
-                topicMemo: "scheduled rename",
-            });
-
-            expect(result.scheduleId).toBe("0.0.777");
-            expect(result.transactionId).toBe("0.0.123@1234567890.000000000");
-
-            const tx = vi.mocked(TopicUpdateTransaction).mock.results[0].value;
-            expect(tx.schedule).toHaveBeenCalled();
-        });
-
-        it("forwards schedule options to the scheduling transaction", async () => {
-            await service.scheduleUpdateTopic(
-                {
-                    topicId: "0.0.12345",
-                    topicMemo: "scheduled rename",
-                },
-                {
-                    payerAccountId: "0.0.999",
-                    scheduleMemo: "update via multisig",
-                },
-            );
-
-            expect(mocks.scheduleTx.setPayerAccountId).toHaveBeenCalled();
-            expect(mocks.scheduleTx.setScheduleMemo).toHaveBeenCalledWith(
-                "update via multisig",
-            );
-        });
-    });
 });

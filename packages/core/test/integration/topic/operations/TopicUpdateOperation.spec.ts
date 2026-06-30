@@ -119,18 +119,4 @@ describe("TopicUpdateOperation", () => {
             .execute(client);
         expect(updated.topicMemo).toBe("after rotation");
     });
-
-    it("schedules an update and returns a scheduleId", async () => {
-        const scheduled = await topicService.scheduleUpdateTopic(
-            {
-                topicId,
-                topicMemo: "integration: scheduled update",
-                additionalSigners: [adminKey],
-            },
-            { scheduleMemo: "integration scheduled topic update" },
-        );
-
-        expect(scheduled.scheduleId).toMatch(/^0\.0\.\d+$/);
-        expect(scheduled.transactionId).toBeDefined();
-    });
 });

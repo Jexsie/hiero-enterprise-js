@@ -117,12 +117,25 @@ export class TopicService {
     /**
      * Update an existing topic.
      *
-     * Every field except `topicId` is optional. Each optional field
-     * uses three-state semantics:
+     * Every field except `topicId` is optional. Optional fields fall
+     * into two groups:
      *
+     * **Clearable fields** — three-state semantics:
      *  - omitted (`undefined`) → leave unchanged
      *  - `null`                → clear on the network
      *  - value                 → replace existing value
+     *
+     * Clearable: `topicMemo`, `adminKey`, `submitKey`,
+     * `autoRenewAccountId`, `feeScheduleKey`, `feeExemptKeys`,
+     * `customFees`.
+     *
+     * **Non-clearable fields** — two-state semantics:
+     *  - omitted (`undefined`) → leave unchanged
+     *  - value                 → replace existing value
+     *
+     * Non-clearable: `autoRenewPeriod`, `expirationTime`. The SDK
+     * exposes no `clearX()` for these, so passing `null` is rejected by
+     * the validator instead of being silently ignored.
      *
      * Signing rules (enforced by the network):
      *
@@ -134,16 +147,19 @@ export class TopicService {
      *  - Switching to a new `autoRenewAccountId` (not just clearing it)
      *    requires that account's signature as well.
      *
+     * `TopicUpdate` is **not whitelisted for scheduling** on the
+     * network, so no `scheduleUpdateTopic` variant is exposed.
+     *
      * @param options.topicId - Topic to update (required)
      * @param options.topicMemo - New memo (max 100 bytes), or `null` to clear
      * @param options.adminKey - Replace admin key, or `null` to make immutable
      * @param options.submitKey - Replace submit key, or `null` to make public
      * @param options.autoRenewAccountId - New auto-renew account, or `null` to clear
-     * @param options.autoRenewPeriod - New auto-renew period in seconds
+     * @param options.autoRenewPeriod - New auto-renew period in seconds (not clearable)
      * @param options.feeScheduleKey - Replace fee-schedule key (HIP-991), or `null`
      * @param options.feeExemptKeys - Replace fee-exempt keys (HIP-991), or `null`
      * @param options.customFees - Replace custom fees (HIP-991), or `null`
-     * @param options.expirationTime - Extend the topic's expiration
+     * @param options.expirationTime - Extend the topic's expiration (not clearable)
      *
      * @example
      * ```typescript
@@ -172,22 +188,5 @@ export class TopicService {
      */
     async updateTopic(options: UpdateTopicOptions): Promise<void> {
         return await this.updateOperation.execute(options);
-    }
-
-    /**
-     * Schedule a topic update for deferred multi-sig execution.
-     * Returns a `scheduleId` — other parties can then sign through
-     * `ScheduleService` before the topic update executes automatically.
-     *
-     * @param options - Same fields as `updateTopic`
-     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
-     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
-     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
-     */
-    async scheduleUpdateTopic(
-        options: UpdateTopicOptions,
-        scheduleOptions?: ScheduleOptions,
-    ): Promise<ScheduledResult> {
-        return await this.updateOperation.schedule(options, scheduleOptions);
     }
 }
