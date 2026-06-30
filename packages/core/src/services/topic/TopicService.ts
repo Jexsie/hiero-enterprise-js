@@ -74,7 +74,7 @@ export class TopicService {
      * });
      * ```
      */
-    async createTopic(options: CreateTopicOptions): Promise<string> {
+    async createTopic(options: CreateTopicOptions = {}): Promise<string> {
         return await this.createOperation.execute(options);
     }
 
