@@ -1,7 +1,13 @@
 import type { IHieroContext } from "../../context/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
-import { TopicCreateOperation } from "./operations/index.js";
-import type { TopicCreateOperationOptions } from "./operations/index.js";
+import {
+    TopicCreateOperation,
+    TopicUpdateOperation,
+} from "./operations/index.js";
+import type {
+    TopicCreateOperationOptions,
+    TopicUpdateOperationOptions,
+} from "./operations/index.js";
 
 /**
  * Options for creating a topic via `TopicCreateTransaction`.
@@ -14,6 +20,17 @@ import type { TopicCreateOperationOptions } from "./operations/index.js";
  * topic.
  */
 export type CreateTopicOptions = TopicCreateOperationOptions;
+
+/**
+ * Options for updating a topic via `TopicUpdateTransaction`.
+ *
+ * Every optional field follows a three-state convention:
+ *
+ *  - **omitted (undefined)** — leave the field unchanged
+ *  - **`null`**               — clear the field on the network
+ *  - **a value**              — replace the existing value
+ */
+export type UpdateTopicOptions = TopicUpdateOperationOptions;
 
 /**
  * Service for managing topics on the Hiero Consensus Service (HCS).
@@ -31,9 +48,11 @@ export type CreateTopicOptions = TopicCreateOperationOptions;
  */
 export class TopicService {
     private readonly createOperation: TopicCreateOperation;
+    private readonly updateOperation: TopicUpdateOperation;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TopicCreateOperation(context);
+        this.updateOperation = new TopicUpdateOperation(context);
     }
 
     /**
@@ -93,5 +112,82 @@ export class TopicService {
         scheduleOptions?: ScheduleOptions,
     ): Promise<ScheduledResult> {
         return await this.createOperation.schedule(options, scheduleOptions);
+    }
+
+    /**
+     * Update an existing topic.
+     *
+     * Every field except `topicId` is optional. Each optional field
+     * uses three-state semantics:
+     *
+     *  - omitted (`undefined`) → leave unchanged
+     *  - `null`                → clear on the network
+     *  - value                 → replace existing value
+     *
+     * Signing rules (enforced by the network):
+     *
+     *  - A topic without an `adminKey` is mutable only via
+     *    `expirationTime` extension. Every other change requires the
+     *    existing admin key to sign — pass it via `additionalSigners`.
+     *  - Rotating the `adminKey` requires signatures from BOTH the old
+     *    and the new admin keys.
+     *  - Switching to a new `autoRenewAccountId` (not just clearing it)
+     *    requires that account's signature as well.
+     *
+     * @param options.topicId - Topic to update (required)
+     * @param options.topicMemo - New memo (max 100 bytes), or `null` to clear
+     * @param options.adminKey - Replace admin key, or `null` to make immutable
+     * @param options.submitKey - Replace submit key, or `null` to make public
+     * @param options.autoRenewAccountId - New auto-renew account, or `null` to clear
+     * @param options.autoRenewPeriod - New auto-renew period in seconds
+     * @param options.feeScheduleKey - Replace fee-schedule key (HIP-991), or `null`
+     * @param options.feeExemptKeys - Replace fee-exempt keys (HIP-991), or `null`
+     * @param options.customFees - Replace custom fees (HIP-991), or `null`
+     * @param options.expirationTime - Extend the topic's expiration
+     *
+     * @example
+     * ```typescript
+     * // Rename a topic
+     * await topicService.updateTopic({
+     *     topicId: "0.0.12345",
+     *     topicMemo: "renamed feed",
+     *     additionalSigners: [adminKey],
+     * });
+     *
+     * // Make a previously-private topic public by clearing the submit key
+     * await topicService.updateTopic({
+     *     topicId: "0.0.12345",
+     *     submitKey: null,
+     *     additionalSigners: [adminKey],
+     * });
+     *
+     * // Rotate the admin key — BOTH old and new keys must sign
+     * const newAdmin = PrivateKey.generateED25519();
+     * await topicService.updateTopic({
+     *     topicId: "0.0.12345",
+     *     adminKey: newAdmin.publicKey,
+     *     additionalSigners: [oldAdmin, newAdmin],
+     * });
+     * ```
+     */
+    async updateTopic(options: UpdateTopicOptions): Promise<void> {
+        return await this.updateOperation.execute(options);
+    }
+
+    /**
+     * Schedule a topic update for deferred multi-sig execution.
+     * Returns a `scheduleId` — other parties can then sign through
+     * `ScheduleService` before the topic update executes automatically.
+     *
+     * @param options - Same fields as `updateTopic`
+     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
+     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
+     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
+     */
+    async scheduleUpdateTopic(
+        options: UpdateTopicOptions,
+        scheduleOptions?: ScheduleOptions,
+    ): Promise<ScheduledResult> {
+        return await this.updateOperation.schedule(options, scheduleOptions);
     }
 }
