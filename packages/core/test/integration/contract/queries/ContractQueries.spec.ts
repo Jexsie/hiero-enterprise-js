@@ -65,7 +65,9 @@ describe("Contract queries", () => {
                 "contract-queries integration target",
             );
             expect(info.isDeleted).toBe(false);
-            expect(info.adminKey).toBeNull(); // immutable: no admin key supplied
+            // No adminKey was supplied to createContract, so the network
+            // defaults it to the operator's key — assert it exists
+            expect(info.adminKey).not.toBeNull();
         });
     });
 
