@@ -133,9 +133,7 @@ export class TopicService {
      *  - omitted (`undefined`) → leave unchanged
      *  - value                 → replace existing value
      *
-     * Non-clearable: `autoRenewPeriod`, `expirationTime`. The SDK
-     * exposes no `clearX()` for these, so passing `null` is rejected by
-     * the validator instead of being silently ignored.
+     * Non-clearable: `autoRenewPeriod`, `expirationTime`.
      *
      * Signing rules (enforced by the network):
      *
