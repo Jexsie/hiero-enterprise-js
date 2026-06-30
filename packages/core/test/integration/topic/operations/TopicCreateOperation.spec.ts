@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { PrivateKey } from "@hiero-ledger/sdk";
 import { setupIntegrationTestEnv } from "../../../utils/env.js";
-import { waitForMirrorNodeRecord } from "../../../utils/mirror-node.js";
+import {
+    waitForMirrorEntity,
+    waitForMirrorNodeRecord,
+} from "../../../utils/mirror-node.js";
 import { queryTopicInfo } from "../../../utils/mirror-node-rest.js";
 import { TopicService } from "../../../../src/services/index.js";
 
@@ -23,7 +26,9 @@ describe("TopicCreateOperation", () => {
         expect(topicId).toMatch(/^0\.0\.\d+$/);
 
         await waitForMirrorNodeRecord();
-        const info = await queryTopicInfo(topicId);
+        const info = await waitForMirrorEntity(() => queryTopicInfo(topicId), {
+            description: `topic ${topicId}`,
+        });
         expect(info.topic_id).toBe(topicId);
         expect(info.memo).toBe("integration: public topic");
         expect(info.deleted).toBe(false);
@@ -48,7 +53,9 @@ describe("TopicCreateOperation", () => {
         expect(topicId).toMatch(/^0\.0\.\d+$/);
 
         await waitForMirrorNodeRecord();
-        const info = await queryTopicInfo(topicId);
+        const info = await waitForMirrorEntity(() => queryTopicInfo(topicId), {
+            description: `topic ${topicId}`,
+        });
         expect(info.topic_id).toBe(topicId);
         expect(info.memo).toBe("integration: private topic");
         expect(info.admin_key).not.toBeNull();
