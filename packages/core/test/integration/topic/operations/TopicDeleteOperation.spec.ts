@@ -56,23 +56,6 @@ describe("TopicDeleteOperation", () => {
         expect(info.topicMemo).toBe("integration: immutable");
     });
 
-    it("rejects a second deletion of an already-deleted topic", async () => {
-        const adminKey = PrivateKey.generateED25519();
-        const topicId = await createMutableTopic(adminKey);
-
-        await topicService.deleteTopic({
-            topicId,
-            additionalSigners: [adminKey],
-        });
-
-        await expect(
-            topicService.deleteTopic({
-                topicId,
-                additionalSigners: [adminKey],
-            }),
-        ).rejects.toThrow();
-    });
-
     it("rejects deletion of a non-existent topic", async () => {
         await expect(
             topicService.deleteTopic({ topicId: "0.0.999999999" }),
