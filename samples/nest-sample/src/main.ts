@@ -120,19 +120,20 @@ class TopicController {
     @Post()
     async createTopic(@Body() body: { memo?: string }) {
         const topicId = await this.topicService.createTopic({
-            memo: body.memo,
+            topicMemo: body.memo,
         });
         return { topicId };
     }
 
-    @Post(":id/messages")
-    async submitMessage(
-        @Param("id") id: string,
-        @Body() body: { message: string },
-    ) {
-        await this.topicService.submitMessage(id, body.message);
-        return { status: "submitted" };
-    }
+    // TODO(topic-service-migration): re-enable when TopicMessageSubmitOperation lands.
+    // @Post(":id/messages")
+    // async submitMessage(
+    //     @Param("id") id: string,
+    //     @Body() body: { message: string },
+    // ) {
+    //     await this.topicService.submitMessage(id, body.message);
+    //     return { status: "submitted" };
+    // }
 }
 
 @Controller("api/network")

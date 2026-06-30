@@ -200,3 +200,34 @@ export async function queryContractInfo(
         `${getMirrorUrl()}/api/v1/contracts/${contractId}`,
     );
 }
+
+export interface MirrorTopicInfo {
+    topic_id: string;
+    memo?: string;
+    admin_key?: {
+        _type: string;
+        key: string;
+    } | null;
+    submit_key?: {
+        _type: string;
+        key: string;
+    } | null;
+    auto_renew_account?: string | null;
+    auto_renew_period?: number | null;
+    deleted?: boolean;
+    created_timestamp?: string;
+}
+
+/**
+ * Fetch topic info by ID. Used to verify topic-create integration tests —
+ * `memo`, `admin_key`, `submit_key`, `auto_renew_account`, and
+ * `auto_renew_period` are all observable via the Mirror Node after the
+ * consensus node propagates.
+ */
+export async function queryTopicInfo(
+    topicId: string,
+): Promise<MirrorTopicInfo> {
+    return getJson<MirrorTopicInfo>(
+        `${getMirrorUrl()}/api/v1/topics/${topicId}`,
+    );
+}

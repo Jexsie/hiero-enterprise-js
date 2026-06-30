@@ -4,7 +4,7 @@ import type { TokenService } from "../services/token/index.js";
 import type { ScheduleService } from "../services/schedule/index.js";
 import type { FileService } from "../services/file-service.js";
 import type { ContractService } from "../services/contract/index.js";
-import type { TopicService } from "../services/topic-service.js";
+import type { TopicService } from "../services/topic/index.js";
 import type { AccountRepository } from "../repositories/account-repository.js";
 import type { NftRepository } from "../repositories/nft-repository.js";
 import type { TokenRepository } from "../repositories/token-repository.js";

@@ -75,24 +75,25 @@ app.get<{ Params: { id: string } }>(
 /** Create a new public topic */
 app.post<{ Body: { memo?: string } }>("/api/topics", async (request, reply) => {
     const topicId = await app.hiero.topicService.createTopic({
-        memo: request.body.memo,
+        topicMemo: request.body.memo,
     });
     reply.code(201);
     return { topicId };
 });
 
 /** Submit a message to a topic */
-app.post<{ Params: { id: string }; Body: { message: string } }>(
-    "/api/topics/:id/messages",
-    async (request, reply) => {
-        await app.hiero.topicService.submitMessage(
-            request.params.id,
-            request.body.message,
-        );
-        reply.code(202);
-        return { status: "submitted" };
-    },
-);
+// TODO(topic-service-migration): re-enable when TopicMessageSubmitOperation lands.
+// app.post<{ Params: { id: string }; Body: { message: string } }>(
+//     "/api/topics/:id/messages",
+//     async (request, reply) => {
+//         await app.hiero.topicService.submitMessage(
+//             request.params.id,
+//             request.body.message,
+//         );
+//         reply.code(202);
+//         return { status: "submitted" };
+//     },
+// );
 
 // ─── Network Routes ───────────────────────────────────────────
 
