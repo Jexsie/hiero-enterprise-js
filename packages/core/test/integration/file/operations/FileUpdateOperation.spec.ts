@@ -112,16 +112,25 @@ describe("FileUpdateOperation", () => {
     });
 
     it("extends the expirationTime", async () => {
-        // ~120 days out — comfortably past the current expiration.
-        const expirationTime = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000);
+        // The network's auto-renew window for files caps at ~92 days
+        // (8,000,001 seconds). Create a short-lived file so we have
+        // room to extend within that window.
+        const shortLivedFileId = await fileService.createFile({
+            contents: "short-lived",
+            expirationTime: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        });
+
+        // Extend to ~90 days out — well past the initial 30-day expiry,
+        // still under the network's max auto-renew window.
+        const expirationTime = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
         await fileService.updateFile({
-            fileId,
+            fileId: shortLivedFileId,
             expirationTime,
         });
 
         const info = await new FileInfoQuery()
-            .setFileId(fileId)
+            .setFileId(shortLivedFileId)
             .execute(client);
         expect(info.expirationTime.toDate().toISOString().slice(0, 10)).toBe(
             expirationTime.toISOString().slice(0, 10),

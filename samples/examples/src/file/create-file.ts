@@ -124,12 +124,13 @@ async function createImmutableFile(fileService: FileService) {
 async function createFileWithExpiration(fileService: FileService) {
     console.log("=== Create file with custom fileMemo + expiration ===\n");
 
-    // ~120 days out — past the 91-day default.
-    const expirationTime = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000);
+    // ~90 days out — near the top of the network's auto-renew window
+    // (~92 days). Values past that cap trigger AUTORENEW_DURATION_NOT_IN_RANGE.
+    const expirationTime = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
     const fileId = await fileService.createFile({
         contents: "long-lived",
-        fileMemo: "retention: 120d",
+        fileMemo: "retention: 90d",
         expirationTime,
     });
 

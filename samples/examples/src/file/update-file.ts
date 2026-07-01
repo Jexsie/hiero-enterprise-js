@@ -104,10 +104,15 @@ async function replaceContents(fileService: FileService) {
 async function extendExpiration(fileService: FileService) {
     console.log("=== Extend file expiration ===\n");
 
-    const fileId = await createOperatorFile(fileService, "expiry demo");
+    // Create a short-lived file so the extension is meaningful and
+    // stays under the network's ~92-day max auto-renew window.
+    const fileId = await fileService.createFile({
+        contents: "expiry demo",
+        expirationTime: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
 
-    // ~120 days out.
-    const expirationTime = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000);
+    // Extend to ~90 days out — comfortably past the initial expiry.
+    const expirationTime = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
     await fileService.updateFile({
         fileId,
