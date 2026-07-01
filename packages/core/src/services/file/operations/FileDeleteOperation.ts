@@ -2,11 +2,7 @@ import type { FileId } from "@hiero-ledger/sdk";
 import { FileDeleteTransaction } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
 import { TransactionExecutor } from "../../transaction/index.js";
-import type {
-    TransactionOptions,
-    ScheduleOptions,
-    ScheduledResult,
-} from "../../transaction/index.js";
+import type { TransactionOptions } from "../../transaction/index.js";
 import { FileDeleteValidator } from "../validation/index.js";
 
 /**
@@ -53,28 +49,6 @@ export class FileDeleteOperation {
                 timestamp: new Date(),
             },
             () => undefined,
-        );
-    }
-
-    /** Schedule a `FileDeleteTransaction` for deferred multi-sig execution. */
-    async schedule(
-        options: FileDeleteOperationOptions,
-        scheduleOptions?: ScheduleOptions,
-    ): Promise<ScheduledResult> {
-        this.validator.validate(options);
-
-        const tx = this.build(options);
-
-        return await this.executor.scheduleRun(
-            tx,
-            options,
-            {
-                type: "FileDelete",
-                serviceName: "FileService",
-                methodName: "deleteFile",
-                timestamp: new Date(),
-            },
-            scheduleOptions,
         );
     }
 

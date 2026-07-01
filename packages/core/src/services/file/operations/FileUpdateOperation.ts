@@ -1,4 +1,4 @@
-import type { Key, FileId, Timestamp } from "@hiero-ledger/sdk";
+import type { Key, KeyList, FileId, Timestamp } from "@hiero-ledger/sdk";
 import { FileUpdateTransaction } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
 import { TransactionExecutor } from "../../transaction/index.js";
@@ -51,8 +51,10 @@ export interface FileUpdateOperationOptions extends TransactionOptions {
      * which chains a `FileAppendTransaction`.
      */
     contents?: Uint8Array | string;
-    /** Replace the key list. Pass `[]` to make the file unmodifiable. */
-    keys?: Key[];
+    /**
+     * Replace the key list. Pass `[]` to make the file unmodifiable.
+     */
+    keys?: Key[] | KeyList;
     /** New file memo. `null` clears the memo. */
     fileMemo?: string | null;
     /**

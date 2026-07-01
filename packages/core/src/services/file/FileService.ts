@@ -95,27 +95,43 @@ export class FileService {
     /**
      * Create a file with the given contents.
      *
+     * `options` itself is optional — calling `createFile()` with no
+     * arguments creates an empty, operator-modifiable file (SDK parity).
+     *
+     * `contents` is optional — omitting it creates an empty file
+     *
      * If `contents` exceeds the per-transaction network limit
-     * (~4 KiB) the facade automatically splits the payload: the
-     * leading chunk is submitted via `FileCreateTransaction`, and the
-     * remainder is appended via a single `FileAppendTransaction`
+     * (~4 KiB) they are automatically split.
+     * The leading chunk is submitted via `FileCreateTransaction`,
+     * and the remainder is appended via a single `FileAppendTransaction`
      * (which the SDK further sub-chunks internally).
      *
      * If `keys` is omitted the file is created with `[operatorPublicKey]`
      * so the operator can later update or delete it. Pass `keys: []`
      * for an unmodifiable file.
      *
-     * @returns The new file's entity ID (e.g., `"0.0.12345"`).
+     * `FileCreate` is not whitelisted for scheduling on the network, so
+     * no `scheduleCreateFile` variant is exposed.
+     *
+     * @param options.contents - Initial file contents (UTF-8 string or raw bytes); omit for an empty file
+     * @param options.keys - Keys required to later modify or delete the file; defaults to `[operatorPublicKey]`, pass `[]` for immutable
+     * @param options.fileMemo - Short memo attached to the file entity
+     * @param options.expirationTime - Expiration timestamp; SDK default is ~91 days from now
+     * @returns The new file's entity ID (e.g., `"0.0.12345"`)
      *
      * @example
      * ```typescript
+     * // Empty, operator-modifiable file
+     * const emptyId = await fileService.createFile();
+     *
+     * // File with initial contents
      * const fileId = await fileService.createFile({
      *     contents: Buffer.from("hello", "utf8"),
      *     fileMemo: "greeting",
      * });
      * ```
      */
-    async createFile(options: CreateFileOptions): Promise<string> {
+    async createFile(options: CreateFileOptions = {}): Promise<string> {
         const [head, tail] = splitContents(options.contents);
         const keys = options.keys ?? [this.context.operatorPublicKey as Key];
 
@@ -127,16 +143,9 @@ export class FileService {
 
         if (tail !== null) {
             await this.appendOperation.execute({
+                ...options,
                 fileId,
                 contents: tail,
-                additionalSigners: options.additionalSigners,
-                externalSigners: options.externalSigners,
-                legacySignatures: options.legacySignatures,
-                maxTransactionFee: options.maxTransactionFee,
-                transactionValidDuration: options.transactionValidDuration,
-                nodeAccountIds: options.nodeAccountIds,
-                regenerateTransactionId: options.regenerateTransactionId,
-                highVolume: options.highVolume,
             });
         }
 
@@ -144,37 +153,20 @@ export class FileService {
     }
 
     /**
-     * Schedule a file creation for deferred multi-sig execution.
-     * Returns a `scheduleId` — other parties can then sign via
-     * `ScheduleService` before the file creation executes automatically.
-     *
-     * Note: only the leading `FileCreate` chunk is scheduled. Large
-     * payloads that require follow-up `FileAppend` cannot be atomically
-     * scheduled today — the facade rejects `contents` exceeding the
-     * per-transaction limit for this method.
-     */
-    async scheduleCreateFile(
-        options: CreateFileOptions,
-        scheduleOptions?: ScheduleOptions,
-    ): Promise<ScheduledResult> {
-        const [, tail] = splitContents(options.contents);
-        if (tail !== null) {
-            throw new Error(
-                "scheduleCreateFile does not support contents larger than the per-transaction network limit " +
-                    `(~${MAX_FILE_TX_BYTES} bytes). Create the file directly and schedule follow-up updates instead.`,
-            );
-        }
-
-        const keys = options.keys ?? [this.context.operatorPublicKey as Key];
-        return await this.createOperation.schedule(
-            { ...options, keys },
-            scheduleOptions,
-        );
-    }
-
-    /**
      * Append content to an existing file. The SDK auto-chunks the
      * payload — no size cap beyond what `maxChunks * chunkSize` allows.
+     *
+     * Every key in the file's `keys` list must sign — pass them via
+     * `additionalSigners` if the operator isn't already one of them.
+     *
+     * `FileAppend` is not whitelisted for scheduling on the network, so
+     * no `scheduleAppendToFile` variant is exposed.
+     *
+     * @param options.fileId - File to append to (required)
+     * @param options.contents - Payload to append (UTF-8 string or raw bytes, required)
+     * @param options.maxChunks - Max chunks the SDK will produce (SDK default 20)
+     * @param options.chunkSize - Bytes per chunk (SDK default 4096)
+     * @param options.chunkInterval - Milliseconds to wait between chunks
      */
     async appendToFile(options: AppendToFileOptions): Promise<void> {
         return await this.appendOperation.execute(options);
@@ -189,6 +181,16 @@ export class FileService {
      * When `contents` exceeds the per-transaction network limit
      * (~4 KiB), the leading chunk goes into the `FileUpdate` and the
      * remainder into a single follow-up `FileAppendTransaction`.
+     *
+     * Every key in the file's existing `keys` must sign; rotating
+     * `keys` to a new list additionally requires the new keys to sign.
+     * Pass all required keys via `additionalSigners`.
+     *
+     * @param options.fileId - File to update (required)
+     * @param options.contents - Replace the file contents (auto-appended if larger than the per-tx limit)
+     * @param options.keys - Replace the key list; pass `[]` to make the file unmodifiable
+     * @param options.fileMemo - New file memo, or `null` to clear
+     * @param options.expirationTime - Extend the file's expiration (not clearable)
      */
     async updateFile(options: UpdateFileOptions): Promise<void> {
         if (options.contents === undefined) {
@@ -201,21 +203,31 @@ export class FileService {
 
         if (tail !== null) {
             await this.appendOperation.execute({
+                ...options,
                 fileId: options.fileId,
                 contents: tail,
-                additionalSigners: options.additionalSigners,
-                externalSigners: options.externalSigners,
-                legacySignatures: options.legacySignatures,
-                maxTransactionFee: options.maxTransactionFee,
-                transactionValidDuration: options.transactionValidDuration,
-                nodeAccountIds: options.nodeAccountIds,
-                regenerateTransactionId: options.regenerateTransactionId,
-                highVolume: options.highVolume,
             });
         }
     }
 
-    /** Schedule a `FileUpdateTransaction` for deferred multi-sig execution. */
+    /**
+     * Schedule a `FileUpdateTransaction` for deferred multi-sig execution.
+     *
+     * `FileUpdate` is the only file transaction currently in the network's
+     * default `scheduling.whitelist` — `FileCreate`, `FileAppend`, and
+     * `FileDelete` are rejected with `SCHEDULED_TRANSACTION_NOT_IN_WHITELIST`
+     * on mainnet / testnet, which is why this facade exposes no
+     * `scheduleCreateFile` / `scheduleDeleteFile` counterparts.
+     *
+     * `contents` must fit in a single transaction (~4 KiB) — auto-append
+     * cannot be atomically scheduled. Rejects larger payloads before any
+     * network call.
+     *
+     * @param options - Same fields as `updateFile` (with the per-tx `contents` cap)
+     * @param scheduleOptions.payerAccountId - Override the account that pays for the schedule creation
+     * @param scheduleOptions.adminKey - Optional schedule admin key for later updates / deletion
+     * @param scheduleOptions.scheduleMemo - Optional memo stored on the schedule itself
+     */
     async scheduleUpdateFile(
         options: UpdateFileOptions,
         scheduleOptions?: ScheduleOptions,
@@ -236,22 +248,29 @@ export class FileService {
     /**
      * Delete a file. Contents are zeroed and the entity is marked
      * `isDeleted: true` for the remainder of its expiration window.
+     *
+     * Every key in the file's `keys` list must sign — pass them via
+     * `additionalSigners`. A file created with an empty `keys` list is
+     * only deletable via network expiration.
+     *
+     * `FileDelete` is not whitelisted for scheduling on the network, so
+     * no `scheduleDeleteFile` variant is exposed.
+     *
+     * @param options.fileId - File to delete (required)
      */
     async deleteFile(options: DeleteFileOptions): Promise<void> {
         return await this.deleteOperation.execute(options);
     }
 
-    /** Schedule a `FileDeleteTransaction` for deferred multi-sig execution. */
-    async scheduleDeleteFile(
-        options: DeleteFileOptions,
-        scheduleOptions?: ScheduleOptions,
-    ): Promise<ScheduledResult> {
-        return await this.deleteOperation.schedule(options, scheduleOptions);
-    }
-
     /**
      * Fetch the current contents of a file from the consensus nodes.
      * Returns a zero-length payload for deleted files.
+     *
+     * Hits the consensus nodes directly — no mirror-node propagation
+     * lag.
+     *
+     * @param fileId - The file entity ID (e.g., `"0.0.12345"`)
+     * @returns The raw file bytes — empty for a deleted file
      */
     async getFileContents(fileId: string | FileId): Promise<Uint8Array> {
         return await this.contentsQuery.execute(fileId);
@@ -260,6 +279,12 @@ export class FileService {
     /**
      * Fetch a file's metadata (size, expiration, keys, `isDeleted`,
      * memo, ledger) as a plain object decoupled from SDK primitives.
+     *
+     * Hits the consensus nodes directly — no mirror-node propagation
+     * lag.
+     *
+     * @param fileId - The file entity ID (e.g., `"0.0.12345"`)
+     * @returns Plain-object file info — never `null`; throws if the file does not exist
      */
     async getFileInfo(fileId: string | FileId): Promise<GetFileInfoResult> {
         return await this.infoQuery.execute(fileId);
@@ -271,14 +296,14 @@ export class FileService {
  * `FileCreate` / `FileUpdate` transaction and the remainder that should
  * be appended.
  *
- * Returns `[head, null]` when the payload already fits and no append is
- * needed. The split is byte-accurate for `Uint8Array` inputs and
- * UTF-8-byte-accurate for `string` inputs (the network's limit is on
- * the serialized byte length, not the string's `.length`).
  */
 function splitContents(
-    contents: Uint8Array | string,
-): [Uint8Array | string, Uint8Array | string | null] {
+    contents: Uint8Array | string | undefined,
+): [Uint8Array | string | undefined, Uint8Array | string | null] {
+    if (contents == null) {
+        return [contents, null];
+    }
+
     if (typeof contents === "string") {
         const encoded = Buffer.from(contents, "utf8");
         if (encoded.byteLength <= MAX_FILE_TX_BYTES) {

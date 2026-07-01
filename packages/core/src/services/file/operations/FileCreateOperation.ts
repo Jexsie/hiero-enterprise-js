@@ -1,12 +1,8 @@
-import type { Key, Timestamp } from "@hiero-ledger/sdk";
+import type { Key, KeyList, Timestamp } from "@hiero-ledger/sdk";
 import { FileCreateTransaction } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
 import { TransactionExecutor } from "../../transaction/index.js";
-import type {
-    TransactionOptions,
-    ScheduleOptions,
-    ScheduledResult,
-} from "../../transaction/index.js";
+import type { TransactionOptions } from "../../transaction/index.js";
 import { FileCreateValidator } from "../validation/index.js";
 
 /**
@@ -36,18 +32,20 @@ import { FileCreateValidator } from "../validation/index.js";
  */
 export interface FileCreateOperationOptions extends TransactionOptions {
     /**
-     * Initial file contents. Sized against the single-transaction limit
-     * (~4 KiB); larger payloads should be created via
-     * `FileService.createFile`, which chains a `FileAppendTransaction`.
+     * Initial file contents. Optional — omitting it creates an empty
+     *
+     * Sized against the single-transaction limit (~4 KiB); larger
+     * payloads should be created via `FileService.createFile`, which
+     * chains a `FileAppendTransaction`.
      */
-    contents: Uint8Array | string;
+    contents?: Uint8Array | string;
     /**
      * Keys required to later modify or delete the file. Defaults to
      * `[operatorPublicKey]` at the facade layer so simple flows don't
      * have to think about it; pass `[]` for an unmodifiable file (only
      * deletable by network expiration).
      */
-    keys?: Key[];
+    keys?: Key[] | KeyList;
     /** Short memo attached to the file entity itself. */
     fileMemo?: string;
     /** Timestamp at which the file expires and is auto-deleted. */
@@ -82,30 +80,12 @@ export class FileCreateOperation {
         );
     }
 
-    /** Schedule a `FileCreateTransaction` for deferred multi-sig execution. */
-    async schedule(
-        options: FileCreateOperationOptions,
-        scheduleOptions?: ScheduleOptions,
-    ): Promise<ScheduledResult> {
-        this.validator.validate(options);
-
-        const tx = this.build(options);
-
-        return await this.executor.scheduleRun(
-            tx,
-            options,
-            {
-                type: "FileCreate",
-                serviceName: "FileService",
-                methodName: "createFile",
-                timestamp: new Date(),
-            },
-            scheduleOptions,
-        );
-    }
-
     private build(options: FileCreateOperationOptions): FileCreateTransaction {
-        const tx = new FileCreateTransaction().setContents(options.contents);
+        const tx = new FileCreateTransaction();
+
+        if (options.contents !== undefined) {
+            tx.setContents(options.contents);
+        }
 
         if (options.keys != null) {
             tx.setKeys(options.keys);
