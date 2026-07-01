@@ -1,3 +1,4 @@
+import type { SubscriptionHandle, TopicId } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../context/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
 import {
@@ -13,6 +14,12 @@ import type {
     TopicMessageSubmitOperationOptions,
     TopicMessageSubmitResult,
 } from "./operations/index.js";
+import { TopicInfoQuery, TopicMessageQuery } from "./queries/index.js";
+import type {
+    TopicInfoResult,
+    TopicMessageResult,
+    TopicMessageSubscribeOptions,
+} from "./queries/index.js";
 
 /**
  * Options for creating a topic via `TopicCreateTransaction`.
@@ -64,6 +71,24 @@ export type SubmitMessageOptions = TopicMessageSubmitOperationOptions;
 export type SubmitMessageResult = TopicMessageSubmitResult;
 
 /**
+ * Plain-object representation of a topic's current consensus-node state,
+ * returned by `getTopicInfo`.
+ */
+export type GetTopicInfoResult = TopicInfoResult;
+
+/**
+ * Options for `subscribeToMessages` — topic plus optional time/limit
+ * filters and stream-level handlers.
+ */
+export type SubscribeToMessagesOptions = TopicMessageSubscribeOptions;
+
+/**
+ * Plain-object message delivered through `subscribeToMessages` —
+ * reassembled contents plus sequence number and consensus timestamp.
+ */
+export type SubscribedMessage = TopicMessageResult;
+
+/**
  * Service for managing topics on the Hiero Consensus Service (HCS).
  *
  * Wraps the underlying `TopicCreate*` / `TopicUpdate*` / `TopicDelete*` /
@@ -82,12 +107,16 @@ export class TopicService {
     private readonly updateOperation: TopicUpdateOperation;
     private readonly deleteOperation: TopicDeleteOperation;
     private readonly submitOperation: TopicMessageSubmitOperation;
+    private readonly infoQuery: TopicInfoQuery;
+    private readonly messageQuery: TopicMessageQuery;
 
     constructor(private readonly context: IHieroContext) {
         this.createOperation = new TopicCreateOperation(context);
         this.updateOperation = new TopicUpdateOperation(context);
         this.deleteOperation = new TopicDeleteOperation(context);
         this.submitOperation = new TopicMessageSubmitOperation(context);
+        this.infoQuery = new TopicInfoQuery(context);
+        this.messageQuery = new TopicMessageQuery(context);
     }
 
     /**
@@ -221,5 +250,52 @@ export class TopicService {
         options: SubmitMessageOptions,
     ): Promise<SubmitMessageResult> {
         return await this.submitOperation.execute(options);
+    }
+
+    /**
+     * Query the current consensus-node state of a topic.
+     *
+     * Returns the topic's memo, running hash, sequence number, keys,
+     * auto-renew settings, custom fees (HIP-991), expiration time, and
+     * ledger ID — projected from the SDK's `TopicInfo` to a plain
+     * object decoupled from SDK primitives like `Long`, `Timestamp`,
+     * and `Duration`.
+     *
+     * Hits the consensus nodes directly — no mirror-node propagation
+     * lag.
+     *
+     * @param topicId - The topic entity ID (e.g., `"0.0.12345"`)
+     * @returns Plain-object topic info
+     */
+    async getTopicInfo(topicId: string | TopicId): Promise<GetTopicInfoResult> {
+        return await this.infoQuery.execute(topicId);
+    }
+
+    /**
+     * Subscribe to messages on a topic via the mirror-node consensus
+     * stream.
+     *
+     * The listener receives `TopicMessageResult` objects in consensus
+     * order; multi-chunk messages are reassembled by the SDK before
+     * delivery. The subscription stays open until `endTime` is reached,
+     * `limit` messages are delivered, or `.unsubscribe()` is called on
+     * the returned handle.
+     *
+     * @param options.topicId - Topic to subscribe to (required)
+     * @param options.startTime - Earliest consensus timestamp to deliver
+     * @param options.endTime - Stop point — subscription ends when reached
+     * @param options.limit - Max number of messages to deliver before stopping
+     * @param options.maxAttempts - Retry attempts on transient stream errors
+     * @param options.maxBackoff - Cap on exponential-backoff delay (ms)
+     * @param options.errorHandler - Invoked when the stream errors
+     * @param options.completionHandler - Invoked when the stream completes naturally
+     * @param listener - Invoked once per delivered message
+     * @returns A `SubscriptionHandle`; call `.unsubscribe()` to stop the stream
+     */
+    subscribeToMessages(
+        options: SubscribeToMessagesOptions,
+        listener: (message: SubscribedMessage) => void,
+    ): SubscriptionHandle {
+        return this.messageQuery.subscribe(options, listener);
     }
 }

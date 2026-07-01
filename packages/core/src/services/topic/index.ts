@@ -5,4 +5,7 @@ export type {
     DeleteTopicOptions,
     SubmitMessageOptions,
     SubmitMessageResult,
+    GetTopicInfoResult,
+    SubscribeToMessagesOptions,
+    SubscribedMessage,
 } from "./TopicService.js";
