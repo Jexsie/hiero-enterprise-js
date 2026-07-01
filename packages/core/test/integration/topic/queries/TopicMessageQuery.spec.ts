@@ -2,9 +2,18 @@ import { describe, it, expect, beforeAll } from "vitest";
 import {
     setupIntegrationTestEnv,
     MIRROR_GRPC_ADDRESS,
+    wait,
 } from "../../../utils/env.js";
 import { TopicService } from "../../../../src/services/index.js";
 import type { SubscribedMessage } from "../../../../src/services/topic/index.js";
+
+// The mirror node imports the
+// record stream on a schedule, so subscriptions must be opened AFTER
+// the topic-create record has been ingested and messages submitted
+// AFTER the subscription is live.
+const MIRROR_INGEST_MS = 5_000; // create → subscribe
+const STREAM_ESTABLISH_MS = 2_000; // subscribe → first submit
+const DELIVERY_WINDOW_MS = 5_000; // last submit → assertion
 
 describe("TopicMessageQuery", () => {
     let topicService: TopicService;
@@ -24,23 +33,39 @@ describe("TopicMessageQuery", () => {
             topicMemo: "integration: subscribe single",
         });
 
+        // Give the mirror importer time to see the new topic before
+        // opening the subscription — otherwise it responds NOT_FOUND
+        // and the SDK falls into its 250ms→8s backoff loop.
+        await wait(MIRROR_INGEST_MS);
+
+        const received: SubscribedMessage[] = [];
+        const handle = topicService.subscribeToMessages(
+            {
+                topicId,
+                limit: 1,
+                errorHandler: (_msg, err) =>
+                    console.error(
+                        `[TopicMessageQuery] subscribe error: ${err.message}`,
+                    ),
+            },
+            (msg) => {
+                received.push(msg);
+            },
+        );
+
+        // Let the gRPC stream establish before pushing traffic through
+        // the consensus node.
+        await wait(STREAM_ESTABLISH_MS);
+
         await topicService.submitMessage({
             topicId,
             message: "hello subscribers",
         });
 
-        const received: SubscribedMessage[] = [];
-
-        await new Promise<void>((resolve) => {
-            const handle = topicService.subscribeToMessages(
-                { topicId, limit: 1 },
-                (msg) => {
-                    received.push(msg);
-                    handle.unsubscribe();
-                    resolve();
-                },
-            );
-        });
+        // Wait for the mirror to publish the submitted message on the
+        // open stream.
+        await wait(DELIVERY_WINDOW_MS);
+        handle.unsubscribe();
 
         expect(received).toHaveLength(1);
         const msg = received[0];
@@ -52,64 +77,81 @@ describe("TopicMessageQuery", () => {
             "hello subscribers",
         );
         expect(msg.runningHash.byteLength).toBeGreaterThan(0);
-    }, 120_000);
+    });
 
     it("delivers multiple messages in consensus order up to the limit", async () => {
         const topicId = await topicService.createTopic({
             topicMemo: "integration: subscribe ordered",
         });
 
+        await wait(MIRROR_INGEST_MS);
+
+        const received: SubscribedMessage[] = [];
+        const handle = topicService.subscribeToMessages(
+            {
+                topicId,
+                limit: 3,
+                errorHandler: (_msg, err) =>
+                    console.error(
+                        `[TopicMessageQuery] subscribe error: ${err.message}`,
+                    ),
+            },
+            (msg) => {
+                received.push(msg);
+            },
+        );
+
+        await wait(STREAM_ESTABLISH_MS);
+
         await topicService.submitMessage({ topicId, message: "alpha" });
         await topicService.submitMessage({ topicId, message: "beta" });
         await topicService.submitMessage({ topicId, message: "gamma" });
 
-        const received: SubscribedMessage[] = [];
-
-        await new Promise<void>((resolve) => {
-            const handle = topicService.subscribeToMessages(
-                { topicId, limit: 3 },
-                (msg) => {
-                    received.push(msg);
-                    if (received.length === 3) {
-                        handle.unsubscribe();
-                        resolve();
-                    }
-                },
-            );
-        });
+        await wait(DELIVERY_WINDOW_MS);
+        handle.unsubscribe();
 
         const payloads = received.map((m) =>
             Buffer.from(m.contents).toString("utf8"),
         );
         expect(payloads).toEqual(["alpha", "beta", "gamma"]);
         expect(received.map((m) => m.sequenceNumber)).toEqual(["1", "2", "3"]);
-    }, 120_000);
+    });
 
     it("unsubscribe stops further deliveries", async () => {
         const topicId = await topicService.createTopic({
             topicMemo: "integration: subscribe unsubscribe",
         });
 
-        await topicService.submitMessage({ topicId, message: "one" });
+        await wait(MIRROR_INGEST_MS);
 
         const received: SubscribedMessage[] = [];
+        const handle = topicService.subscribeToMessages(
+            {
+                topicId,
+                errorHandler: (_msg, err) =>
+                    console.error(
+                        `[TopicMessageQuery] subscribe error: ${err.message}`,
+                    ),
+            },
+            (msg) => {
+                received.push(msg);
+            },
+        );
 
-        await new Promise<void>((resolve) => {
-            const handle = topicService.subscribeToMessages(
-                { topicId, limit: 1 },
-                (msg) => {
-                    received.push(msg);
-                    handle.unsubscribe();
-                    resolve();
-                },
-            );
-        });
+        await wait(STREAM_ESTABLISH_MS);
+
+        await topicService.submitMessage({ topicId, message: "one" });
+        await wait(DELIVERY_WINDOW_MS);
 
         expect(received).toHaveLength(1);
 
-        // Submit another message after unsubscribing — should NOT be
-        // delivered to the (already-disposed) listener.
+        // Stop the stream, then submit another message — it must NOT
+        // reach the (now-disposed) listener even after the delivery
+        // window elapses.
+        handle.unsubscribe();
         await topicService.submitMessage({ topicId, message: "two" });
+        await wait(DELIVERY_WINDOW_MS);
+
         expect(received).toHaveLength(1);
-    }, 120_000);
+    });
 });
