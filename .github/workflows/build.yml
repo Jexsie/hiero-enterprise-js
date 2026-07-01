@@ -57,16 +57,46 @@ jobs:
             - name: Wait for Mirror Node
               run: |
                   echo "Waiting for Mirror Node REST API to be ready..."
+                  REST_READY=""
                   for i in $(seq 1 60); do
                     if curl -s http://localhost:38081/api/v1/accounts | grep -q "accounts"; then
                       echo "Mirror Node is ready!"
+                      REST_READY="yes"
                       break
                     fi
                     echo "Attempt $i/60 — waiting 5s..."
                     sleep 5
                   done
+                  if [ -z "$REST_READY" ]; then
+                    echo "::error::Mirror Node REST on http://localhost:38081 never became reachable" >&2
+                    exit 1
+                  fi
               env:
                   HIERO_MIRROR_NODE_URL: http://localhost:38081
+
+            - name: Wait for Mirror Node gRPC (consensus stream)
+              # Streaming queries (TopicMessageQuery.subscribe) hit the
+              # mirror node's *gRPC* channel on port 5600, which is a
+              # separate service from the REST API on 38081 and can come
+              # up several seconds later. Without this probe the first
+              # subscribe test in the run frequently times out.
+              run: |
+                  echo "Waiting for Mirror Node gRPC (localhost:5600) to accept TCP connections..."
+                  gRPC_READY=""
+                  for i in $(seq 1 60); do
+                    if timeout 2 bash -c '</dev/tcp/localhost/5600' 2>/dev/null; then
+                      echo "Mirror Node gRPC is accepting connections."
+                      gRPC_READY="yes"
+                      break
+                    fi
+                    echo "Attempt $i/60 — waiting 5s..."
+                    sleep 5
+                  done
+                  if [ -z "$gRPC_READY" ]; then
+                    echo "::error::Mirror Node gRPC on localhost:5600 never became reachable" >&2
+                    exit 1
+                  fi
+
             - name: ESLint
               run: pnpm run lint
 
