@@ -53,6 +53,8 @@ describe("FileAppendOperation", () => {
         const fileId = await fileService.createFile({
             contents: "signed file",
             keys: [customKey.publicKey],
+            // Every key assigned to a new file must sign FileCreate.
+            additionalSigners: [customKey],
         });
 
         // Without customKey the append fails.

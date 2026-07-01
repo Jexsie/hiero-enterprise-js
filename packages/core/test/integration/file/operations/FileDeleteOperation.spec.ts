@@ -44,6 +44,8 @@ describe("FileDeleteOperation", () => {
         const fileId = await fileService.createFile({
             contents: "signed delete",
             keys: [customKey.publicKey],
+            // Every key assigned to a new file must sign FileCreate.
+            additionalSigners: [customKey],
         });
 
         // Without the signature the delete fails.

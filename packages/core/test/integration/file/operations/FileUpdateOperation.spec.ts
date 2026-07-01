@@ -79,6 +79,8 @@ describe("FileUpdateOperation", () => {
         const customFileId = await fileService.createFile({
             contents: "rotatable",
             keys: [oldKey.publicKey],
+            // Every key assigned to a new file must sign FileCreate.
+            additionalSigners: [oldKey],
         });
 
         await fileService.updateFile({

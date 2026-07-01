@@ -81,6 +81,8 @@ describe("FileCreateOperation", () => {
         const fileId = await fileService.createFile({
             contents: "custom-keyed",
             keys: [customKey.publicKey],
+            // Every key assigned to a new file must sign FileCreate.
+            additionalSigners: [customKey],
         });
 
         // Without customKey, an update should fail.
