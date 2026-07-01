@@ -114,7 +114,7 @@ describe("HieroContext", () => {
             expect(Client.forPreviewnet).toHaveBeenCalled();
         });
 
-        it("throws for unknown network without mirrorNodeUrl", () => {
+        it("throws for unknown network without networkNodes", () => {
             expect(() => {
                 new HieroContext({ ...validConfig, network: "invalid-net" });
             }).toThrow(/Unknown network/);
@@ -125,6 +125,18 @@ describe("HieroContext", () => {
                 ...validConfig,
                 network: "local",
                 mirrorNodeUrl: "http://localhost:38081",
+                networkNodes: { "127.0.0.1:35211": "0.0.3" },
+            });
+            expect(Client.forNetwork).toHaveBeenCalled();
+            expect(ctx).toBeDefined();
+        });
+
+        it("supports custom network with networkNodes only (no mirrorNodeUrl)", () => {
+            // Custom SDK client only needs consensus node addresses;
+            // mirrorNodeUrl is a REST concern handled by the factory.
+            const ctx = new HieroContext({
+                ...validConfig,
+                network: "local",
                 networkNodes: { "127.0.0.1:35211": "0.0.3" },
             });
             expect(Client.forNetwork).toHaveBeenCalled();

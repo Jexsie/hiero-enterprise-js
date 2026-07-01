@@ -77,23 +77,15 @@ export class HieroContext implements IHieroContext {
             network === "hedera-previewnet"
         ) {
             this.client = Client.forPreviewnet();
-        } else if (resolved.mirrorNodeUrl) {
-            // Custom network — requires explicit mirror node URL and consensus nodes
-            if (
-                !resolved.networkNodes ||
-                Object.keys(resolved.networkNodes).length === 0
-            ) {
-                throw new HieroError(
-                    `Custom network "${resolved.network}" requires networkNodes (consensus node addresses). ` +
-                        `Provide networkNodes in the config or set HIERO_NETWORK_NODES (e.g. "127.0.0.1:50211=0.0.3").`,
-                    { code: HieroErrorCodes.ConfigInvalid },
-                );
-            }
+        } else if (
+            resolved.networkNodes &&
+            Object.keys(resolved.networkNodes).length > 0
+        ) {
             this.client = Client.forNetwork(resolved.networkNodes);
-            this.client.setMirrorNetwork([resolved.mirrorNodeUrl]);
         } else {
             throw new HieroError(
-                `Unknown network "${resolved.network}". Provide a mirrorNodeUrl for custom networks.`,
+                `Unknown network "${resolved.network}". Provide networkNodes (consensus node addresses) for custom networks ` +
+                    `(e.g. via HIERO_NETWORK_NODES="127.0.0.1:50211=0.0.3").`,
                 { code: HieroErrorCodes.ConfigInvalid },
             );
         }

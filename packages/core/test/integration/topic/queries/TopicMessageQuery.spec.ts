@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { setupIntegrationTestEnv } from "../../../utils/env.js";
+import {
+    setupIntegrationTestEnv,
+    MIRROR_GRPC_ADDRESS,
+} from "../../../utils/env.js";
 import { TopicService } from "../../../../src/services/index.js";
 import type { SubscribedMessage } from "../../../../src/services/topic/index.js";
 
@@ -8,6 +11,11 @@ describe("TopicMessageQuery", () => {
 
     beforeAll(() => {
         const ctx = setupIntegrationTestEnv();
+        // Consensus-stream subscriptions use the mirror node's gRPC
+        // channel — the REST URL from HIERO_MIRROR_NODE_URL points at a
+        // different port, so point the SDK at the local gRPC endpoint
+        // explicitly here.
+        ctx.client.setMirrorNetwork([MIRROR_GRPC_ADDRESS]);
         topicService = new TopicService(ctx);
     });
 
