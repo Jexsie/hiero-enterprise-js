@@ -4,6 +4,7 @@ export * from "./schedule/index.js";
 export * from "./network/index.js";
 export * from "./contract/index.js";
 export * from "./topic/index.js";
+export * from "./file/index.js";
 export type {
     TransactionOptions,
     ExternalSigner,
@@ -12,4 +13,3 @@ export type {
     ScheduleOptions,
     ScheduledResult,
 } from "./transaction/index.js";
-export { FileService } from "./file-service.js";
