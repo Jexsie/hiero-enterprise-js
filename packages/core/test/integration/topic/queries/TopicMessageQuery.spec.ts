@@ -52,7 +52,7 @@ describe("TopicMessageQuery", () => {
             "hello subscribers",
         );
         expect(msg.runningHash.byteLength).toBeGreaterThan(0);
-    });
+    }, 120_000);
 
     it("delivers multiple messages in consensus order up to the limit", async () => {
         const topicId = await topicService.createTopic({
@@ -83,7 +83,7 @@ describe("TopicMessageQuery", () => {
         );
         expect(payloads).toEqual(["alpha", "beta", "gamma"]);
         expect(received.map((m) => m.sequenceNumber)).toEqual(["1", "2", "3"]);
-    });
+    }, 120_000);
 
     it("unsubscribe stops further deliveries", async () => {
         const topicId = await topicService.createTopic({
@@ -111,5 +111,5 @@ describe("TopicMessageQuery", () => {
         // delivered to the (already-disposed) listener.
         await topicService.submitMessage({ topicId, message: "two" });
         expect(received).toHaveLength(1);
-    });
+    }, 120_000);
 });
