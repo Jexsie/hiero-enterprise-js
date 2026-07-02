@@ -22,10 +22,14 @@ import { FileCreateValidator } from "../validation/index.js";
  *  - Multi-sig document storage (via a `KeyList` in `keys`).
  *
  * Signing:
- *  - No signature beyond the operator is required to create a file.
- *  - Every key in `keys` MUST sign to later *modify* or *delete* the
- *    file — supply those keys via `additionalSigners` on the future
- *    update/delete call (not here).
+ *  - Every key in `keys` MUST sign the `FileCreate` transaction —
+ *    supply their private keys via `additionalSigners` (or
+ *    `externalSigners`), otherwise the network rejects with
+ *    `INVALID_SIGNATURE`. When `keys` is omitted the facade defaults
+ *    to `[operatorPublicKey]`, which the operator client signs
+ *    automatically.
+ *  - The same keys MUST also sign any later *modify* or *delete* —
+ *    supply them via `additionalSigners` on those calls.
  *
  * Extends `TransactionOptions` for fees, validity window, additional
  * signers, and scheduling.

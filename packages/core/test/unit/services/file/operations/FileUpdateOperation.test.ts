@@ -5,6 +5,10 @@ import {
     PrivateKey,
 } from "@hiero-ledger/sdk";
 import { FileService } from "../../../../../src/services/file/index.js";
+import {
+    HieroError,
+    HieroErrorCodes,
+} from "../../../../../src/errors/index.js";
 import { createMockContext } from "../../../../utils/mock-context.js";
 import { reattachMockChain } from "../../../../utils/sdk-mocks.js";
 import type { IHieroContext } from "../../../../../src/context/index.js";
@@ -221,14 +225,19 @@ describe("FileUpdateOperation (via FileService)", () => {
         it("rejects contents exceeding the per-tx limit (no atomic chunked scheduling)", async () => {
             const large = Buffer.alloc(4097, 0x62);
 
-            await expect(
-                service.scheduleUpdateFile({
-                    fileId: "0.0.555",
-                    contents: large,
-                }),
-            ).rejects.toThrow(
-                /scheduleUpdateFile does not support contents larger than/,
-            );
+            const promise = service.scheduleUpdateFile({
+                fileId: "0.0.555",
+                contents: large,
+            });
+
+            await expect(promise).rejects.toThrow(HieroError);
+            await expect(promise).rejects.toMatchObject({
+                code: HieroErrorCodes.SdkError,
+                context: "FileService.scheduleUpdateFile",
+                message: expect.stringMatching(
+                    /scheduleUpdateFile does not support contents larger than/,
+                ),
+            });
 
             expect(vi.mocked(FileUpdateTransaction)).not.toHaveBeenCalled();
         });

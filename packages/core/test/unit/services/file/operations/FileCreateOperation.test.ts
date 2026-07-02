@@ -5,6 +5,10 @@ import {
     PrivateKey,
 } from "@hiero-ledger/sdk";
 import { FileService } from "../../../../../src/services/file/index.js";
+import {
+    HieroError,
+    HieroErrorCodes,
+} from "../../../../../src/errors/index.js";
 import { createMockContext } from "../../../../utils/mock-context.js";
 import { reattachMockChain } from "../../../../utils/sdk-mocks.js";
 import type { IHieroContext } from "../../../../../src/context/index.js";
@@ -225,6 +229,41 @@ describe("FileCreateOperation (via FileService)", () => {
             ]);
             expect(tx.execute).toHaveBeenCalledWith(context.client);
             expect(vi.mocked(FileAppendTransaction)).not.toHaveBeenCalled();
+        });
+
+        it("surfaces the created fileId when the follow-up append fails", async () => {
+            // FileCreate succeeded on-chain, but the FileAppend for the
+            // tail chunk fails. The caller needs the fileId to retry the
+            // append or delete the partial file — it must be attached to
+            // the thrown HieroError.
+            const appendFailure = new Error("append boom");
+            mocks.append.tx.execute.mockRejectedValueOnce(appendFailure);
+
+            const large = Buffer.alloc(4200, 0x61); // > 4096 → triggers append
+
+            const promise = service.createFile({ contents: large });
+
+            await expect(promise).rejects.toThrow(HieroError);
+            await expect(promise).rejects.toMatchObject({
+                code: HieroErrorCodes.SdkError,
+                context: "FileService.createFile",
+                fileId: "0.0.555",
+                message: expect.stringMatching(
+                    /File 0\.0\.555 was created, but appending the remainder/,
+                ),
+            });
+            // The underlying append failure is preserved as `cause` for
+            // debugging (TransactionExecutor normalises it first).
+            await expect(promise).rejects.toHaveProperty(
+                "cause",
+                expect.any(Error),
+            );
+
+            // FileCreate did run to completion.
+            expect(vi.mocked(FileCreateTransaction)).toHaveBeenCalledTimes(1);
+            expect(mocks.create.tx.execute).toHaveBeenCalled();
+            // FileAppend was attempted (and rejected).
+            expect(vi.mocked(FileAppendTransaction)).toHaveBeenCalledTimes(1);
         });
     });
 });

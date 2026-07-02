@@ -1,5 +1,6 @@
 import type { FileId, Key } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../context/index.js";
+import { HieroError, HieroErrorCodes } from "../../errors/index.js";
 import type { ScheduleOptions, ScheduledResult } from "../transaction/index.js";
 import {
     FileCreateOperation,
@@ -113,8 +114,18 @@ export class FileService {
      * `FileCreate` is not whitelisted for scheduling on the network, so
      * no `scheduleCreateFile` variant is exposed.
      *
+     * **Signing**: any non-operator key placed in `keys` must ALSO sign
+     * the `FileCreate` transaction — supply their private keys via
+     * `additionalSigners` (inherited from `TransactionOptions`), otherwise
+     * the network rejects with `INVALID_SIGNATURE`.
+     *
+     * **Partial-create recovery**: if the leading `FileCreate` succeeds
+     * but a follow-up `FileAppend` for oversized payloads fails, the
+     * thrown `HieroError` carries the already-provisioned `fileId` so
+     * callers can retry the append or delete the partial file.
+     *
      * @param options.contents - Initial file contents (UTF-8 string or raw bytes); omit for an empty file
-     * @param options.keys - Keys required to later modify or delete the file; defaults to `[operatorPublicKey]`, pass `[]` for immutable
+     * @param options.keys - Keys required to later modify or delete the file; defaults to `[operatorPublicKey]`, pass `[]` for immutable. Every non-operator key here must also sign the create via `additionalSigners`.
      * @param options.fileMemo - Short memo attached to the file entity
      * @param options.expirationTime - Expiration timestamp; SDK default is ~91 days from now
      * @returns The new file's entity ID (e.g., `"0.0.12345"`)
@@ -129,6 +140,14 @@ export class FileService {
      *     contents: Buffer.from("hello", "utf8"),
      *     fileMemo: "greeting",
      * });
+     *
+     * // Custom-keyed file — customKey must co-sign FileCreate
+     * const customKey = PrivateKey.generateED25519();
+     * const fileId = await fileService.createFile({
+     *     contents: "signed",
+     *     keys: [customKey.publicKey],
+     *     additionalSigners: [customKey],
+     * });
      * ```
      */
     async createFile(options: CreateFileOptions = {}): Promise<string> {
@@ -142,11 +161,31 @@ export class FileService {
         });
 
         if (tail !== null) {
-            await this.appendOperation.execute({
-                ...options,
-                fileId,
-                contents: tail,
-            });
+            try {
+                await this.appendOperation.execute({
+                    ...options,
+                    fileId,
+                    contents: tail,
+                });
+            } catch (error) {
+                // FileCreate already succeeded on-chain — the caller
+                // needs the fileId to retry the append or delete the
+                // partial file. Surface it on the thrown error.
+                //
+                // `error` is always a HieroError here because
+                // `TransactionExecutor.run` normalises every failure
+                // before throwing.
+                const cause = error as Error;
+                throw new HieroError(
+                    `File ${fileId} was created, but appending the remainder of its contents failed: ${cause.message}`,
+                    {
+                        code: HieroErrorCodes.SdkError,
+                        context: "FileService.createFile",
+                        cause,
+                        fileId,
+                    },
+                );
+            }
         }
 
         return fileId;
@@ -235,9 +274,13 @@ export class FileService {
         if (options.contents !== undefined) {
             const [, tail] = splitContents(options.contents);
             if (tail !== null) {
-                throw new Error(
+                throw new HieroError(
                     "scheduleUpdateFile does not support contents larger than the per-transaction network limit " +
                         `(~${MAX_FILE_TX_BYTES} bytes). Update the file directly and schedule follow-up updates instead.`,
+                    {
+                        code: HieroErrorCodes.SdkError,
+                        context: "FileService.scheduleUpdateFile",
+                    },
                 );
             }
         }

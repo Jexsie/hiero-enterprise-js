@@ -27,6 +27,8 @@ export class HieroError extends Error {
     public override readonly cause?: Error;
     /** Transaction ID if available (from ReceiptStatusError) */
     public readonly transactionId?: string;
+    /** File entity ID when the failure occurred mid-way through a multi-step file operation */
+    public readonly fileId?: string;
 
     constructor(
         message: string,
@@ -36,6 +38,7 @@ export class HieroError extends Error {
             context?: string;
             cause?: Error;
             transactionId?: string;
+            fileId?: string;
         } = {},
     ) {
         super(message);
@@ -45,6 +48,7 @@ export class HieroError extends Error {
         this.context = options.context;
         this.cause = options.cause;
         this.transactionId = options.transactionId;
+        this.fileId = options.fileId;
     }
 }
 
