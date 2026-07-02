@@ -27,9 +27,9 @@ describe("ContractCreateOperation", () => {
         // contract deploy expects the file contents to be the hex-encoded
         // bytecode (the network decodes it server-side). Uploading raw decoded
         // bytes triggers ERROR_DECODING_BYTESTRING at ContractCreate time.
-        bytecodeFileId = await fileService.createFile(
-            Buffer.from(MINIMAL_BYTECODE_HEX, "utf8"),
-        );
+        bytecodeFileId = await fileService.createFile({
+            contents: Buffer.from(MINIMAL_BYTECODE_HEX, "utf8"),
+        });
     });
 
     it("deploys a contract from a pre-uploaded bytecode FileId", async () => {

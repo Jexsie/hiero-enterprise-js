@@ -2,7 +2,7 @@ import type { HieroContext } from "../context/index.js";
 import type { AccountService } from "../services/account/index.js";
 import type { TokenService } from "../services/token/index.js";
 import type { ScheduleService } from "../services/schedule/index.js";
-import type { FileService } from "../services/file-service.js";
+import type { FileService } from "../services/file/index.js";
 import type { ContractService } from "../services/contract/index.js";
 import type { TopicService } from "../services/topic/index.js";
 import type { AccountRepository } from "../repositories/account-repository.js";

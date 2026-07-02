@@ -160,7 +160,7 @@ export class ContractService {
      *
      * @example
      * ```typescript
-     * const fileId = await fileService.createFile(bytecode);
+     * const fileId = await fileService.createFile({ contents: bytecode });
      * const contractId = await contractService.createContract({
      *     bytecodeFileId: fileId,
      *     gas: 150_000,
